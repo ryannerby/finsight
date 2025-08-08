@@ -1,0 +1,23 @@
+{
+  "name": "thesis-project",
+  "version": "1.0.0",
+  "description": "A full-stack thesis project",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server", 
+    "shared"
+  ],
+  "scripts": {
+    "dev": "echo 'Development setup in progress'",
+    "build": "echo 'Build setup in progress'",
+    "install:all": "npm install"
+  },
+  "keywords": [
+    "thesis",
+    "research",
+    "fullstack"
+  ],
+  "author": "",
+  "license": "MIT"
+}
