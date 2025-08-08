@@ -1,0 +1,22 @@
+{
+  "name": "@thesis/shared",
+  "version": "1.0.0",
+  "description": "Shared types, utilities, and constants for thesis project",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "shared",
+    "types",
+    "utilities"
+  ],
+  "author": "",
+  "license": "MIT"
+}
