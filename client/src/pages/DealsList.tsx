@@ -60,8 +60,12 @@ export default function DealsList() {
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Deals</h1>
-            <p className="text-gray-600 mt-2">Manage and track your business deals</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              📊 Finsight Deals
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Manage and track your financial deals with intelligent insights
+            </p>
           </div>
           <Button onClick={() => navigate('/login')}>
             Logout

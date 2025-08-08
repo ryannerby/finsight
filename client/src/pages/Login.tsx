@@ -18,12 +18,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome Back</CardTitle>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-900">
+            Welcome to Finsight
+          </CardTitle>
           <CardDescription>
-            Sign in to your account to continue
+            Sign in to your financial insights platform
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -57,7 +59,7 @@ export default function Login() {
               />
             </div>
             <Button type="submit" className="w-full">
-              Sign In
+              Sign In to Finsight
             </Button>
           </form>
         </CardContent>
