@@ -1,7 +1,7 @@
 {
-  "name": "@thesis/shared",
+  "name": "@finsight/shared",
   "version": "1.0.0",
-  "description": "Shared types, utilities, and constants for thesis project",
+  "description": "Shared types, utilities, and constants for Finsight",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,6 +13,7 @@
     "typescript": "^5.0.0"
   },
   "keywords": [
+    "finsight",
     "shared",
     "types",
     "utilities"
