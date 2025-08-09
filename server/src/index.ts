@@ -2,12 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables FIRST
-console.log('Loading .env from:', path.join(__dirname, '../.env'));
 dotenv.config({ path: path.join(__dirname, '../.env') });
-
-console.log('Environment variables loaded:');
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
-console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
 
 import express from 'express';
 import cors from 'cors';
@@ -42,7 +37,6 @@ async function startServer() {
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

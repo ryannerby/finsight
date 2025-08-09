@@ -137,7 +137,6 @@ export function useFileUpload() {
 
           if (!parseResponse.ok) {
             // Parsing failed, but upload succeeded
-            console.warn(`Failed to parse file: ${parseResponse.statusText}`);
             setUploads(prev => prev.map((upload, index) => 
               index === i ? { 
                 ...upload, 
@@ -163,7 +162,6 @@ export function useFileUpload() {
           }
 
         } catch (error) {
-          console.error(`Error uploading file ${file.name}:`, error);
           setUploads(prev => prev.map((upload, index) => 
             index === i ? { 
               ...upload, 

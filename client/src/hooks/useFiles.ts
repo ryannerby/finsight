@@ -24,7 +24,6 @@ export function useFiles(dealId: string | undefined, userId: string) {
       const data = await response.json();
       setFiles(data);
     } catch (err) {
-      console.error('Error fetching files:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch files');
     } finally {
       setLoading(false);
