@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileDropzone } from '@/components/ui/file-dropzone';
+import { FileList } from '@/components/FileList';
+import { UploadProgress } from '@/components/UploadProgress';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import { useFiles } from '@/hooks/useFiles';
 
 // Mock deal data - in real app this would come from API
 const mockDealData = {
@@ -34,60 +39,69 @@ const mockDealData = {
   }
 };
 
-const UploadTab = () => (
-  <div className="space-y-6">
-    <div>
-      <h3 className="text-lg font-semibold mb-4">Document Upload</h3>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-        <div className="space-y-4">
-          <div className="text-gray-500">
-            <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-lg text-gray-600">Drop files here or click to upload</p>
-            <p className="text-sm text-gray-500">Supports PDF, DOC, DOCX files up to 10MB</p>
-          </div>
-          <Button variant="outline">
-            Choose Files
+const UploadTab = ({ dealId }: { dealId: string }) => {
+  // Mock user ID - in real app this would come from auth context
+  const userId = 'user_123';
+  
+  const { uploads, isUploading, uploadFiles, clearUploads, removeUpload } = useFileUpload();
+  const { files, loading, error, refreshFiles } = useFiles(dealId, userId);
+
+  const handleFilesSelected = async (selectedFiles: File[]) => {
+    await uploadFiles(selectedFiles, dealId, userId);
+    // Refresh the file list after upload completes
+    setTimeout(() => {
+      refreshFiles();
+    }, 1000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Document Upload</h3>
+        <FileDropzone
+          onFilesSelected={handleFilesSelected}
+          disabled={isUploading}
+          acceptedFileTypes={[
+            'application/pdf',
+            'text/csv',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel'
+          ]}
+          maxFileSize={10}
+          multiple={true}
+        />
+      </div>
+
+      {/* Upload Progress */}
+      {uploads.length > 0 && (
+        <div>
+          <h4 className="font-medium mb-3">Upload Progress</h4>
+          <UploadProgress
+            uploads={uploads}
+            onRemove={removeUpload}
+            onClear={clearUploads}
+          />
+        </div>
+      )}
+      
+      {/* File List */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="font-medium">Uploaded Documents</h4>
+          <Button variant="ghost" size="sm" onClick={refreshFiles} disabled={loading}>
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
+        <FileList
+          files={files}
+          loading={loading}
+          error={error}
+          onRefresh={refreshFiles}
+        />
       </div>
     </div>
-    
-    <div>
-      <h4 className="font-medium mb-3">Recent Uploads</h4>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-              <span className="text-red-600 text-xs font-semibold">PDF</span>
-            </div>
-            <div>
-              <p className="font-medium">Financial_Statement_2024.pdf</p>
-              <p className="text-sm text-gray-500">Uploaded 2 hours ago</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm">View</Button>
-        </div>
-        
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
-              <span className="text-blue-600 text-xs font-semibold">DOC</span>
-            </div>
-            <div>
-              <p className="font-medium">Due_Diligence_Report.docx</p>
-              <p className="text-sm text-gray-500">Uploaded 1 day ago</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm">View</Button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const SummaryTab = ({ deal }: { deal: any }) => (
   <div className="space-y-6">
@@ -266,7 +280,7 @@ export default function DealDetail() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'upload' && <UploadTab />}
+            {activeTab === 'upload' && <UploadTab dealId={deal.id} />}
             {activeTab === 'summary' && <SummaryTab deal={deal} />}
             {activeTab === 'qa' && <QATab />}
           </div>
