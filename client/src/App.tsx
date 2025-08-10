@@ -50,9 +50,17 @@ function Protected({ children }: { children: JSX.Element }) {
 export default function App() {
   const navigate = useNavigate();
   
-  // If Clerk is not configured, show setup page
+  // If Clerk is not configured, show demo mode without authentication
   if (!pk) {
-    return <SetupPage />;
+    return (
+      <Routes>
+        <Route path="/" element={<SetupPage />} />
+        <Route path="/login" element={<SetupPage />} />
+        <Route path="/deals" element={<DealsList />} />
+        <Route path="/deals/:dealId" element={<DealDetail />} />
+        <Route path="*" element={<SetupPage />} />
+      </Routes>
+    );
   }
   
   return (
