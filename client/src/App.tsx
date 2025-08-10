@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
+import { SafeNavigationButton } from './components/SafeNavigationButton';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -26,26 +27,18 @@ function SetupPage() {
         </div>
         
         <div className="mt-6 space-y-3">
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigate('/deals');
-            }}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          <SafeNavigationButton 
+            to="/deals"
+            className="w-full bg-blue-600 hover:bg-blue-700"
           >
             View Deals (Demo)
-          </button>
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigate('/deals/1');
-            }}
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+          </SafeNavigationButton>
+          <SafeNavigationButton 
+            to="/deals/1"
+            className="w-full bg-green-600 hover:bg-green-700"
           >
             View Deal Detail (Demo)
-          </button>
+          </SafeNavigationButton>
         </div>
         
         <div className="mt-6 text-sm text-gray-600">
