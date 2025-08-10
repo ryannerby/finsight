@@ -27,18 +27,26 @@ function SetupPage() {
         </div>
         
         <div className="mt-6 space-y-3">
-          <SafeNavigationButton 
-            to="/deals"
-            className="w-full bg-blue-600 hover:bg-blue-700"
+          <div 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/deals');
+            }}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors cursor-pointer text-center"
           >
             View Deals (Demo)
-          </SafeNavigationButton>
-          <SafeNavigationButton 
-            to="/deals/1"
-            className="w-full bg-green-600 hover:bg-green-700"
+          </div>
+          <div 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/deals/1');
+            }}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors cursor-pointer text-center"
           >
             View Deal Detail (Demo)
-          </SafeNavigationButton>
+          </div>
         </div>
         
         <div className="mt-6 text-sm text-gray-600">

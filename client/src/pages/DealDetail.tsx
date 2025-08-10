@@ -91,21 +91,6 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
     } catch (err) {
       console.error('Analysis error:', err);
       setAnalysisError(err instanceof Error ? err.message : 'Analysis failed');
-      
-      // For now, show mock data while Ryan implements the backend
-      setAnalysisResult({
-        health_score: 75,
-        verdict: "GOOD",
-        strengths: ["Strong revenue growth", "Healthy profit margins", "Good market position"],
-        risks: ["High debt levels", "Customer concentration"],
-        key_ratios: {
-          "Revenue Growth": "15.2%",
-          "Profit Margin": "12.5%",
-          "Debt-to-Equity": "0.8",
-          "Current Ratio": "1.2"
-        },
-        summary: "This company shows strong financial performance with good growth prospects, though there are some concerns about debt levels and customer concentration."
-      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -192,21 +177,8 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
 };
 
 const SummaryTab = ({ deal }: { deal: any }) => {
-  // Mock analysis data - in real app this would come from the analysis result
-  const analysisData = {
-    health_score: 75,
-    verdict: "GOOD",
-    strengths: ["Strong revenue growth", "Healthy profit margins", "Good market position", "Diversified customer base"],
-    risks: ["High debt levels", "Customer concentration", "Regulatory uncertainty"],
-    key_ratios: {
-      "Revenue Growth": "15.2%",
-      "Profit Margin": "12.5%",
-      "Debt-to-Equity": "0.8",
-      "Current Ratio": "1.2",
-      "ROE": "18.5%",
-      "ROA": "8.2%"
-    }
-  };
+  // Analysis data will come from the backend when implemented
+  const analysisData = null;
 
   const getVerdictColor = (verdict: string) => {
     switch (verdict.toUpperCase()) {
@@ -238,93 +210,112 @@ const SummaryTab = ({ deal }: { deal: any }) => {
 
   return (
     <div className="space-y-8">
-      {/* Health Score & Verdict */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Financial Health Assessment</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Traffic Light Indicator */}
-          <div className="text-center">
-            <div className="flex justify-center space-x-2 mb-3">
-              <div className={`w-4 h-4 rounded-full ${getTrafficLightColor(analysisData.health_score)}`}></div>
-              <div className={`w-4 h-4 rounded-full ${analysisData.health_score >= 60 ? 'bg-gray-300' : 'bg-gray-300'}`}></div>
-              <div className={`w-4 h-4 rounded-full ${analysisData.health_score >= 80 ? 'bg-gray-300' : 'bg-gray-300'}`}></div>
-            </div>
-            <p className="text-sm text-gray-600">Risk Level</p>
+      {!analysisData ? (
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <div className="text-gray-400 mb-4">
+            <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
           </div>
-
-          {/* Health Score */}
-          <div className="text-center">
-            <p className={`text-4xl font-bold ${getHealthScoreColor(analysisData.health_score)}`}>
-              {analysisData.health_score}
-            </p>
-            <p className="text-sm text-gray-600">Health Score</p>
-          </div>
-
-          {/* Verdict */}
-          <div className="text-center">
-            <span className={`px-4 py-2 rounded-full text-sm font-medium ${getVerdictColor(analysisData.verdict)}`}>
-              {analysisData.verdict}
-            </span>
-            <p className="text-sm text-gray-600 mt-2">Overall Verdict</p>
-          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analysis Available</h3>
+          <p className="text-gray-600 mb-4">
+            Upload documents and run analysis to see financial insights and metrics.
+          </p>
+          <p className="text-sm text-gray-500">
+            Go to the Upload tab to get started.
+          </p>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Health Score & Verdict */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Financial Health Assessment</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Traffic Light Indicator */}
+              <div className="text-center">
+                <div className="flex justify-center space-x-2 mb-3">
+                  <div className={`w-4 h-4 rounded-full ${getTrafficLightColor(analysisData.health_score)}`}></div>
+                  <div className={`w-4 h-4 rounded-full ${analysisData.health_score >= 60 ? 'bg-gray-300' : 'bg-gray-300'}`}></div>
+                  <div className={`w-4 h-4 rounded-full ${analysisData.health_score >= 80 ? 'bg-gray-300' : 'bg-gray-300'}`}></div>
+                </div>
+                <p className="text-sm text-gray-600">Risk Level</p>
+              </div>
 
-      {/* Strengths & Risks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Strengths */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <span className="text-green-600 mr-2">✅</span>
-              Top Strengths
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {analysisData.strengths.map((strength, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-green-500 mr-2 mt-1">•</span>
-                  <span className="text-gray-700">{strength}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+              {/* Health Score */}
+              <div className="text-center">
+                <p className={`text-4xl font-bold ${getHealthScoreColor(analysisData.health_score)}`}>
+                  {analysisData.health_score}
+                </p>
+                <p className="text-sm text-gray-600">Health Score</p>
+              </div>
 
-        {/* Risks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <span className="text-red-600 mr-2">⚠️</span>
-              Key Risks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {analysisData.risks.map((risk, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-red-500 mr-2 mt-1">•</span>
-                  <span className="text-gray-700">{risk}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Key Ratios Grid */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Key Financial Ratios</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Object.entries(analysisData.key_ratios).map(([ratio, value]) => (
-            <div key={ratio} className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-1">{ratio}</p>
-              <p className="text-lg font-semibold text-gray-900">{value}</p>
+              {/* Verdict */}
+              <div className="text-center">
+                <span className={`px-4 py-2 rounded-full text-sm font-medium ${getVerdictColor(analysisData.verdict)}`}>
+                  {analysisData.verdict}
+                </span>
+                <p className="text-sm text-gray-600 mt-2">Overall Verdict</p>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+
+          {/* Strengths & Risks */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Strengths */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <span className="text-green-600 mr-2">✅</span>
+                  Top Strengths
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {analysisData.strengths.map((strength, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-green-500 mr-2 mt-1">•</span>
+                      <span className="text-gray-700">{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Risks */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <span className="text-red-600 mr-2">⚠️</span>
+                  Key Risks
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {analysisData.risks.map((risk, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-red-500 mr-2 mt-1">•</span>
+                      <span className="text-gray-700">{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Key Ratios Grid */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Key Financial Ratios</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Object.entries(analysisData.key_ratios).map(([ratio, value]) => (
+                <div key={ratio} className="text-center p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-1">{ratio}</p>
+                  <p className="text-lg font-semibold text-gray-900">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Deal Overview */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -357,20 +348,7 @@ const SummaryTab = ({ deal }: { deal: any }) => {
 };
 
 const QATab = ({ dealId }: { dealId: string }) => {
-  const [questions, setQuestions] = useState([
-    {
-      id: 1,
-      question: "What is the expected ROI for this acquisition?",
-      answer: "Based on our financial projections, we expect an ROI of 15-20% within the first 18 months post-acquisition. This projection is based on the company's current growth trajectory and market expansion opportunities.",
-      timestamp: "2 days ago"
-    },
-    {
-      id: 2,
-      question: "Are there any regulatory compliance issues?",
-      answer: "We have conducted a thorough compliance review and identified minimal regulatory hurdles. The company maintains all necessary licenses and has a clean compliance record with no pending regulatory issues.",
-      timestamp: "3 days ago"
-    }
-  ]);
+  const [questions, setQuestions] = useState<any[]>([]);
   
   const [newQuestion, setNewQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
@@ -418,19 +396,6 @@ const QATab = ({ dealId }: { dealId: string }) => {
     } catch (err) {
       console.error('Q&A error:', err);
       setAskError(err instanceof Error ? err.message : 'Failed to get answer');
-      
-      // For now, show mock answer while Ryan implements the backend
-      const mockAnswer = "Based on the uploaded documents, this appears to be a promising opportunity with strong financial fundamentals. The company shows consistent revenue growth and healthy profit margins, though there are some areas of concern regarding debt levels that should be monitored closely.";
-      
-      const newQA = {
-        id: Date.now(),
-        question: newQuestion.trim(),
-        answer: mockAnswer,
-        timestamp: 'Just now'
-      };
-      
-      setQuestions([newQA, ...questions]);
-      setNewQuestion('');
     } finally {
       setIsAsking(false);
     }
@@ -440,21 +405,35 @@ const QATab = ({ dealId }: { dealId: string }) => {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Q&A Section</h3>
-        <div className="space-y-4">
-          {questions.map((qa) => (
-            <div key={qa.id} className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-gray-900">{qa.question}</h4>
-                <span className="text-sm text-gray-500">{qa.timestamp}</span>
-              </div>
-              <p className="text-gray-700 mb-3 leading-relaxed">{qa.answer}</p>
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="sm">Ask Follow-up</Button>
-                <Button variant="ghost" size="sm">Copy Answer</Button>
-              </div>
+        {questions.length === 0 ? (
+          <div className="bg-gray-50 p-8 rounded-lg text-center">
+            <div className="text-gray-400 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
             </div>
-          ))}
-        </div>
+            <h4 className="font-medium text-gray-900 mb-2">No Questions Yet</h4>
+            <p className="text-gray-600">
+              Ask a question about the uploaded documents to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {questions.map((qa) => (
+              <div key={qa.id} className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium text-gray-900">{qa.question}</h4>
+                  <span className="text-sm text-gray-500">{qa.timestamp}</span>
+                </div>
+                <p className="text-gray-700 mb-3 leading-relaxed">{qa.answer}</p>
+                <div className="flex space-x-2">
+                  <Button variant="ghost" size="sm">Ask Follow-up</Button>
+                  <Button variant="ghost" size="sm">Copy Answer</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -506,7 +485,12 @@ export default function DealDetail() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Deal Not Found</h2>
             <p className="text-gray-600 mb-4">The deal you're looking for doesn't exist.</p>
-            <Button onClick={handleBackToDeals}>Back to Deals</Button>
+            <div 
+              onClick={handleBackToDeals}
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors cursor-pointer text-center"
+            >
+              Back to Deals
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -524,9 +508,12 @@ export default function DealDetail() {
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={handleBackToDeals}>
+            <div 
+              onClick={handleBackToDeals}
+              className="text-blue-600 hover:text-blue-800 cursor-pointer px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
+            >
               ← Back to Deals
-            </Button>
+            </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{deal.title}</h1>
               <p className="text-gray-600">{deal.company}</p>

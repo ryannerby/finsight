@@ -73,7 +73,12 @@ export default function DealsList() {
               Manage and track your financial deals with intelligent insights
             </p>
           </div>
-          <Button onClick={handleBackClick}>Back to Home</Button>
+          <div 
+            onClick={handleBackClick}
+            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors cursor-pointer text-center"
+          >
+            Back to Home
+          </div>
         </div>
 
         <div className="grid gap-6">
