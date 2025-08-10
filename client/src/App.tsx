@@ -9,6 +9,8 @@ const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // Simple setup page when authentication is not configured
 function SetupPage() {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
@@ -18,10 +20,26 @@ function SetupPage() {
         </p>
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-800">
-            <strong>Setup Required:</strong> Authentication is not configured. 
-            Please set up your Clerk publishable key in the environment variables.
+            <strong>Demo Mode:</strong> Authentication is not configured. 
+            You can still test the application features.
           </p>
         </div>
+        
+        <div className="mt-6 space-y-3">
+          <button 
+            onClick={() => navigate('/deals')}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            View Deals (Demo)
+          </button>
+          <button 
+            onClick={() => navigate('/deals/1')}
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+          >
+            View Deal Detail (Demo)
+          </button>
+        </div>
+        
         <div className="mt-6 text-sm text-gray-600">
           <p className="mb-2">To configure authentication:</p>
           <ol className="list-decimal list-inside space-y-1 text-gray-500">
