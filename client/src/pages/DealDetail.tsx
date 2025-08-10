@@ -491,6 +491,12 @@ export default function DealDetail() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'upload' | 'summary' | 'qa'>('summary');
 
+  const handleBackToDeals = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/deals');
+  };
+
   const deal = dealId ? mockDealData[dealId as keyof typeof mockDealData] : null;
 
   if (!deal) {
@@ -500,7 +506,7 @@ export default function DealDetail() {
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Deal Not Found</h2>
             <p className="text-gray-600 mb-4">The deal you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/deals')}>Back to Deals</Button>
+            <Button onClick={handleBackToDeals}>Back to Deals</Button>
           </CardContent>
         </Card>
       </div>
@@ -518,7 +524,7 @@ export default function DealDetail() {
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/deals')}>
+            <Button variant="ghost" onClick={handleBackToDeals}>
               ← Back to Deals
             </Button>
             <div>
