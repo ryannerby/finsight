@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SignOutButton } from '@clerk/clerk-react';
 
 // Mock data for deals
 const mockDeals = [
@@ -68,9 +67,7 @@ export default function DealsList() {
               Manage and track your financial deals with intelligent insights
             </p>
           </div>
-          <SignOutButton signOutOptions={{ redirectUrl: '/login' }}>
-            <Button>Logout</Button>
-          </SignOutButton>
+          <Button onClick={() => navigate('/')}>Back to Home</Button>
         </div>
 
         <div className="grid gap-6">
