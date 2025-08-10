@@ -42,6 +42,12 @@ export default function DealsList() {
     navigate(`/deals/${dealId}`);
   };
 
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/');
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -67,7 +73,7 @@ export default function DealsList() {
               Manage and track your financial deals with intelligent insights
             </p>
           </div>
-          <Button onClick={() => navigate('/')}>Back to Home</Button>
+          <Button onClick={handleBackClick}>Back to Home</Button>
         </div>
 
         <div className="grid gap-6">
