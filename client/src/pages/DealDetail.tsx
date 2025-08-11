@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+
 import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
 import { useFileUpload } from '@/hooks/useFileUpload';
@@ -41,15 +42,13 @@ const mockDealData = {
 
 const UploadTab = ({ dealId }: { dealId: string }) => {
   // Mock user ID - in real app this would come from auth context
-  const userId = 'user_123';
+  const userId = 'demo-user-123';
   
   const { uploads, isUploading, uploadFiles, clearUploads, removeUpload } = useFileUpload();
   const { files, loading, error, refreshFiles } = useFiles(dealId, userId);
   
   // Analysis state
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
 
   const handleFilesSelected = async (selectedFiles: File[]) => {
     await uploadFiles(selectedFiles, dealId, userId);
@@ -59,42 +58,7 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
     }, 1000);
   };
 
-  const handleRunAnalysis = async () => {
-    if (files.length === 0) {
-      setAnalysisError('No files uploaded to analyze');
-      return;
-    }
 
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    setAnalysisResult(null);
-
-    try {
-      // TODO: Replace with actual API call when Ryan implements the backend
-      const response = await fetch(`/api/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dealId,
-          userId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      setAnalysisResult(result);
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setAnalysisError(err instanceof Error ? err.message : 'Analysis failed');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -142,42 +106,12 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
         />
       </div>
 
-      {/* Analysis Section */}
-      <div>
-        <div className="flex justify-between items-center mb-3">
-          <h4 className="font-medium">AI Analysis</h4>
-          <Button 
-            onClick={handleRunAnalysis}
-            disabled={isAnalyzing || files.length === 0}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
-          </Button>
-        </div>
-        
-        {analysisError && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-            <p className="text-red-800 text-sm">{analysisError}</p>
-          </div>
-        )}
 
-        {analysisResult && (
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-            <h5 className="font-medium mb-3 text-gray-900">Analysis Result (Dev View)</h5>
-            <div className="bg-white border border-gray-300 rounded-md p-4">
-              <pre className="text-xs text-gray-800 overflow-auto max-h-96">
-                {JSON.stringify(analysisResult, null, 2)}
-              </pre>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
 
 const SummaryTab = ({ deal }: { deal: any }) => {
-  // Analysis data will come from the backend when implemented
   const analysisData = null;
 
   const getVerdictColor = (verdict: string) => {
@@ -348,118 +282,11 @@ const SummaryTab = ({ deal }: { deal: any }) => {
 };
 
 const QATab = ({ dealId }: { dealId: string }) => {
-  const [questions, setQuestions] = useState<any[]>([]);
-  
-  const [newQuestion, setNewQuestion] = useState('');
-  const [isAsking, setIsAsking] = useState(false);
-  const [askError, setAskError] = useState<string | null>(null);
-
-  const handleAskQuestion = async () => {
-    if (!newQuestion.trim()) {
-      setAskError('Please enter a question');
-      return;
-    }
-
-    setIsAsking(true);
-    setAskError(null);
-
-    try {
-      // TODO: Replace with actual API call when Ryan implements the backend
-      const response = await fetch(`/api/qa`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dealId,
-          question: newQuestion.trim(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Q&A failed: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      // Add new Q&A to the list
-      const newQA = {
-        id: Date.now(),
-        question: newQuestion.trim(),
-        answer: result.answer,
-        timestamp: 'Just now'
-      };
-      
-      setQuestions([newQA, ...questions]);
-      setNewQuestion('');
-      
-    } catch (err) {
-      console.error('Q&A error:', err);
-      setAskError(err instanceof Error ? err.message : 'Failed to get answer');
-    } finally {
-      setIsAsking(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold mb-4">Q&A Section</h3>
-        {questions.length === 0 ? (
-          <div className="bg-gray-50 p-8 rounded-lg text-center">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </div>
-            <h4 className="font-medium text-gray-900 mb-2">No Questions Yet</h4>
-            <p className="text-gray-600">
-              Ask a question about the uploaded documents to get started.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {questions.map((qa) => (
-              <div key={qa.id} className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-medium text-gray-900">{qa.question}</h4>
-                  <span className="text-sm text-gray-500">{qa.timestamp}</span>
-                </div>
-                <p className="text-gray-700 mb-3 leading-relaxed">{qa.answer}</p>
-                <div className="flex space-x-2">
-                  <Button variant="ghost" size="sm">Ask Follow-up</Button>
-                  <Button variant="ghost" size="sm">Copy Answer</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h4 className="font-medium mb-3">Ask a Question</h4>
-        <div className="space-y-3">
-          <textarea
-            value={newQuestion}
-            onChange={(e) => setNewQuestion(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={4}
-            placeholder="Ask a question about the uploaded documents..."
-            disabled={isAsking}
-          />
-          {askError && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-red-800 text-sm">{askError}</p>
-            </div>
-          )}
-          <Button 
-            onClick={handleAskQuestion}
-            disabled={isAsking || !newQuestion.trim()}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isAsking ? 'Asking...' : 'Submit Question'}
-          </Button>
-        </div>
       </div>
     </div>
   );
@@ -469,6 +296,9 @@ export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'upload' | 'summary' | 'qa'>('summary');
+  const [deal, setDeal] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleBackToDeals = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -476,15 +306,61 @@ export default function DealDetail() {
     navigate('/deals');
   };
 
-  const deal = dealId ? mockDealData[dealId as keyof typeof mockDealData] : null;
+  // Fetch deal data from API
+  React.useEffect(() => {
+    const fetchDeal = async () => {
+      if (!dealId) {
+        setError('No deal ID provided');
+        setLoading(false);
+        return;
+      }
 
-  if (!deal) {
+      try {
+        const response = await fetch(`http://localhost:3001/api/deals/${dealId}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Deal not found');
+          } else {
+            setError('Failed to fetch deal');
+          }
+          setLoading(false);
+          return;
+        }
+
+        const dealData = await response.json();
+        setDeal(dealData);
+      } catch (err) {
+        console.error('Error fetching deal:', err);
+        setError('Failed to fetch deal');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeal();
+  }, [dealId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+            <p className="text-gray-600">Fetching deal information...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !deal) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card>
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Deal Not Found</h2>
-            <p className="text-gray-600 mb-4">The deal you're looking for doesn't exist.</p>
+            <p className="text-gray-600 mb-4">{error || 'The deal you\'re looking for doesn\'t exist.'}</p>
             <div 
               onClick={handleBackToDeals}
               className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors cursor-pointer text-center"
@@ -516,14 +392,16 @@ export default function DealDetail() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{deal.title}</h1>
-              <p className="text-gray-600">{deal.company}</p>
+              <p className="text-gray-600">{deal.description}</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-              {deal.status}
+              Active
             </span>
-            <span className="text-xl font-semibold">{deal.value}</span>
+            <span className="text-sm text-gray-500">
+              Created: {new Date(deal.created_at).toLocaleDateString()}
+            </span>
           </div>
         </div>
 

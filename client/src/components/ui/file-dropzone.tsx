@@ -144,14 +144,15 @@ export function FileDropzone({
               className="hidden"
               id="file-upload"
             />
-            <label htmlFor="file-upload">
+            <label htmlFor="file-upload" className="cursor-pointer">
               <Button 
+                type="button"
                 variant="outline" 
                 disabled={disabled}
                 className="cursor-pointer"
-                asChild
+                onClick={() => document.getElementById('file-upload')?.click()}
               >
-                <span>Choose Files</span>
+                Choose Files
               </Button>
             </label>
           </div>

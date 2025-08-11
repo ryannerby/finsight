@@ -1,14 +1,17 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables FIRST
+// Load environment variables FIRST - before any other imports
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+// Now import everything else
 import express from 'express';
 import cors from 'cors';
 import { healthRouter } from './routes/health';
 import { dealsRouter } from './routes/deals';
 import { filesRouter } from './routes/files';
+import { analyzeRouter } from './routes/analyze';
+import { qaRouter } from './routes/qa';
 import { initializeDatabase } from './database/init';
 
 const app = express();
@@ -23,6 +26,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/health', healthRouter);
 app.use('/api/deals', dealsRouter);
 app.use('/api/files', filesRouter);
+app.use('/api/analyze', analyzeRouter);
+app.use('/api/qa', qaRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
