@@ -2,8 +2,10 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
+import CreateDeal from './pages/CreateDeal';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { SafeNavigationButton } from './components/SafeNavigationButton';
+import AppHeader from './components/navigation/AppHeader';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -81,10 +83,12 @@ export default function App() {
   if (!pk) {
     return (
       <div>
+        <AppHeader />
         <Routes>
           <Route path="/" element={<SetupPage />} />
           <Route path="/login" element={<SetupPage />} />
           <Route path="/deals" element={<DealsList />} />
+          <Route path="/deals/new" element={<CreateDeal />} />
           <Route path="/deals/:dealId" element={<DealDetail />} />
           <Route path="*" element={<SetupPage />} />
         </Routes>
@@ -100,10 +104,12 @@ export default function App() {
       afterSignInUrl="/deals"
       afterSignUpUrl="/deals"
     >
+      <AppHeader />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/deals" element={<Protected><DealsList /></Protected>} />
+        <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
         <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
