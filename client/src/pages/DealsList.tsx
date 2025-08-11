@@ -175,7 +175,7 @@ export default function DealsList() {
                         dealId = deal.id;
                       }
                       await uploadFiles(files, dealId!, userId);
-                      navigate(`/deals/${dealId}`);
+                      // Stay on this page; user can click "View Deal" to navigate when ready
                     } catch (err) {
                       setError(err instanceof Error ? err.message : 'Failed to upload documents');
                     }
@@ -196,7 +196,7 @@ export default function DealsList() {
 
               <div className="flex gap-3 mt-4">
                 <Button type="submit" disabled={isUploading} className="bg-blue-600 hover:bg-blue-700">
-                  {isUploading ? 'Creating…' : 'Create Deal'}
+                  {createdDealId ? 'View Deal' : (isUploading ? 'Creating…' : 'Create Deal')}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
               </div>
