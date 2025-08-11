@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState, useId } from 'react';
 import { Button } from './button';
 
 interface FileDropzoneProps {
@@ -20,6 +20,10 @@ export function FileDropzone({
 }: FileDropzoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dragCounterRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const uid = useId();
+  const inputId = `file-upload-${uid}`;
 
   const validateFile = useCallback((file: File): boolean => {
     // Check file type
@@ -59,15 +63,20 @@ export function FileDropzone({
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!disabled) {
-      setIsDragOver(true);
-    }
+    if (disabled) return;
+    dragCounterRef.current += 1;
+    setIsDragOver(true);
   }, [disabled]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(false);
+    if (dragCounterRef.current > 0) {
+      dragCounterRef.current -= 1;
+    }
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -78,6 +87,7 @@ export function FileDropzone({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    dragCounterRef.current = 0;
     setIsDragOver(false);
     
     if (disabled) return;
@@ -106,6 +116,7 @@ export function FileDropzone({
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        onClick={() => { if (!disabled) inputRef.current?.click(); }}
         className={`
           border-2 border-dashed rounded-lg p-8 text-center transition-colors
           ${isDragOver && !disabled 
@@ -136,21 +147,22 @@ export function FileDropzone({
           </div>
           <div>
             <input
+              ref={inputRef}
               type="file"
               multiple={multiple}
               accept={acceptedFileTypes.join(',')}
               onChange={handleFileInput}
               disabled={disabled}
               className="hidden"
-              id="file-upload"
+              id={inputId}
             />
-            <label htmlFor="file-upload" className="cursor-pointer">
+            <label htmlFor={inputId} className="cursor-pointer">
               <Button 
                 type="button"
                 variant="outline" 
                 disabled={disabled}
                 className="cursor-pointer"
-                onClick={() => document.getElementById('file-upload')?.click()}
+                onClick={() => inputRef.current?.click()}
               >
                 Choose Files
               </Button>
