@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SignOutButton } from '@clerk/clerk-react';
 
 // Mock data for deals
 const mockDeals = [
@@ -43,6 +42,12 @@ export default function DealsList() {
     navigate(`/deals/${dealId}`);
   };
 
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/');
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -68,9 +73,12 @@ export default function DealsList() {
               Manage and track your financial deals with intelligent insights
             </p>
           </div>
-          <SignOutButton signOutOptions={{ redirectUrl: '/login' }}>
-            <Button>Logout</Button>
-          </SignOutButton>
+          <div 
+            onClick={handleBackClick}
+            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors cursor-pointer text-center"
+          >
+            Back to Home
+          </div>
         </div>
 
         <div className="grid gap-6">
