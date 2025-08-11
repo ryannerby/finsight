@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { SafeNavigationButton } from '@/components/SafeNavigationButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Mock data for deals
@@ -42,11 +43,7 @@ export default function DealsList() {
     navigate(`/deals/${dealId}`);
   };
 
-  const handleBackClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigate('/');
-  };
+  // Back to Home uses SafeNavigationButton for robust navigation
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -73,12 +70,12 @@ export default function DealsList() {
               Manage and track your financial deals with intelligent insights
             </p>
           </div>
-          <div 
-            onClick={handleBackClick}
-            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors cursor-pointer text-center"
+          <SafeNavigationButton 
+            to="/"
+            className="bg-gray-600 text-white py-2 px-4"
           >
             Back to Home
-          </div>
+          </SafeNavigationButton>
         </div>
 
         <div className="grid gap-6">
