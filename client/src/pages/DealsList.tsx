@@ -24,6 +24,7 @@ export default function DealsList() {
   const [formDescription, setFormDescription] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  const [createdDealId, setCreatedDealId] = useState<string | null>(null);
 
   const handleDealClick = (dealId: string) => {
     navigate(`/deals/${dealId}`);
@@ -54,6 +55,10 @@ export default function DealsList() {
   const handleCreateDeal = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (createdDealId) {
+      navigate(`/deals/${createdDealId}`);
+      return;
+    }
     if (!formTitle.trim()) {
       setError('Please enter a deal title');
       return;
@@ -145,7 +150,36 @@ export default function DealsList() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Initial Documents (optional)</label>
                 <FileDropzone
-                  onFilesSelected={(files) => setSelectedFiles(files)}
+                  onFilesSelected={async (files) => {
+                    setSelectedFiles(files);
+                    setError(null);
+                    if (!formTitle.trim()) {
+                      setError('Please enter a deal title before adding documents');
+                      return;
+                    }
+                    try {
+                      let dealId = createdDealId;
+                      if (!dealId) {
+                        const description = [formCompany && `Company: ${formCompany}`, formDescription]
+                          .filter(Boolean)
+                          .join(' | ');
+                        const res = await fetch(`${API_BASE_URL}/deals`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
+                        });
+                        if (!res.ok) throw new Error(await res.text());
+                        const deal = await res.json();
+                        setDeals((prev) => [deal, ...prev]);
+                        setCreatedDealId(deal.id);
+                        dealId = deal.id;
+                      }
+                      await uploadFiles(files, dealId!, userId);
+                      navigate(`/deals/${dealId}`);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to upload documents');
+                    }
+                  }}
                   multiple
                   maxFileSize={10}
                 />
