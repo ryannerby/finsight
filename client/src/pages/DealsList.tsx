@@ -1,10 +1,11 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { UploadProgress } from '@/components/UploadProgress';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -14,7 +15,7 @@ export default function DealsList() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const userId = 'user_123';
-  const { uploadFiles, isUploading } = useFileUpload();
+  const { uploadFiles, isUploading, uploads, clearUploads, removeUpload } = useFileUpload();
 
   // Create deal form state
   const [showCreate, setShowCreate] = useState(false);
@@ -43,13 +44,12 @@ export default function DealsList() {
       .finally(() => setLoading(false));
   }, []);
 
-  // If header requests creating a deal (?create=1), open the form
+  // Open or close inline create form when query parameter changes
+  const location = useLocation();
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('create') === '1') {
-      setShowCreate(true);
-    }
-  }, []);
+    const params = new URLSearchParams(location.search);
+    setShowCreate(params.get('create') === '1');
+  }, [location.search]);
 
   const handleCreateDeal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,11 +149,18 @@ export default function DealsList() {
                   multiple
                   maxFileSize={10}
                 />
-                {selectedFiles.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-600">{selectedFiles.length} file(s) selected</div>
-                )}
               </div>
-              <div className="flex gap-3">
+
+              {/* Upload progress (mirrors deal detail) */}
+              <div className="mt-4">
+                <UploadProgress
+                  uploads={uploads}
+                  onRemove={removeUpload}
+                  onClear={clearUploads}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-4">
                 <Button type="submit" disabled={isUploading} className="bg-blue-600 hover:bg-blue-700">
                   {isUploading ? 'Creating…' : 'Create Deal'}
                 </Button>

@@ -220,3 +220,44 @@ filesRouter.get('/deal/:deal_id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Create a signed download URL for a document
+filesRouter.get('/download/:document_id', async (req: Request, res: Response) => {
+  try {
+    const { document_id } = req.params;
+    const { user_id } = req.query;
+
+    // Get document plus deal user_id to verify access
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select(`
+        *,
+        deal:deals!inner(user_id)
+      `)
+      .eq('id', document_id)
+      .single();
+
+    if (docError || !document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (document.deal.user_id !== user_id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Create a temporary signed URL for download
+    const { data, error } = await supabaseAdmin.storage
+      .from('documents')
+      .createSignedUrl(document.file_path, 60); // 60 seconds
+
+    if (error || !data) {
+      console.error('Error creating signed download URL:', error);
+      return res.status(500).json({ error: 'Failed to create download URL' });
+    }
+
+    return res.json({ url: data.signedUrl });
+  } catch (error) {
+    console.error('Error in download document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

@@ -2,6 +2,8 @@
 import { Button } from './ui/button';
 import { UploadedFile } from '../hooks/useFileUpload';
 
+const API_BASE_URL = 'http://localhost:3001/api';
+
 interface FileListProps {
   files: UploadedFile[];
   loading?: boolean;
@@ -154,7 +156,21 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
                   View Analysis
                 </Button>
               )}
-              <Button variant="ghost" size="sm">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const params = new URLSearchParams({ user_id: 'user_123' });
+                    const resp = await fetch(`${API_BASE_URL}/files/download/${file.id}?${params}`);
+                    if (!resp.ok) throw new Error('Failed to get download URL');
+                    const { url } = await resp.json();
+                    window.open(url, '_blank');
+                  } catch (e) {
+                    alert('Download failed');
+                  }
+                }}
+              >
                 Download
               </Button>
             </div>
