@@ -38,8 +38,9 @@ filesRouter.post('/upload-url', async (req: Request, res: Response) => {
     const extension = filename.split('.').pop();
     const uniqueFilename = `${deal_id}/${timestamp}-${filename}`;
 
-    // Create signed URL for upload
-    const { data, error } = await supabase.storage
+    // Create signed URL for upload using admin client so the operation does not
+    // depend on any RLS/storage policy and never exposes client credentials
+    const { data, error } = await supabaseAdmin.storage
       .from('documents')
       .createSignedUploadUrl(uniqueFilename);
 
