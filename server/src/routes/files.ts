@@ -36,7 +36,16 @@ filesRouter.post('/upload-url', async (req: Request, res: Response) => {
     // Generate unique filename
     const timestamp = Date.now();
     const extension = filename.split('.').pop();
-    const uniqueFilename = `${deal_id}/${timestamp}-${filename}`;
+    
+    // Clean filename: remove special characters, replace spaces with underscores
+    const cleanFilename = filename
+      .normalize('NFD') // Decompose accented characters
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics (accents)
+      .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace special chars with underscores
+      .replace(/_+/g, '_') // Replace multiple underscores with single
+      .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+    
+    const uniqueFilename = `${deal_id}/${timestamp}-${cleanFilename}`;
 
     // Create signed URL for upload using admin client so the operation does not
     // depend on any RLS/storage policy and never exposes client credentials
@@ -151,35 +160,19 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
     // Parse the document
     const parsedText = await parseDocument(fileBuffer, document.mime_type);
 
-    // Save analysis
-    const { data: analysis, error: analysisError } = await supabase
-      .from('analyses')
-      .insert({
-        document_id,
-        parsed_text: parsedText,
-        analysis_type: 'text_extraction',
-        analysis_result: {
-          word_count: parsedText.split(' ').length,
-          extraction_timestamp: new Date().toISOString()
-        }
-      })
-      .select()
-      .single();
-
-    if (analysisError) {
-      console.error('Error saving analysis:', analysisError);
-      return res.status(500).json({ error: 'Failed to save analysis' });
-    }
-
-    // Log the action
-    await supabase
-      .from('logs')
-      .insert({
-        deal_id: document.deal_id,
-        user_id,
-        action: 'parsed_document',
-        details: { document_id, filename: document.original_name }
-      });
+    // TODO: Ryan will implement analysis saving (Days 7-8)
+    // For now, just return the parsed text
+    const analysis = {
+      id: `temp-${Date.now()}`,
+      document_id,
+      parsed_text: parsedText,
+      analysis_type: 'text_extraction',
+      analysis_result: {
+        word_count: parsedText.split(' ').length,
+        extraction_timestamp: new Date().toISOString()
+      },
+      created_at: new Date().toISOString()
+    };
 
     res.json(analysis);
   } catch (error) {
@@ -224,6 +217,47 @@ filesRouter.get('/deal/:deal_id', async (req: Request, res: Response) => {
     res.json(data);
   } catch (error) {
     console.error('Error in get documents:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create a signed download URL for a document
+filesRouter.get('/download/:document_id', async (req: Request, res: Response) => {
+  try {
+    const { document_id } = req.params;
+    const { user_id } = req.query;
+
+    // Get document plus deal user_id to verify access
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select(`
+        *,
+        deal:deals!inner(user_id)
+      `)
+      .eq('id', document_id)
+      .single();
+
+    if (docError || !document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (document.deal.user_id !== user_id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Create a temporary signed URL for download
+    const { data, error } = await supabaseAdmin.storage
+      .from('documents')
+      .createSignedUrl(document.file_path, 60); // 60 seconds
+
+    if (error || !data) {
+      console.error('Error creating signed download URL:', error);
+      return res.status(500).json({ error: 'Failed to create download URL' });
+    }
+
+    return res.json({ url: data.signedUrl });
+  } catch (error) {
+    console.error('Error in download document:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

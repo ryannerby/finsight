@@ -1,10 +1,11 @@
+import React from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SignedIn, SignedOut, SignOutButton } from '@clerk/clerk-react';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { UploadProgress } from '@/components/UploadProgress';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -14,7 +15,7 @@ export default function DealsList() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const userId = 'user_123';
-  const { uploadFiles, isUploading } = useFileUpload();
+  const { uploadFiles, isUploading, uploads, clearUploads, removeUpload } = useFileUpload();
 
   // Create deal form state
   const [showCreate, setShowCreate] = useState(false);
@@ -23,13 +24,10 @@ export default function DealsList() {
   const [formDescription, setFormDescription] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
+  const [createdDealId, setCreatedDealId] = useState<string | null>(null);
 
   const handleDealClick = (dealId: string) => {
     navigate(`/deals/${dealId}`);
-  };
-
-  const handleBackClick = () => {
-    navigate('/');
   };
 
   // Back to Home uses SafeNavigationButton for robust navigation
@@ -47,9 +45,20 @@ export default function DealsList() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Open or close inline create form when query parameter changes
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setShowCreate(params.get('create') === '1');
+  }, [location.search]);
+
   const handleCreateDeal = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (createdDealId) {
+      navigate(`/deals/${createdDealId}`);
+      return;
+    }
     if (!formTitle.trim()) {
       setError('Please enter a deal title');
       return;
@@ -89,34 +98,6 @@ export default function DealsList() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              📊 Finsight Deals
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Manage and track your financial deals with intelligent insights
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setShowCreate((v) => !v)} className="bg-blue-600 hover:bg-blue-700">
-              {showCreate ? 'Close' : 'Create Deal'}
-            </Button>
-            <SignedIn>
-              <SignOutButton>
-                <Button variant="outline">Log out</Button>
-              </SignOutButton>
-            </SignedIn>
-            <SignedOut>
-              <div 
-                onClick={handleBackClick}
-                className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors cursor-pointer text-center"
-              >
-                Back to Home
-              </div>
-            </SignedOut>
-          </div>
-        </div>
 
         {showCreate && (
           <div className="mb-6 bg-white border border-gray-200 rounded-lg p-6">
@@ -159,17 +140,53 @@ export default function DealsList() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Initial Documents (optional)</label>
                 <FileDropzone
-                  onFilesSelected={(files) => setSelectedFiles(files)}
+                  onFilesSelected={async (files) => {
+                    setSelectedFiles(files);
+                    setError(null);
+                    if (!formTitle.trim()) {
+                      setError('Please enter a deal title before adding documents');
+                      return;
+                    }
+                    try {
+                      let dealId = createdDealId;
+                      if (!dealId) {
+                        const description = [formCompany && `Company: ${formCompany}`, formDescription]
+                          .filter(Boolean)
+                          .join(' | ');
+                        const res = await fetch(`${API_BASE_URL}/deals`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
+                        });
+                        if (!res.ok) throw new Error(await res.text());
+                        const deal = await res.json();
+                        setDeals((prev) => [deal, ...prev]);
+                        setCreatedDealId(deal.id);
+                        dealId = deal.id;
+                      }
+                      await uploadFiles(files, dealId!, userId);
+                      // Stay on this page; user can click "View Deal" to navigate when ready
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Failed to upload documents');
+                    }
+                  }}
                   multiple
                   maxFileSize={10}
                 />
-                {selectedFiles.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-600">{selectedFiles.length} file(s) selected</div>
-                )}
               </div>
-              <div className="flex gap-3">
+
+              {/* Upload progress (mirrors deal detail) */}
+              <div className="mt-4">
+                <UploadProgress
+                  uploads={uploads}
+                  onRemove={removeUpload}
+                  onClear={clearUploads}
+                />
+              </div>
+
+              <div className="flex gap-3 mt-4">
                 <Button type="submit" disabled={isUploading} className="bg-blue-600 hover:bg-blue-700">
-                  {isUploading ? 'Creating…' : 'Create Deal'}
+                  {createdDealId ? 'View Deal' : (isUploading ? 'Creating…' : 'Create Deal')}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
               </div>
@@ -230,6 +247,19 @@ export default function DealsList() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-500">
+                    {(() => {
+                      const docs = (Array.isArray(deal.documents) ? deal.documents : []);
+                      const count = typeof deal.documents_count === 'number'
+                        ? deal.documents_count
+                        : (Array.isArray(docs) && docs[0] && typeof docs[0].count === 'number')
+                          ? docs[0].count
+                          : (Array.isArray(docs) ? docs.length : 0);
+                      return (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
+                          {count} doc{count === 1 ? '' : 's'}
+                        </span>
+                      );
+                    })()}
                     <span>{new Date(deal.created_at).toLocaleString()}</span>
                   </div>
                 </div>

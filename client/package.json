@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.40.0",
+    "@radix-ui/react-dialog": "^1.1.14",
+    "@radix-ui/react-label": "^2.1.7",
     "@remix-run/router": "^1.23.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
