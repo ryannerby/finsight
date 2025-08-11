@@ -33,10 +33,16 @@ export function AppHeader({ className }: { className?: string }) {
     <header className={cn('w-full border-b bg-white', className)}>
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <div
-          className="font-semibold text-gray-900 cursor-pointer select-none"
+          className="flex items-center gap-2 cursor-pointer select-none"
           onClick={handleBrandClick}
         >
-          Finsight
+          <img
+            src="/logo.png"
+            alt="Finsight logo"
+            className="h-8 w-8 object-contain"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span className="font-semibold text-gray-900">Finsight</span>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
