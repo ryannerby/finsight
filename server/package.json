@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:generate": "supabase gen types typescript --local > src/types/supabase.ts"
+    "db:generate": "supabase gen types typescript --local > src/types/supabase.ts",
+    "seed": "tsx scripts/seedData.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.54.0",

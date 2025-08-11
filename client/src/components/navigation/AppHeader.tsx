@@ -22,7 +22,7 @@ export function AppHeader({ className }: { className?: string }) {
       try {
         await anyWindow.Clerk.signOut();
       } finally {
-        navigate('/login');
+        navigate('/deals');
       }
       return;
     }
@@ -33,14 +33,19 @@ export function AppHeader({ className }: { className?: string }) {
     <header className={cn('w-full border-b bg-white', className)}>
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <div
-          className="font-semibold text-gray-900 cursor-pointer select-none"
+          className="flex items-center cursor-pointer select-none"
           onClick={handleBrandClick}
         >
-          Finsight
+          <img
+            src="/logo.png"
+            alt="Finsight logo"
+            className="h-20 w-auto object-contain"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
-          <Button onClick={() => navigate('/deals/new')}>Create Deal</Button>
+          <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
           <Button variant="outline" onClick={handleLogout}>Logout</Button>
         </div>
       </div>

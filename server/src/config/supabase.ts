@@ -2,9 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Ensure environment variables are loaded before reading them
-// ESM imports are evaluated before module body in other files, so we load here as well
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Ensure environment variables are loaded even if this module is imported
+// before the server's main entrypoint configures dotenv. This happens because
+// TypeScript import statements are hoisted and evaluated before top-level code.
+// We attempt to load both .env.local (if present) and .env from the server root.
+const serverRootEnv = path.join(__dirname, '../../.env');
+const serverRootEnvLocal = path.join(__dirname, '../../.env.local');
+
+// Load .env.local first (if it exists), then .env
+dotenv.config({ path: serverRootEnvLocal });
+dotenv.config({ path: serverRootEnv });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;

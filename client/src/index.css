@@ -4,48 +4,58 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Finsight brand palette */
+    /* Mirage #16232A */
+    --mirage: 205 30% 12%;
+    /* Deep Sea Green #075056 */
+    --deep-sea: 185 86% 19%;
+    /* Blaze Orange #FF5B04 */
+    --blaze: 19 100% 50%;
+    /* Wild Sand #E4EEF0 */
+    --wild-sand: 195 33% 91%;
+
+    --background: var(--wild-sand);
+    --foreground: var(--mirage);
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: var(--mirage);
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --popover-foreground: var(--mirage);
+    --primary: var(--deep-sea);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--wild-sand);
+    --secondary-foreground: var(--mirage);
+    --muted: var(--wild-sand);
+    --muted-foreground: 205 14% 40%;
+    --accent: var(--blaze);
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 200 15% 85%;
+    --input: 200 15% 85%;
+    --ring: var(--deep-sea);
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: var(--mirage);
+    --foreground: 0 0% 100%;
+    --card: var(--mirage);
+    --card-foreground: 0 0% 100%;
+    --popover: var(--mirage);
+    --popover-foreground: 0 0% 100%;
+    --primary: var(--blaze);
+    --primary-foreground: 0 0% 100%;
+    --secondary: 207 30% 18%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 207 30% 18%;
+    --muted-foreground: 0 0% 80%;
+    --accent: var(--deep-sea);
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --border: 200 15% 30%;
+    --input: 200 15% 30%;
+    --ring: var(--blaze);
   }
 }
 

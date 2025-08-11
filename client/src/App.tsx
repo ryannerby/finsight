@@ -4,7 +4,6 @@ import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
-import { SafeNavigationButton } from './components/SafeNavigationButton';
 import AppHeader from './components/navigation/AppHeader';
 import './App.css';
 
