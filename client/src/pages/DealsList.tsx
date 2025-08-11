@@ -28,6 +28,10 @@ export default function DealsList() {
     navigate(`/deals/${dealId}`);
   };
 
+  const handleBackClick = () => {
+    navigate('/');
+  };
+
   // Back to Home uses SafeNavigationButton for robust navigation
 
   useEffect(() => {
