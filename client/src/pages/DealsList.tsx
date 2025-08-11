@@ -32,8 +32,6 @@ export default function DealsList() {
     navigate('/');
   };
 
-  // Back to Home uses SafeNavigationButton for robust navigation
-
   useEffect(() => {
     setLoading(true);
     setError(null);
