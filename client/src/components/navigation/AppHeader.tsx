@@ -22,7 +22,7 @@ export function AppHeader({ className }: { className?: string }) {
       try {
         await anyWindow.Clerk.signOut();
       } finally {
-        navigate('/login');
+        navigate('/deals');
       }
       return;
     }
@@ -40,7 +40,7 @@ export function AppHeader({ className }: { className?: string }) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
-          <Button onClick={() => navigate('/deals/new')}>Create Deal</Button>
+          <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
           <Button variant="outline" onClick={handleLogout}>Logout</Button>
         </div>
       </div>

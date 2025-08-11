@@ -13,7 +13,7 @@ const API_BASE_URL = 'http://localhost:3001/api';
 
 const UploadTab = ({ dealId }: { dealId: string }) => {
   // Mock user ID - in real app this would come from auth context
-  const userId = 'demo-user-123';
+  const userId = 'user_123';
   
   const { uploads, isUploading, uploadFiles, clearUploads, removeUpload } = useFileUpload();
   const { files, loading, error, refreshFiles } = useFiles(dealId, userId);

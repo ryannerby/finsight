@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SignedIn, SignedOut, SignOutButton } from '@clerk/clerk-react';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
 
@@ -29,10 +28,6 @@ export default function DealsList() {
     navigate(`/deals/${dealId}`);
   };
 
-  const handleBackClick = () => {
-    navigate('/');
-  };
-
   // Back to Home uses SafeNavigationButton for robust navigation
 
   useEffect(() => {
@@ -46,6 +41,14 @@ export default function DealsList() {
       })
       .catch((e) => setError(e.message || 'Failed to fetch deals'))
       .finally(() => setLoading(false));
+  }, []);
+
+  // If header requests creating a deal (?create=1), open the form
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('create') === '1') {
+      setShowCreate(true);
+    }
   }, []);
 
   const handleCreateDeal = async (e: React.FormEvent) => {
@@ -98,24 +101,6 @@ export default function DealsList() {
             <p className="text-gray-600 mt-2">
               Manage and track your financial deals with intelligent insights
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setShowCreate((v) => !v)} className="bg-blue-600 hover:bg-blue-700">
-              {showCreate ? 'Close' : 'Create Deal'}
-            </Button>
-            <SignedIn>
-              <SignOutButton>
-                <Button variant="outline">Log out</Button>
-              </SignOutButton>
-            </SignedIn>
-            <SignedOut>
-              <div 
-                onClick={handleBackClick}
-                className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors cursor-pointer text-center"
-              >
-                Back to Home
-              </div>
-            </SignedOut>
           </div>
         </div>
 
@@ -231,6 +216,19 @@ export default function DealsList() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-500">
+                    {(() => {
+                      const docs = (Array.isArray(deal.documents) ? deal.documents : []);
+                      const count = typeof deal.documents_count === 'number'
+                        ? deal.documents_count
+                        : (Array.isArray(docs) && docs[0] && typeof docs[0].count === 'number')
+                          ? docs[0].count
+                          : (Array.isArray(docs) ? docs.length : 0);
+                      return (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
+                          {count} doc{count === 1 ? '' : 's'}
+                        </span>
+                      );
+                    })()}
                     <span>{new Date(deal.created_at).toLocaleString()}</span>
                   </div>
                 </div>
