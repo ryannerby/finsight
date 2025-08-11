@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,8 @@ export default function DealsList() {
   const handleBackClick = () => {
     navigate('/');
   };
+
+  // Back to Home uses SafeNavigationButton for robust navigation
 
   useEffect(() => {
     setLoading(true);

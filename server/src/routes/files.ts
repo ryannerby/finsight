@@ -160,7 +160,8 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
     // Parse the document
     const parsedText = await parseDocument(fileBuffer, document.mime_type);
 
-    // TODO: implement analysis saving
+    // TODO: Ryan will implement analysis saving (Days 7-8)
+    // For now, just return the parsed text
     const analysis = {
       id: `temp-${Date.now()}`,
       document_id,
