@@ -35,12 +35,12 @@ npm install
 cp env.example .env
 ```
 
-3. Configure your Supabase credentials in `.env`:
+3. Configure your Supabase credentials in `.env` (see `server/env.example`):
 ```
 PORT=3001
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 ```
 
 4. Start the development server:
@@ -49,6 +49,14 @@ npm run dev
 ```
 
 The server will run on `http://localhost:3001`
+
+## Database migrations (shared dev workflow)
+
+- Install Supabase CLI: `brew install supabase/tap/supabase`
+- Login: `supabase login`
+- Link to your dev project: `supabase link --project-ref <project-ref>`
+- Apply migrations: `supabase db push`
+- When you change schema: create a new SQL file under `supabase/migrations/` and commit it, then `supabase db push`.
 
 ## API Endpoints
 
