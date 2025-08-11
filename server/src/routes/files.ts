@@ -135,7 +135,7 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
     }
 
     // Download file from Supabase Storage
-    const { data: fileData, error: downloadError } = await supabase.storage
+    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from('documents')
       .download(document.file_path);
 

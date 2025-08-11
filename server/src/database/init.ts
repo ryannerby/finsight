@@ -4,8 +4,8 @@ import { join } from 'path';
 
 export async function initializeDatabase() {
   try {
-    // For now, we'll skip the SQL execution since we need to set up the database schema manually
-    // The tables should be created directly in Supabase dashboard or via migrations
+    // Ensure the Storage bucket used by the app exists
+    await ensureDocumentsBucket();
     
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -20,4 +20,20 @@ export async function executeSQL(sql: string) {
     throw error;
   }
   return data;
+}
+
+async function ensureDocumentsBucket() {
+  try {
+    // Check if bucket exists
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+    const exists = (buckets || []).some(b => b.name === 'documents');
+    if (!exists) {
+      await supabaseAdmin.storage.createBucket('documents', {
+        public: false,
+      });
+      console.log('Created storage bucket: documents');
+    }
+  } catch (error) {
+    console.warn('Could not verify/create storage bucket "documents". Continuing...', error);
+  }
 }
