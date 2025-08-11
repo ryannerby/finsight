@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not needed with modern JSX transform
 import { Button } from './ui/button';
 import { UploadProgress as UploadProgressType } from '../hooks/useFileUpload';
 

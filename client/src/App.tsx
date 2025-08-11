@@ -3,7 +3,6 @@ import Login from './pages/Login';
 import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
-import { SafeNavigationButton } from './components/SafeNavigationButton';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
