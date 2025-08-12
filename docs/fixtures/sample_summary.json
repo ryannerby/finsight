@@ -1,0 +1,8 @@
+{
+  "deal_id": "00000000-0000-0000-0000-000000000000",
+  "health_score": 78,
+  "traffic_lights": { "revenue_quality": "yellow", "margin_trends": "green" },
+  "top_strengths": [{ "title": "Stable GM", "evidence": "Consistent 40% over last 4Q" }],
+  "top_risks": [{ "title": "Q4 spike", "evidence": "Rev +65% vs prior Q4", "page": 7 }],
+  "recommendation": "Proceed"
+}

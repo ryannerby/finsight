@@ -2,6 +2,12 @@
 - Do not change DB schema or auth.
 - Use only `server/src/schemas/analysis.ts` for JSON contracts.
 - Add new files under `server/src/services`, `server/src/prompts`, `server/src/schemas`.
+- Never invent numbers; only use deterministic metrics for ratios.
+- If JSON fails Zod, run a single “repair” pass using the repair prompt.
+- Keep extraction chunks page-aware and return page indices for citations.
+- Don’t refactor unrelated files.
+- For PDFs: prefer structured tables; if ambiguous, return `confidence<0.6` and `manual_review:true`.
+
 
 ## Steps to execute
 1) Implement Zod schemas (`server/src/schemas/analysis.ts`) and export TS types.
