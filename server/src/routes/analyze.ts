@@ -134,7 +134,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
     const userPayload = `Instructions:\n${summaryUser}\n\nComputedMetrics:\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS:\n${JSON.stringify(excerpts)}`;
 
-    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
+    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload }, { forceJson: true });
     // Extract text content from Anthropic response
     let textOut = '';
     const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];
@@ -144,12 +144,24 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    // Sanitize possible code fences
-    const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
-    let parsed: any;
-    try {
-      parsed = JSON.parse(fenced || textOut);
-    } catch (e) {
+    // Prefer SDK structured output when response_format=json_object; fallback to text blocks
+    let parsed: any = undefined;
+    const firstMessage = (llmResp as any);
+    if (firstMessage && typeof firstMessage === 'object' && typeof (firstMessage as any).content === 'object') {
+      const jsonBlock = (firstMessage as any).content?.find?.((b: any) => b?.type === 'tool_use' && b?.name === 'json')
+        || (firstMessage as any).content?.find?.((b: any) => b?.type === 'json')
+        || null;
+      // Many SDKs just return text even with response_format; try text blocks first
+      if (!parsed && textOut) {
+        try { parsed = JSON.parse(textOut); } catch {}
+      }
+    }
+    if (!parsed && textOut) {
+      // Final fence cleanup attempt
+      const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
+      try { parsed = JSON.parse(fenced); } catch {}
+    }
+    if (!parsed) {
       return res.status(500).json({ error: 'Failed to parse summary JSON from model' });
     }
 

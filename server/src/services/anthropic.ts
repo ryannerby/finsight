@@ -4,9 +4,10 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-export async function jsonCall({system, prompt, model="claude-3-5-sonnet-20240620"}:{
-  system: string; prompt: string; model?: string;
-}) {
+export async function jsonCall(
+  {system, prompt, model="claude-3-5-sonnet-20240620"}:{ system: string; prompt: string; model?: string },
+  opts?: { forceJson?: boolean }
+) {
   const resp = await anthropic.messages.create(
     {
       model,
@@ -14,6 +15,7 @@ export async function jsonCall({system, prompt, model="claude-3-5-sonnet-2024062
       temperature: 0.1,
       system,
       messages: [{ role: "user", content: prompt }],
+      ...(opts?.forceJson ? { response_format: { type: "json_object" as const } } : {}),
     },
     { headers: { "anthropic-beta": "prompt-caching-2024-07-31" } }
   );
