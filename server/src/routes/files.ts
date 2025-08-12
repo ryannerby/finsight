@@ -160,21 +160,57 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
     // Parse the document
     const parsedText = await parseDocument(fileBuffer, document.mime_type);
 
-    // TODO: Ryan will implement analysis saving (Days 7-8)
-    // For now, just return the parsed text
-    const analysis = {
-      id: `temp-${Date.now()}`,
-      document_id,
-      parsed_text: parsedText,
-      analysis_type: 'text_extraction',
-      analysis_result: {
-        word_count: parsedText.split(' ').length,
-        extraction_timestamp: new Date().toISOString()
-      },
-      created_at: new Date().toISOString()
-    };
+    // Idempotent upsert: one 'extraction' row per document
+    const { data: existing, error: findErr } = await supabase
+      .from('analyses')
+      .select('id')
+      .eq('document_id', document_id)
+      .eq('analysis_type', 'extraction')
+      .maybeSingle();
 
-    res.json(analysis);
+    if (findErr) {
+      console.error('Find analysis error:', findErr);
+      return res.status(500).json({ error: 'Failed to check existing analysis' });
+    }
+
+    if (existing?.id) {
+      const { data: updated, error: updErr } = await supabase
+        .from('analyses')
+        .update({
+          parsed_text: parsedText,
+          analysis_result: {
+            word_count: parsedText.split(/\s+/).filter(Boolean).length,
+            extraction_timestamp: new Date().toISOString()
+          }
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (updErr) {
+        console.error('Update analysis error:', updErr);
+        return res.status(500).json({ error: 'Failed to update analysis' });
+      }
+      return res.json(updated);
+    } else {
+      const { data: inserted, error: insErr } = await supabase
+        .from('analyses')
+        .insert({
+          document_id,
+          analysis_type: 'extraction',
+          parsed_text: parsedText,
+          analysis_result: {
+            word_count: parsedText.split(/\s+/).filter(Boolean).length,
+            extraction_timestamp: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+      if (insErr) {
+        console.error('Insert analysis error:', insErr);
+        return res.status(500).json({ error: 'Failed to save analysis' });
+      }
+      return res.json(inserted);
+    }
   } catch (error) {
     console.error('Error in parse document:', error);
     res.status(500).json({ error: 'Internal server error' });

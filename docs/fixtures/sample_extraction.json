@@ -1,0 +1,8 @@
+{
+  "document_id": "00000000-0000-0000-0000-000000000000",
+  "statement_type": "income_statement",
+  "currency": "USD",
+  "periods": [
+    { "period": "2023-Q1", "values": { "revenue": 100, "cogs": 60, "gross_profit": 40, "net_income": 10 } }
+  ]
+}

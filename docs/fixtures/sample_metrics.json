@@ -1,0 +1,5 @@
+{
+  "deal_id": "00000000-0000-0000-0000-000000000000",
+  "metrics": { "gross_margin": 0.4, "net_margin": 0.1, "current_ratio": 1.5, "debt_to_equity": 0.9 },
+  "coverage": { "periodicity": "annual" }
+}
