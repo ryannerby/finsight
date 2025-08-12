@@ -1,9 +1,13 @@
 import { Router, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { supabase, supabaseAdmin } from '../config/supabase';
 import Papa from 'papaparse';
 import { normalizeLines, type Canon } from '../lib/normalize/accounts';
 import { computeAllMetrics } from '../lib/math/computeMetrics';
 import type { PeriodKey, Periodicity, CanonByPeriod } from '../lib/math/ratios';
+import { Summary } from '../schemas/analysis';
+import { jsonCall } from '../services/anthropic';
 
 export const analyzeRouter = Router();
 
@@ -88,7 +92,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       coverage: { periodicity }
     };
 
-    const { data: inserted, error: insErr } = await supabase
+    const { data: financialRow, error: insErr } = await supabase
       .from('analyses')
       .insert({
         document_id: representativeDocId,
@@ -101,7 +105,76 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
 
     if (insErr) return res.status(500).json({ error: 'Failed to save financial analysis' });
 
-    return res.json(inserted);
+    // Generate summary using Anthropic
+    // Load summary prompt from file (works in dev and after build)
+    const promptPaths = [
+      path.resolve(__dirname, '../prompts/summary.md'),          // tsx dev: src/routes -> src/prompts
+      path.resolve(__dirname, '../../src/prompts/summary.md'),   // built: dist/routes -> src/prompts
+      path.resolve(process.cwd(), 'server/src/prompts/summary.md')
+    ];
+    let summarySystem = 'You write crisp risk/strength summaries with citations.';
+    let summaryUser = '';
+    for (const p of promptPaths) {
+      try {
+        if (fs.existsSync(p)) {
+          const fileText = fs.readFileSync(p, 'utf8');
+          // First line is the system directive in our prompt file
+          const lines = fileText.split(/\r?\n/);
+          if (lines[0]?.startsWith('System:')) {
+            summarySystem = lines[0].replace(/^System:\s*/, '').trim();
+            summaryUser = lines.slice(1).join('\n');
+          } else {
+            summaryUser = fileText;
+          }
+          break;
+        }
+      } catch {}
+    }
+
+    const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
+    const userPayload = `Instructions:\n${summaryUser}\n\nComputedMetrics:\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS:\n${JSON.stringify(excerpts)}`;
+
+    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
+    // Extract text content from Anthropic response
+    let textOut = '';
+    const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];
+    for (const b of blocks) {
+      if (b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string') {
+        textOut += (textOut ? '\n' : '') + b.text;
+      }
+    }
+
+    // Sanitize possible code fences
+    const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(fenced || textOut);
+    } catch (e) {
+      return res.status(500).json({ error: 'Failed to parse summary JSON from model' });
+    }
+
+    // Validate with Zod
+    let validSummary;
+    try {
+      validSummary = Summary.parse({ deal_id: dealId, ...parsed });
+    } catch (e) {
+      return res.status(500).json({ error: 'Summary validation failed', details: (e as any)?.errors ?? String(e) });
+    }
+
+    const { data: summaryRow, error: sumErr } = await supabase
+      .from('analyses')
+      .insert({
+        document_id: representativeDocId,
+        analysis_type: 'summary',
+        parsed_text: null,
+        analysis_result: validSummary
+      })
+      .select()
+      .single();
+
+    if (sumErr) return res.status(500).json({ error: 'Failed to save summary analysis' });
+
+    return res.json({ financial: financialRow, summary: summaryRow });
   } catch (error) {
     console.error('Error in analyze:', error);
     res.status(500).json({ error: 'Internal server error' });
