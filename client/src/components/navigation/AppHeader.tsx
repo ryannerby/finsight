@@ -30,7 +30,7 @@ export function AppHeader({ className }: { className?: string }) {
   };
 
   return (
-    <header className={cn('w-full border-b bg-white', className)}>
+    <header className={cn('w-full border-b bg-background', className)}>
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <div
           className="flex items-center cursor-pointer select-none"

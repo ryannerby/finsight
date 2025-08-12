@@ -76,27 +76,27 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
 const SummaryTab = ({ deal }: { deal: any }) => {
   return (
     <div className="space-y-8">
-      <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Summary</h3>
-        <p className="text-gray-600 mb-4">Analysis coming soon. Use the Upload tab to add documents.</p>
+      <div className="bg-card text-card-foreground border rounded-lg p-8 text-center">
+        <h3 className="text-lg font-semibold mb-2">Summary</h3>
+        <p className="text-muted-foreground mb-4">Analysis coming soon. Use the Upload tab to add documents.</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-card text-card-foreground border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Deal Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Title</label>
             <p className="text-lg">{deal.title}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Created</label>
             <p className="text-lg">{new Date(deal.created_at).toLocaleString()}</p>
           </div>
         </div>
         {deal.description && (
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <p className="text-gray-600 leading-relaxed">{deal.description}</p>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+            <p className="text-muted-foreground leading-relaxed">{deal.description}</p>
           </div>
         )}
       </div>
@@ -104,7 +104,7 @@ const SummaryTab = ({ deal }: { deal: any }) => {
   );
 };
 
-const QATab = ({ dealId }: { dealId: string }) => {
+const QATab = () => {
   return (
     <div className="space-y-6">
       <div>
@@ -144,22 +144,17 @@ export default function DealDetail() {
   }, [dealId]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-600">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
 
   if (error || !deal) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="border">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Deal Not Found</h2>
-            <p className="text-gray-600 mb-4">{error || "The deal you're looking for doesn't exist."}</p>
-            <div 
-              onClick={handleBackToDeals}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors cursor-pointer text-center"
-            >
-              Back to Deals
-            </div>
+            <p className="text-muted-foreground mb-4">{error || "The deal you're looking for doesn't exist."}</p>
+            <Button onClick={handleBackToDeals}>Back to Deals</Button>
           </CardContent>
         </Card>
       </div>
@@ -173,43 +168,38 @@ export default function DealDetail() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <div 
-              onClick={handleBackToDeals}
-              className="text-blue-600 hover:text-blue-800 cursor-pointer px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
-            >
-              ← Back to Deals
-            </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{deal.title}</h1>
-              <p className="text-gray-600">{deal.description}</p>
+              <h1 className="text-2xl font-bold">{deal.title}</h1>
+              {deal.description && <p className="text-muted-foreground">{deal.description}</p>}
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 bg-muted text-foreground/80 rounded-full text-sm font-medium">
               Active
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               Created: {new Date(deal.created_at).toLocaleDateString()}
             </span>
             <Button variant="destructive" onClick={() => setConfirmDelete(true)}>Delete Deal</Button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+        <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+          <div className="border-b">
+            <nav className="flex gap-8 px-6">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))]'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }`}
                 >
                   <span className="mr-2">{tab.icon}</span>
@@ -222,15 +212,15 @@ export default function DealDetail() {
           <div className="p-6">
             {activeTab === 'upload' && <UploadTab dealId={deal.id} />}
             {activeTab === 'summary' && <SummaryTab deal={deal} />}
-            {activeTab === 'qa' && <QATab dealId={deal.id} />}
+            {activeTab === 'qa' && <QATab />}
           </div>
         </div>
 
         {confirmDelete && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="bg-card text-card-foreground border rounded-lg p-6 w-full max-w-md shadow-xl">
               <h3 className="text-lg font-semibold mb-2">Delete Deal</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Are you sure you want to delete "{deal.title}"? This will remove associated documents and cannot be undone.
               </p>
               <div className="flex justify-end gap-2">

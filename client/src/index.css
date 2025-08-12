@@ -35,28 +35,6 @@
     --ring: var(--deep-sea);
     --radius: 0.5rem;
   }
-
-  .dark {
-    --background: var(--mirage);
-    --foreground: 0 0% 100%;
-    --card: var(--mirage);
-    --card-foreground: 0 0% 100%;
-    --popover: var(--mirage);
-    --popover-foreground: 0 0% 100%;
-    --primary: var(--blaze);
-    --primary-foreground: 0 0% 100%;
-    --secondary: 207 30% 18%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 207 30% 18%;
-    --muted-foreground: 0 0% 80%;
-    --accent: var(--deep-sea);
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 200 15% 30%;
-    --input: 200 15% 30%;
-    --ring: var(--blaze);
-  }
 }
 
 @layer base {
