@@ -1,0 +1,48 @@
+period,account,value
+2021,total revenue,800000
+2021,cogs,480000
+2021,gross profit,320000
+2021,net income,80000
+2021,total current assets,200000
+2021,total current liabilities,120000
+2021,accounts receivable,60000
+2021,accounts payable,40000
+2021,inventory,50000
+2021,total debt,150000
+2021,shareholders' equity,250000
+
+2022,total revenue,880000
+2022,cogs,528000
+2022,gross profit,352000
+2022,net income,88000
+2022,total current assets,220000
+2022,total current liabilities,130000
+2022,accounts receivable,65000
+2022,accounts payable,42000
+2022,inventory,52000
+2022,total debt,160000
+2022,shareholders' equity,260000
+
+2023,total revenue,968000
+2023,cogs,580800
+2023,gross profit,387200
+2023,net income,96000
+2023,total current assets,240000
+2023,total current liabilities,140000
+2023,accounts receivable,70000
+2023,accounts payable,44000
+2023,inventory,54000
+2023,total debt,170000
+2023,shareholders' equity,270000
+
+2024,total revenue,1064800
+2024,cogs,638880
+2024,gross profit,426920
+2024,net income,106000
+2024,total current assets,260000
+2024,total current liabilities,150000
+2024,accounts receivable,74000
+2024,accounts payable,46000
+2024,inventory,56000
+2024,total debt,180000
+2024,shareholders' equity,280000
