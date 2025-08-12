@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { UploadProgress } from '@/components/UploadProgress';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -96,109 +99,113 @@ export default function DealsList() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6">
 
         {showCreate && (
-          <div className="mb-6 bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">New Deal</h2>
-            {error && (
-              <div className="mb-3 text-sm text-red-600">{error}</div>
-            )}
-            <form onSubmit={handleCreateDeal} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., TechCorp Acquisition"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                <input
-                  type="text"
-                  value={formCompany}
-                  onChange={(e) => setFormCompany(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Company name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Brief description"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Documents (optional)</label>
-                <FileDropzone
-                  onFilesSelected={async (files) => {
-                    setSelectedFiles(files);
-                    setError(null);
-                    if (!formTitle.trim()) {
-                      setError('Please enter a deal title before adding documents');
-                      return;
-                    }
-                    try {
-                      let dealId = createdDealId;
-                      if (!dealId) {
-                        const description = [formCompany && `Company: ${formCompany}`, formDescription]
-                          .filter(Boolean)
-                          .join(' | ');
-                        const res = await fetch(`${API_BASE_URL}/deals`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
-                        });
-                        if (!res.ok) throw new Error(await res.text());
-                        const deal = await res.json();
-                        setDeals((prev) => [deal, ...prev]);
-                        setCreatedDealId(deal.id);
-                        dealId = deal.id;
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">New Deal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <div className="mb-3 text-sm text-destructive">{error}</div>
+              )}
+              <form onSubmit={handleCreateDeal} className="space-y-4">
+                <div>
+                  <Label htmlFor="deal-title" className="mb-1 block">Title</Label>
+                  <Input
+                    id="deal-title"
+                    type="text"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="e.g., TechCorp Acquisition"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deal-company" className="mb-1 block">Company</Label>
+                  <Input
+                    id="deal-company"
+                    type="text"
+                    value={formCompany}
+                    onChange={(e) => setFormCompany(e.target.value)}
+                    placeholder="Company name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deal-description" className="mb-1 block">Description</Label>
+                  <Textarea
+                    id="deal-description"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">Initial Documents (optional)</Label>
+                  <FileDropzone
+                    onFilesSelected={async (files) => {
+                      setSelectedFiles(files);
+                      setError(null);
+                      if (!formTitle.trim()) {
+                        setError('Please enter a deal title before adding documents');
+                        return;
                       }
-                      await uploadFiles(files, dealId!, userId);
-                      // Stay on this page; user can click "View Deal" to navigate when ready
-                    } catch (err) {
-                      setError(err instanceof Error ? err.message : 'Failed to upload documents');
-                    }
-                  }}
-                  multiple
-                  maxFileSize={10}
-                />
-              </div>
+                      try {
+                        let dealId = createdDealId;
+                        if (!dealId) {
+                          const description = [formCompany && `Company: ${formCompany}`, formDescription]
+                            .filter(Boolean)
+                            .join(' | ');
+                          const res = await fetch(`${API_BASE_URL}/deals`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
+                          });
+                          if (!res.ok) throw new Error(await res.text());
+                          const deal = await res.json();
+                          setDeals((prev) => [deal, ...prev]);
+                          setCreatedDealId(deal.id);
+                          dealId = deal.id;
+                        }
+                        await uploadFiles(files, dealId!, userId);
+                        // Stay on this page; user can click "View Deal" to navigate when ready
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : 'Failed to upload documents');
+                      }
+                    }}
+                    multiple
+                    maxFileSize={10}
+                  />
+                </div>
 
-              {/* Upload progress (mirrors deal detail) */}
-              <div className="mt-4">
-                <UploadProgress
-                  uploads={uploads}
-                  onRemove={removeUpload}
-                  onClear={clearUploads}
-                />
-              </div>
+                {/* Upload progress (mirrors deal detail) */}
+                <div className="mt-4">
+                  <UploadProgress
+                    uploads={uploads}
+                    onRemove={removeUpload}
+                    onClear={clearUploads}
+                  />
+                </div>
 
-              <div className="flex gap-3 mt-4">
-                <Button type="submit" disabled={isUploading} className="bg-blue-600 hover:bg-blue-700">
-                  {createdDealId ? 'View Deal' : (isUploading ? 'Creating…' : 'Create Deal')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              </div>
-            </form>
-          </div>
+                <div className="flex gap-3 mt-4">
+                  <Button type="submit" disabled={isUploading}>
+                    {createdDealId ? 'View Deal' : (isUploading ? 'Creating…' : 'Create Deal')}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         {confirmDelete && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="bg-card text-card-foreground border rounded-lg p-6 w-full max-w-md shadow-xl">
               <h3 className="text-lg font-semibold mb-2">Delete Deal</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Are you sure you want to delete "{confirmDelete.title}"? This will remove associated documents and cannot be undone.
               </p>
               <div className="flex justify-end gap-2">
@@ -224,10 +231,10 @@ export default function DealsList() {
         )}
 
         {error && (
-          <div className="text-red-600 mb-4">{error}</div>
+          <div className="text-destructive mb-4">{error}</div>
         )}
         {loading && (
-          <div className="text-gray-600 mb-4">Loading deals…</div>
+          <div className="text-muted-foreground mb-4">Loading deals…</div>
         )}
         <div className="grid gap-6">
           {deals.map((deal: any) => (
@@ -246,7 +253,7 @@ export default function DealsList() {
                       </CardDescription>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     {(() => {
                       const docs = (Array.isArray(deal.documents) ? deal.documents : []);
                       const count = typeof deal.documents_count === 'number'
@@ -255,7 +262,7 @@ export default function DealsList() {
                           ? docs[0].count
                           : (Array.isArray(docs) ? docs.length : 0);
                       return (
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
+                        <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
                           {count} doc{count === 1 ? '' : 's'}
                         </span>
                       );
@@ -266,7 +273,7 @@ export default function DealsList() {
               </CardHeader>
               <CardContent>
                 {deal.description && (
-                  <p className="text-gray-600 mb-2">{deal.description}</p>
+                  <p className="text-muted-foreground mb-2">{deal.description}</p>
                 )}
               </CardContent>
             </Card>
@@ -275,8 +282,8 @@ export default function DealsList() {
 
         {deals.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No deals found</p>
-            <p className="text-gray-400">Seed data with npm run seed in the server folder</p>
+            <p className="text-muted-foreground text-lg">No deals found</p>
+            <p className="text-muted-foreground">Seed data with npm run seed in the server folder</p>
           </div>
         )}
       </div>
