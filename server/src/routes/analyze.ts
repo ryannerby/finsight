@@ -132,9 +132,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     }
 
     const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
-    const userPayload = `Instructions:\n${summaryUser}\n\nComputedMetrics:\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS:\n${JSON.stringify(excerpts)}`;
+    const userPayload = `${summaryUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "health_score": <0-100 number>,\n  "traffic_lights": { "revenue_quality": "green|yellow|red", ... },\n  "top_strengths": [{ "title": string, "evidence": string, "page": number? }],\n  "top_risks": [{ "title": string, "evidence": string, "page": number? }],\n  "recommendation": "Proceed|Caution|Pass"\n}\n\nComputedMetrics (source of truth, use these numbers):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS (optional citations):\n${JSON.stringify(excerpts)}`;
 
-    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload }, { forceJson: true });
+    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
     // Extract text content from Anthropic response
     let textOut = '';
     const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];
@@ -144,17 +144,10 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       }
     }
 
-    // Prefer SDK structured output when response_format=json_object; fallback to text blocks
+    // Try parse JSON from text blocks
     let parsed: any = undefined;
-    const firstMessage = (llmResp as any);
-    if (firstMessage && typeof firstMessage === 'object' && typeof (firstMessage as any).content === 'object') {
-      const jsonBlock = (firstMessage as any).content?.find?.((b: any) => b?.type === 'tool_use' && b?.name === 'json')
-        || (firstMessage as any).content?.find?.((b: any) => b?.type === 'json')
-        || null;
-      // Many SDKs just return text even with response_format; try text blocks first
-      if (!parsed && textOut) {
-        try { parsed = JSON.parse(textOut); } catch {}
-      }
+    if (textOut) {
+      try { parsed = JSON.parse(textOut); } catch {}
     }
     if (!parsed && textOut) {
       // Final fence cleanup attempt

@@ -5,8 +5,7 @@ export const anthropic = new Anthropic({
 });
 
 export async function jsonCall(
-  {system, prompt, model="claude-3-5-sonnet-20240620"}:{ system: string; prompt: string; model?: string },
-  opts?: { forceJson?: boolean }
+  {system, prompt, model="claude-3-5-sonnet-20240620"}:{ system: string; prompt: string; model?: string }
 ) {
   const resp = await anthropic.messages.create(
     {
@@ -15,7 +14,6 @@ export async function jsonCall(
       temperature: 0.1,
       system,
       messages: [{ role: "user", content: prompt }],
-      ...(opts?.forceJson ? { response_format: { type: "json_object" as const } } : {}),
     },
     { headers: { "anthropic-beta": "prompt-caching-2024-07-31" } }
   );
