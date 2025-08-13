@@ -297,3 +297,48 @@ filesRouter.get('/download/:document_id', async (req: Request, res: Response) =>
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Delete a document and its analyses, and remove from storage
+filesRouter.delete('/document/:document_id', async (req: Request, res: Response) => {
+  try {
+    const { document_id } = req.params;
+    const { user_id } = req.query;
+
+    // Fetch document with deal user_id for access check
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .select(`*, deal:deals!inner(user_id)`) 
+      .eq('id', document_id)
+      .single();
+
+    if (docError || !document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    if (document.deal.user_id !== user_id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Remove file from storage best-effort
+    try {
+      await supabaseAdmin.storage.from('documents').remove([document.file_path]);
+    } catch (e) {
+      // best effort; continue even if storage delete fails
+    }
+
+    // Delete document row (analyses cascade via FK)
+    const { error: delErr } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', document_id);
+
+    if (delErr) {
+      return res.status(500).json({ error: 'Failed to delete document' });
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});

@@ -36,10 +36,12 @@ export const RATIO_REGISTRY: RatioDef[] = [
   {
     id: "gross_margin",
     label: "Gross Margin",
-    requires: ["gross_profit","revenue"],
+    requires: ["revenue","cogs"],
     compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
-      const gp = canon[p]?.gross_profit, rev = canon[p]?.revenue;
-      return [p, (!gp || !rev) ? null : (rev === 0 ? null : gp/rev)];
+      const rev = canon[p]?.revenue;
+      const cogs = canon[p]?.cogs;
+      if (rev == null || cogs == null || rev === 0) return [p, null];
+      return [p, (rev - cogs) / rev];
     })),
   },
   {
@@ -48,7 +50,8 @@ export const RATIO_REGISTRY: RatioDef[] = [
     requires: ["net_income","revenue"],
     compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
       const ni = canon[p]?.net_income, rev = canon[p]?.revenue;
-      return [p, (!ni || !rev) ? null : (rev === 0 ? null : ni/rev)];
+      if (ni == null || rev == null || rev === 0) return [p, null];
+      return [p, ni / rev];
     })),
   },
   {
@@ -56,8 +59,14 @@ export const RATIO_REGISTRY: RatioDef[] = [
     label: "Current Ratio",
     requires: ["current_assets","current_liabilities"],
     compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
-      const ca = canon[p]?.current_assets, cl = canon[p]?.current_liabilities;
-      const v = (ca == null || cl == null || cl === 0) ? null : ca / cl;
+      const ca = canon[p]?.current_assets;
+      const cl = canon[p]?.current_liabilities;
+      // Fallbacks using components if totals absent
+      const caFallback = ca ?? ((canon[p]?.cash ?? 0) + (canon[p]?.marketable_securities ?? 0) + (canon[p]?.accounts_receivable ?? 0) + (canon[p]?.other_current_assets ?? 0) + (canon[p]?.inventory ?? 0));
+      const clFallback = cl ?? ((canon[p]?.accounts_payable ?? 0) + (canon[p]?.short_term_debt ?? 0) + (canon[p]?.other_current_liabilities ?? 0));
+      const denom = cl ?? clFallback;
+      const numer = ca ?? caFallback;
+      const v = (denom == null || denom === 0 || numer == null) ? null : numer / denom;
       return [p, v];
     })),
   },
@@ -66,7 +75,10 @@ export const RATIO_REGISTRY: RatioDef[] = [
     label: "Debt to Equity",
     requires: ["total_debt","shareholders_equity"],
     compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
-      const d = canon[p]?.total_debt, eq = canon[p]?.shareholders_equity;
+      const rawDebt = canon[p]?.total_debt;
+      const liabilities = canon[p]?.total_liabilities;
+      const eq = canon[p]?.shareholders_equity;
+      const d = rawDebt != null ? rawDebt : (liabilities != null ? liabilities : null);
       const v = (d == null || eq == null || eq === 0) ? null : d / eq;
       return [p, v];
     })),
@@ -74,11 +86,12 @@ export const RATIO_REGISTRY: RatioDef[] = [
   {
     id: "quick_ratio",
     label: "Quick Ratio",
-    requires: ["cash","marketable_securities","accounts_receivable","current_liabilities"],
+    requires: ["cash","accounts_receivable","current_liabilities"],
     compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
       const c = canon[p]?.cash, ms = canon[p]?.marketable_securities ?? 0, ar = canon[p]?.accounts_receivable, cl = canon[p]?.current_liabilities;
-      if (c == null || ar == null || cl == null || cl === 0) return [p, null];
-      return [p, (c + ms + ar) / cl];
+      if ((c == null && ms === 0) || ar == null) return [p, null];
+      if (cl == null || cl === 0) return [p, null];
+      return [p, ((c ?? 0) + ms + ar) / cl];
     })),
   },
   {
@@ -108,6 +121,18 @@ export const RATIO_REGISTRY: RatioDef[] = [
     compute: ({periods, canon, periodicity}) => Object.fromEntries(periods.map(p => {
       const inv = canon[p]?.inventory, cogs = canon[p]?.cogs;
       const v = (inv == null || cogs == null || cogs === 0) ? null : (inv / cogs) * periodDays(p, periodicity);
+      return [p, v];
+    })),
+  },
+  {
+    id: "inventory_turns",
+    label: "Inventory Turns",
+    requires: ["inventory","cogs"],
+    compute: ({periods, canon, periodicity}) => Object.fromEntries(periods.map(p => {
+      const inv = canon[p]?.inventory, cogs = canon[p]?.cogs;
+      const days = periodDays(p, periodicity);
+      const avgInventory = inv == null ? null : inv; // ending balance as proxy
+      const v = (avgInventory == null || cogs == null || avgInventory === 0) ? null : (cogs / avgInventory) * (365 / days);
       return [p, v];
     })),
   },
@@ -142,5 +167,58 @@ export const RATIO_REGISTRY: RatioDef[] = [
       if (revT == null || revT3 == null || revT3 === 0) return null;
       return Math.pow(revT / revT3, 1/3) - 1;
     },
+  },
+  {
+    id: "seasonality_volatility_index",
+    label: "Seasonality Volatility Index",
+    requires: ["revenue"],
+    dealLevel: true,
+    compute: ({periods, canon}) => {
+      const quarters = periods.filter(p => /^\d{4}-Q[1-4]$/.test(p)).sort();
+      if (quarters.length < 4) return null;
+      const values = quarters.map(p => canon[p]?.revenue).filter((x): x is number => typeof x === 'number');
+      if (values.length < 4) return null;
+      const mean = values.reduce((a,b)=>a+b,0) / values.length;
+      if (mean === 0) return null;
+      const variance = values.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / values.length;
+      const stddev = Math.sqrt(variance);
+      return stddev / mean;
+    },
+  },
+  {
+    id: "wc_to_sales",
+    label: "Working Capital to Sales",
+    requires: ["current_assets","current_liabilities","revenue"],
+    dealLevel: true,
+    compute: ({periods, canon}) => {
+      const last = [...periods].sort().pop();
+      if (!last) return null;
+      const ca = canon[last]?.current_assets ?? null;
+      const cl = canon[last]?.current_liabilities ?? null;
+      const rev = canon[last]?.revenue ?? null;
+      if (rev == null || rev === 0) return null;
+      const wc = (ca ?? 0) - (cl ?? 0);
+      return wc / rev;
+    },
+  },
+  {
+    id: "ebitda_margin",
+    label: "EBITDA Margin",
+    requires: ["ebitda","revenue"],
+    compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
+      const e = canon[p]?.ebitda, r = canon[p]?.revenue;
+      const v = (e == null || r == null || r === 0) ? null : e / r;
+      return [p, v];
+    })),
+  },
+  {
+    id: "ebitda_to_interest",
+    label: "EBITDA to Interest",
+    requires: ["ebitda","interest_expense"],
+    compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
+      const e = canon[p]?.ebitda, i = canon[p]?.interest_expense;
+      const v = (e == null || i == null || i === 0) ? null : e / i;
+      return [p, v];
+    })),
   },
 ];

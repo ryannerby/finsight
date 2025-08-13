@@ -1,5 +1,6 @@
 // React import not needed with modern JSX transform
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { UploadProgress as UploadProgressType } from '../hooks/useFileUpload';
 
 interface UploadProgressProps {
@@ -22,7 +23,7 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
       case 'error':
         return 'bg-red-500';
       default:
-        return 'bg-gray-500';
+        return 'bg-black/50';
     }
   };
 
@@ -81,20 +82,10 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          {completedCount > 0 && <span className="text-green-600">{completedCount} completed</span>}
-          {errorCount > 0 && (
-            <>
-              {completedCount > 0 && <span className="mx-2">•</span>}
-              <span className="text-red-600">{errorCount} failed</span>
-            </>
-          )}
-          {inProgressCount > 0 && (
-            <>
-              {(completedCount > 0 || errorCount > 0) && <span className="mx-2">•</span>}
-              <span className="text-blue-600">{inProgressCount} in progress</span>
-            </>
-          )}
+        <div className="flex items-center gap-2 text-sm">
+          {completedCount > 0 && <Badge variant="success">{completedCount} completed</Badge>}
+          {errorCount > 0 && <Badge variant="destructive">{errorCount} failed</Badge>}
+          {inProgressCount > 0 && <Badge variant="secondary">{inProgressCount} in progress</Badge>}
         </div>
         {onClear && (completedCount > 0 || errorCount > 0) && (
           <Button variant="ghost" size="sm" onClick={onClear}>
@@ -106,21 +97,21 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
       {/* Upload items */}
       <div className="space-y-3">
         {uploads.map((upload, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4">
+          <div key={index} className="border border-[hsl(var(--secondary))]/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-3">
                 {getStatusIcon(upload.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {upload.file.name}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-foreground/60">
                     {(upload.file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-foreground/60">
                   {getStatusText(upload.status)}
                 </span>
                 {onRemove && (upload.status === 'completed' || upload.status === 'error') && (
@@ -140,9 +131,9 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
 
             {/* Progress bar */}
             {(upload.status === 'uploading' || upload.status === 'processing') && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-black/10 rounded-full h-3">
                 <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(upload.status)}`}
+                  className={`h-3 rounded-full transition-all duration-300 ${getStatusColor(upload.status)}`}
                   style={{ width: `${upload.progress}%` }}
                 />
               </div>

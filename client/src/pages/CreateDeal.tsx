@@ -54,7 +54,7 @@ export default function CreateDeal() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-6">
         <Card>
           <CardHeader>
@@ -66,10 +66,10 @@ export default function CreateDeal() {
           <CardContent>
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name (optional)</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Company Name (optional)</label>
                 <input
                   type="text"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-[hsl(var(--secondary))]/60 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
                   placeholder="e.g., TechCorp Inc."
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
@@ -78,10 +78,10 @@ export default function CreateDeal() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Deal Title</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Deal Title</label>
                 <input
                   type="text"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-[hsl(var(--secondary))]/60 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
                   placeholder="e.g., Acquisition of AI division"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -91,9 +91,9 @@ export default function CreateDeal() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Description (optional)</label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-[hsl(var(--secondary))]/60 rounded-md focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
                   rows={4}
                   placeholder="Brief summary of the deal context and goals"
                   value={description}
@@ -103,13 +103,13 @@ export default function CreateDeal() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                  <p className="text-red-800 text-sm">{error}</p>
+                <div className="bg-black/5 border border-black/10 rounded-md p-3">
+                  <p className="text-black text-sm">{error}</p>
                 </div>
               )}
 
               <div className="flex items-center gap-3">
-                <Button type="submit" disabled={submitting} className="bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" disabled={submitting}>
                   {submitting ? 'Creating…' : 'Create Deal'}
                 </Button>
                 <Button type="button" variant="ghost" onClick={handleCancel} disabled={submitting}>

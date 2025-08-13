@@ -21,8 +21,8 @@ function SetupPage() {
         <p className="text-muted-foreground mb-4">
           Financial Insights & Deal Management Platform
         </p>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-800">
+        <div className="bg-[hsl(var(--secondary))]/20 border border-[hsl(var(--secondary))]/40 rounded-md p-4">
+          <p className="text-sm text-foreground">
             <strong>Demo Mode:</strong> Authentication is not configured. 
             You can still test the application features.
           </p>

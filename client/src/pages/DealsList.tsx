@@ -9,6 +9,8 @@ import { UploadProgress } from '@/components/UploadProgress';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -231,29 +233,43 @@ export default function DealsList() {
         )}
 
         {error && (
-          <div className="text-destructive mb-4">{error}</div>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 p-2 rounded-md border border-destructive/30 bg-destructive/5 text-destructive text-sm">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12" y2="16" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          </div>
         )}
         {loading && (
-          <div className="text-muted-foreground mb-4">Loading deals…</div>
+          <div className="grid gap-4 mb-4">
+            {[1,2,3].map((i)=> (
+              <div key={i} className="rounded-2xl border shadow-sm p-4 animate-pulse bg-foreground/5 h-24" />
+            ))}
+          </div>
         )}
-        <div className="grid gap-6">
+        <div className="grid gap-3">
           {deals.map((deal: any) => (
             <Card 
               key={deal.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
+              className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl"
               onClick={() => handleDealClick(deal.id)}
             >
-              <CardHeader>
+              <CardHeader className="p-4 pb-3">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{deal.title}</CardTitle>
-                    {deal.description && (
-                      <CardDescription className="text-base">
-                        {deal.description}
-                      </CardDescription>
-                    )}
+                  <div className="min-w-0">
+                    <div className="text-title truncate">{deal.title}</div>
+                    {deal.description && (() => {
+                      const first = String(deal.description).split('|')[0]?.trim();
+                      return first ? (
+                        <div className="text-sm text-muted-foreground truncate">{first}</div>
+                      ) : null;
+                    })()}
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 text-caption text-muted-foreground">
                     {(() => {
                       const docs = (Array.isArray(deal.documents) ? deal.documents : []);
                       const count = typeof deal.documents_count === 'number'
@@ -262,29 +278,29 @@ export default function DealsList() {
                           ? docs[0].count
                           : (Array.isArray(docs) ? docs.length : 0);
                       return (
-                        <span className="px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
-                          {count} doc{count === 1 ? '' : 's'}
-                        </span>
+                        <Badge variant="secondary" className="px-2 py-0.5">{count} doc{count === 1 ? '' : 's'}</Badge>
                       );
                     })()}
-                    <span>{new Date(deal.created_at).toLocaleString()}</span>
+                    <div className="flex items-center gap-1" aria-label={`Created ${new Date(deal.created_at).toLocaleString()}`}>
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <span>{new Date(deal.created_at).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                {deal.description && (
-                  <p className="text-muted-foreground mb-2">{deal.description}</p>
-                )}
-              </CardContent>
             </Card>
           ))}
         </div>
 
         {deals.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No deals found</p>
-            <p className="text-muted-foreground">Seed data with npm run seed in the server folder</p>
-          </div>
+          <EmptyState
+            title="No deals found"
+            helper="Seed sample data with the server seed script or create a new deal."
+            action={<Button onClick={()=>setShowCreate(true)}>Create Deal</Button>}
+          />
         )}
       </div>
     </div>
