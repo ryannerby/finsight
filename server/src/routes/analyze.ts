@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import { normalizeLines, type Canon } from '../lib/normalize/accounts';
 import { computeAllMetrics } from '../lib/math/computeMetrics';
 import type { PeriodKey, Periodicity, CanonByPeriod } from '../lib/math/ratios';
-import { Summary, DocumentInventory, DDSignals } from '../schemas/analysis';
+import { Summary, DocumentInventory, DDSignals, DueDiligenceChecklist } from '../schemas/analysis';
 import { buildDocumentInventory } from '../services/documentInventory';
 import { computeDDSignals } from '../services/ddSignals';
 import { parseXlsxToRows } from '../services/xlsxParser';
@@ -238,6 +238,78 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       .single();
 
     if (sumErr) return res.status(500).json({ error: 'Failed to save summary analysis' });
+
+    // Optional DD Checklist generation (LLM) — additive
+    if (process.env.DD_CHECKLIST_ENABLED === 'true') {
+      // Load checklist prompt
+      const ddPaths = [
+        path.resolve(__dirname, '../prompts/dd_checklist.md'),
+        path.resolve(__dirname, '../../src/prompts/dd_checklist.md'),
+        path.resolve(process.cwd(), 'server/src/prompts/dd_checklist.md')
+      ];
+      let ddSystem = 'You output strict JSON for due diligence checklists.';
+      let ddUser = '';
+      for (const p of ddPaths) {
+        try {
+          if (fs.existsSync(p)) {
+            const fileText = fs.readFileSync(p, 'utf8');
+            const lines = fileText.split(/\r?\n/);
+            if (lines[0]?.startsWith('System:')) {
+              ddSystem = lines[0].replace(/^System:\s*/, '').trim();
+              ddUser = lines.slice(1).join('\n');
+            } else {
+              ddUser = fileText;
+            }
+            break;
+          }
+        } catch {}
+      }
+
+      const ddPayload = `${ddUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "items": [ { "id": string, "label": string, "status": "todo"|"in_progress"|"done"|"na", "notes": string? } ]\n}\n\nComputedMetrics (source of truth):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nDocumentInventory:\n${JSON.stringify(inv, null, 2)}`;
+
+      async function callChecklist(payload: string) {
+        const resp = await jsonCall({ system: ddSystem, prompt: payload });
+        let textOut = '';
+        const blocks: any[] = Array.isArray((resp as any)?.content) ? (resp as any).content : [];
+        for (const b of blocks) {
+          if (b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string') {
+            textOut += (textOut ? '\n' : '') + b.text;
+          }
+        }
+        let parsed: any = undefined;
+        if (textOut) { try { parsed = JSON.parse(textOut); } catch {} }
+        if (!parsed && textOut) {
+          const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
+          try { parsed = JSON.parse(fenced); } catch {}
+        }
+        return parsed;
+      }
+
+      let ddParsed = await callChecklist(ddPayload);
+      let ddValid: any = null;
+      if (ddParsed) {
+        try { ddValid = DueDiligenceChecklist.parse({ deal_id: dealId, ...ddParsed }); } catch {}
+      }
+      if (!ddValid) {
+        // single repair attempt: append guidance
+        const repair = `${ddPayload}\n\nIf your previous output did not validate, fix keys/types and re-output strict JSON again.`;
+        ddParsed = await callChecklist(repair);
+        if (ddParsed) {
+          try { ddValid = DueDiligenceChecklist.parse({ deal_id: dealId, ...ddParsed }); } catch {}
+        }
+      }
+
+      if (ddValid) {
+        await supabase
+          .from('analyses')
+          .insert({
+            document_id: representativeDocId,
+            analysis_type: 'dd_checklist',
+            parsed_text: null,
+            analysis_result: ddValid
+          });
+      }
+    }
 
     return res.json({ financial: financialRow, summary: summaryRow });
   } catch (error) {
