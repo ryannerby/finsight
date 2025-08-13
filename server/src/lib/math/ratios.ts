@@ -125,6 +125,18 @@ export const RATIO_REGISTRY: RatioDef[] = [
     })),
   },
   {
+    id: "inventory_turns",
+    label: "Inventory Turns",
+    requires: ["inventory","cogs"],
+    compute: ({periods, canon, periodicity}) => Object.fromEntries(periods.map(p => {
+      const inv = canon[p]?.inventory, cogs = canon[p]?.cogs;
+      const days = periodDays(p, periodicity);
+      const avgInventory = inv == null ? null : inv; // ending balance as proxy
+      const v = (avgInventory == null || cogs == null || avgInventory === 0) ? null : (cogs / avgInventory) * (365 / days);
+      return [p, v];
+    })),
+  },
+  {
     id: "ccc_days",
     label: "Cash Conversion Cycle",
     requires: [],
@@ -155,5 +167,58 @@ export const RATIO_REGISTRY: RatioDef[] = [
       if (revT == null || revT3 == null || revT3 === 0) return null;
       return Math.pow(revT / revT3, 1/3) - 1;
     },
+  },
+  {
+    id: "seasonality_volatility_index",
+    label: "Seasonality Volatility Index",
+    requires: ["revenue"],
+    dealLevel: true,
+    compute: ({periods, canon}) => {
+      const quarters = periods.filter(p => /^\d{4}-Q[1-4]$/.test(p)).sort();
+      if (quarters.length < 4) return null;
+      const values = quarters.map(p => canon[p]?.revenue).filter((x): x is number => typeof x === 'number');
+      if (values.length < 4) return null;
+      const mean = values.reduce((a,b)=>a+b,0) / values.length;
+      if (mean === 0) return null;
+      const variance = values.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / values.length;
+      const stddev = Math.sqrt(variance);
+      return stddev / mean;
+    },
+  },
+  {
+    id: "wc_to_sales",
+    label: "Working Capital to Sales",
+    requires: ["current_assets","current_liabilities","revenue"],
+    dealLevel: true,
+    compute: ({periods, canon}) => {
+      const last = [...periods].sort().pop();
+      if (!last) return null;
+      const ca = canon[last]?.current_assets ?? null;
+      const cl = canon[last]?.current_liabilities ?? null;
+      const rev = canon[last]?.revenue ?? null;
+      if (rev == null || rev === 0) return null;
+      const wc = (ca ?? 0) - (cl ?? 0);
+      return wc / rev;
+    },
+  },
+  {
+    id: "ebitda_margin",
+    label: "EBITDA Margin",
+    requires: ["ebitda","revenue"],
+    compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
+      const e = canon[p]?.ebitda, r = canon[p]?.revenue;
+      const v = (e == null || r == null || r === 0) ? null : e / r;
+      return [p, v];
+    })),
+  },
+  {
+    id: "ebitda_to_interest",
+    label: "EBITDA to Interest",
+    requires: ["ebitda","interest_expense"],
+    compute: ({periods, canon}) => Object.fromEntries(periods.map(p => {
+      const e = canon[p]?.ebitda, i = canon[p]?.interest_expense;
+      const v = (e == null || i == null || i === 0) ? null : e / i;
+      return [p, v];
+    })),
   },
 ];

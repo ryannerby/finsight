@@ -9,6 +9,7 @@ import type { PeriodKey, Periodicity, CanonByPeriod } from '../lib/math/ratios';
 import { Summary, DocumentInventory, DDSignals } from '../schemas/analysis';
 import { buildDocumentInventory } from '../services/documentInventory';
 import { computeDDSignals } from '../services/ddSignals';
+import { parseXlsxToRows } from '../services/xlsxParser';
 import { jsonCall } from '../services/anthropic';
 
 export const analyzeRouter = Router();
@@ -74,8 +75,26 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
         for (const [period, values] of Object.entries(canon)) {
           mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
         }
+      } else if (
+        doc.mime_type.includes('spreadsheet') ||
+        doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        doc.mime_type === 'application/vnd.ms-excel'
+      ) {
+        const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+        if (dlErr || !fileData) continue;
+        const buf = Buffer.from(await fileData.arrayBuffer());
+        const rows = parseXlsxToRows(buf);
+        const canon: CanonByPeriod = {} as any;
+        for (const r of rows) {
+          if (!canon[r.period]) canon[r.period] = {};
+          const norm = normalizeLines([{ account: r.account, value: r.value }]);
+          Object.assign(canon[r.period], norm);
+        }
+        for (const [period, values] of Object.entries(canon)) {
+          mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
+        }
       }
-      // TODO: add XLSX → canon; PDF (LLM extraction) → canon
+      // TODO: add PDF (LLM extraction) → canon
     }
 
     const periods = Object.keys(mergedCanon);
