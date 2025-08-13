@@ -3,6 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+import { MetricCard } from '@/components/ui/metric-card';
+import { HealthScoreRing } from '@/components/ui/health-score-ring';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip } from '@/components/ui/tooltip';
 
 import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
@@ -75,7 +79,12 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
 
 const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
   const userId = 'user_123';
-  const { files, loading, error, refreshFiles } = useFiles(deal.id, userId);
+  const { files, refreshFiles } = useFiles(deal.id, userId);
+  const [showInventoryDetails, setShowInventoryDetails] = useState(false);
+  const [showInventoryWhy, setShowInventoryWhy] = useState(false);
+  const [execOpen, setExecOpen] = useState(true);
+  const [signalsOpen, setSignalsOpen] = useState(true);
+  const [inventoryOpen, setInventoryOpen] = useState(true);
 
   useEffect(() => {
     // when refreshKey changes, refetch files/analyses
@@ -142,10 +151,10 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="bg-card text-card-foreground border rounded-lg p-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Deal Summary</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold tracking-tight">Deal Summary</h3>
           {financial && (
             <span className="text-sm text-muted-foreground">Updated {new Date(financial.created_at).toLocaleString()}</span>
           )}
@@ -154,20 +163,102 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           <p className="text-muted-foreground">No analysis yet. Click Analyze on the top right to compute metrics.</p>
         )}
         {financial && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {['gross_margin','net_margin','current_ratio','debt_to_equity','revenue_cagr_3y'].map((k) => (
-              <div key={k} className="border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">{k.replace(/_/g,' ')}</div>
-                <div className="text-xl font-semibold">
-                  {metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+          <>
+            {/* Health score + recommendation */}
+            {summary && summary.analysis_result && (
+              <div className="flex items-center gap-6 mb-8">
+                <HealthScoreRing
+                  score={summary.analysis_result.health_score}
+                  tooltip="Overall deal health based on liquidity, margins, growth, and volatility"
+                />
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Recommendation</div>
+                  <Badge
+                    variant={summary.analysis_result.recommendation === 'Proceed' ? 'success' : summary.analysis_result.recommendation === 'Caution' ? 'warning' : 'destructive'}
+                    aria-label={`Recommendation: ${summary.analysis_result.recommendation}`}
+                    className="text-sm px-3 py-1"
+                  >
+                    {summary.analysis_result.recommendation}
+                  </Badge>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
+                      <Tooltip key={k} content={`Factor: ${String(k).replace(/_/g,' ')}`}>
+                        <Badge variant={v === 'green' ? 'success' : v === 'yellow' ? 'warning' : 'destructive'}>
+                          {String(k).replace(/_/g, ' ')}
+                        </Badge>
+                      </Tooltip>
+                    ))}
+                  </div>
                 </div>
               </div>
-            ))}
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-muted-foreground mb-1">periodicity</div>
-              <div className="text-xl font-semibold">{coverage.periodicity || '—'}</div>
+            )}
+
+            {/* Metrics grouped */}
+            <div className="space-y-6">
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={`m-${k}`}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                    <MetricCard
+                      key={`l-${k}`}
+                      label={k.replace(/_/g,' ')}
+                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      label={k.replace(/_/g,' ')}
+                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -175,24 +266,14 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
       {summary && summary.analysis_result && (
         <div className="bg-card text-card-foreground border rounded-lg p-6">
           <div className="flex flex-wrap items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Executive Summary</h3>
-            <span className="text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className={`text-2xl font-bold ${summary.analysis_result.health_score >= 80 ? 'text-green-600' : summary.analysis_result.health_score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-              Health score: {Math.round(summary.analysis_result.health_score)}
+            <h3 className="text-lg font-bold">Executive Summary</h3>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
+              <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setExecOpen(v=>!v)}>{execOpen ? 'Hide' : 'Show'}</Button>
             </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${summary.analysis_result.recommendation === 'Proceed' ? 'bg-green-100 text-green-700' : summary.analysis_result.recommendation === 'Caution' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-              {summary.analysis_result.recommendation}
-            </span>
           </div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
-              <span key={k} className={`px-2.5 py-1 rounded-full text-xs font-medium ${v === 'green' ? 'bg-green-100 text-green-700' : v === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                {String(k).replace(/_/g, ' ')}
-              </span>
-            ))}
-          </div>
+          <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(summary.created_at).toLocaleString()}</span>
+          <div className={execOpen ? '' : 'hidden sm:block'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold mb-2">Top strengths</h4>
@@ -221,6 +302,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               </ul>
             </div>
           </div>
+          </div>
         </div>
       )}
 
@@ -228,13 +310,17 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
       {ddSignals && ddSignals.analysis_result && (
         <div className="bg-card text-card-foreground border rounded-lg p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Due Diligence Signals</h3>
-            <span className="text-sm text-muted-foreground">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+            <h3 className="text-lg font-bold">Due Diligence Signals</h3>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+              <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setSignalsOpen(v=>!v)}>{signalsOpen ? 'Hide' : 'Show'}</Button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+          <div className={signalsOpen ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
             {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
               const status = v?.status as string;
-              const color = status === 'pass' ? 'bg-[hsl(var(--secondary))]/30 text-foreground' : status === 'caution' ? 'bg-[hsl(var(--secondary))]/20 text-foreground/80' : status === 'fail' ? 'bg-black/10 text-black' : 'bg-muted text-foreground/70';
+              const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
               const formatSignalValue = (name: string, value: any) => {
                 if (typeof value !== 'number') return null;
                 if (name === 'working_capital_ccc') return `${Math.round(value)} days`;
@@ -245,11 +331,16 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               return (
                 <div key={k} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm text-muted-foreground">{String(k).replace(/_/g,' ')}</div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{status?.toUpperCase() || 'NA'}</span>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      {status === 'pass' && <span aria-hidden>✓</span>}
+                      {status === 'caution' && <span aria-hidden>⚠</span>}
+                      {(!status || status === 'na') && <span aria-hidden>—</span>}
+                      <span>{String(k).replace(/_/g,' ')}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`} aria-label={`Status ${status || 'NA'}`}>{status?.toUpperCase() || 'NA'}</span>
                   </div>
                   {v?.value != null && (
-                    <div className="text-xl font-semibold">{formatSignalValue(k, v.value)}</div>
+                    <div className="text-xl font-semibold text-foreground">{formatSignalValue(k, v.value)}</div>
                   )}
                   {v?.detail && (
                     <div className="text-xs text-muted-foreground mt-1">{v.detail}</div>
@@ -280,9 +371,9 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
             return (
               <>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {chip('To do', groups.todo.length, 'bg-black/10 text-black')}
-                  {chip('In progress', groups.in_progress.length, 'bg-[hsl(var(--secondary))]/20 text-foreground/80')}
-                  {chip('Done', groups.done.length, 'bg-[hsl(var(--secondary))]/30 text-foreground')}
+                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
+                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
+                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
                   {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -317,84 +408,170 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         </div>
       )}
 
-      {/* Document Inventory */}
-      {inventory && inventory.analysis_result && (
-        <div className="bg-card text-card-foreground border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Document Inventory</h3>
-            <span className="text-sm text-muted-foreground">Updated {new Date(inventory.created_at).toLocaleString()}</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-muted-foreground mb-2">Expected</div>
-              <div className="flex flex-wrap gap-2">
-                {(inventory.analysis_result.expected || []).map((x: string) => (
-                  <span key={`exp-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-muted">{x.replace(/_/g,' ')}</span>
-                ))}
+      {/* Document Inventory (compact with optional details) */}
+      {inventory && inventory.analysis_result && (() => {
+        const expected: string[] = inventory.analysis_result.expected || [];
+        const present: string[] = inventory.analysis_result.present || [];
+        const missing: string[] = inventory.analysis_result.missing || [];
+        const expectedCount = expected.length;
+        const presentCount = present.length;
+        const missingCount = missing.length;
+        const completionPct = expectedCount > 0 ? Math.round((presentCount / expectedCount) * 100) : 0;
+        const cov: Record<string, any> = inventory.analysis_result.coverage || {};
+        const periodicities = Object.values(cov).map((v: any) => v?.periodicity).filter(Boolean) as string[];
+        const periodicitySummary = periodicities.length === 0 ? '—' : new Set(periodicities).size === 1 ? periodicities[0] as string : 'mixed';
+        return (
+          <div className="bg-card text-card-foreground border rounded-lg p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">Document Inventory</h3>
+                <button
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setShowInventoryWhy((v) => !v)}
+                >
+                  {showInventoryWhy ? 'Hide why' : 'Why this matters'}
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(inventory.created_at).toLocaleString()}</span>
+                <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setInventoryOpen(v=>!v)}>{inventoryOpen ? 'Hide' : 'Show'}</Button>
               </div>
             </div>
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-muted-foreground mb-2">Present</div>
-              <div className="flex flex-wrap gap-2">
-                {(inventory.analysis_result.present || []).map((x: string) => (
-                  <span key={`pre-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-[hsl(var(--secondary))]/30 text-foreground">{x.replace(/_/g,' ')}</span>
-                ))}
+            <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(inventory.created_at).toLocaleString()}</span>
+            {showInventoryWhy && (
+              <div className="text-sm text-muted-foreground mb-4">
+                Ensures you have the minimum financial statements needed to compute metrics and run diligence. Missing items often block ratio analysis, cohort views, and cash conversion calculations.
               </div>
-            </div>
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-muted-foreground mb-2">Missing</div>
-              <div className="flex flex-wrap gap-2">
-                {(inventory.analysis_result.missing || []).map((x: string) => (
-                  <span key={`mis-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-black/10 text-black">{x.replace(/_/g,' ')}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-          {inventory.analysis_result.coverage && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.entries(inventory.analysis_result.coverage).map(([k, v]: any) => (
-                <div key={`cov-${k}`} className="border rounded-lg p-4">
-                  <div className="text-sm text-muted-foreground mb-1">{String(k).replace(/_/g,' ')}</div>
-                  <div className="text-sm text-muted-foreground">periods: {v?.periods ?? '—'}</div>
-                  <div className="text-sm text-muted-foreground">years: {v?.years ?? '—'}</div>
-                  <div className="text-sm text-muted-foreground">periodicity: {v?.periodicity ?? '—'}</div>
+            )}
+            {/* Summary strip */}
+            <div className="space-y-3 mb-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Completion</span>
+                  <span className="text-muted-foreground">{presentCount}/{expectedCount}</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <Badge variant="success">present: {presentCount}</Badge>
+                  <Badge variant="destructive">missing: {missingCount}</Badge>
+                  <Badge variant="muted">periodicity: {periodicitySummary}</Badge>
+                </div>
+              </div>
+              <div className="h-3 w-full bg-muted/30 rounded">
+                <div
+                  className={`h-3 rounded transition-all duration-300 ${completionPct >= 80 ? 'bg-green-500' : completionPct >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+              <div className="text-right text-xs text-muted-foreground">{completionPct}%</div>
             </div>
-          )}
-        </div>
-      )}
+            <div className={inventoryOpen ? '' : 'hidden sm:block'}>
+            {/* Details toggle */}
+            <div className="flex items-center justify-end mb-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowInventoryDetails((v) => !v)}>
+                {showInventoryDetails ? 'Hide details' : 'Show details'}
+              </Button>
+            </div>
+            {showInventoryDetails && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Expected</div>
+                    <div className="flex flex-wrap gap-2">
+                      {expected.map((x: string) => (
+                        <Badge key={`exp-${x}`} variant="muted">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Present</div>
+                    <div className="flex flex-wrap gap-2">
+                      {present.map((x: string) => (
+                        <Badge key={`pre-${x}`} variant="success">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Missing</div>
+                    <div className="flex flex-wrap gap-2">
+                      {missing.map((x: string) => (
+                        <Badge key={`mis-${x}`} variant="destructive">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {Object.keys(cov).length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(cov).map(([k, v]: any) => (
+                      <div key={`cov-${k}`} className="border rounded-lg p-3">
+                        <div className="text-sm font-medium mb-1">{String(k).replace(/_/g,' ')}</div>
+                        <div className="text-xs text-muted-foreground">{v?.periods ?? '—'} periods over {v?.years ?? '—'} years</div>
+                        <div className="text-xs text-muted-foreground">periodicity: {v?.periodicity ?? '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            </div>
+          </div>
+        );
+      })()}
 
-      <div className="bg-card text-card-foreground border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Deal Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Title</label>
-            <p className="text-lg">{deal.title}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Created</label>
-            <p className="text-lg">{new Date(deal.created_at).toLocaleString()}</p>
-          </div>
-        </div>
-        {deal.description && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
-            <p className="text-muted-foreground leading-relaxed">{deal.description}</p>
-          </div>
-        )}
-        {error && <div className="text-destructive mt-3 text-sm">{error}</div>}
-        {loading && <div className="text-muted-foreground mt-3 text-sm">Loading latest analyses…</div>}
-      </div>
+      
     </div>
   );
 };
 
 const QATab = () => {
+  const [question, setQuestion] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [history, setHistory] = useState<Array<{ q: string; a?: string; t: string }>>([]);
+  const exampleQs = [
+    'How have gross margins trended over the last 3 years?',
+    'Is working capital improving? What is the CCC?',
+    'Any red flags in seasonality or accruals?'
+  ];
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Q&A Section</h3>
+        <label htmlFor="qa-input" className="sr-only">Ask a question about this deal’s financials</label>
+        <div className="flex items-start gap-2">
+          <input
+            id="qa-input"
+            value={question}
+            onChange={(e)=>setQuestion(e.target.value)}
+            placeholder="Ask a question about this deal’s financials…"
+            className="flex-1 rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Q&A input"
+          />
+          <Button disabled={!question.trim()} onClick={()=>{
+            setHistory([{ q: question.trim(), t: new Date().toLocaleString() }, ...history]);
+            setQuestion("");
+          }}>Ask</Button>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          Examples: {exampleQs.map((x, i)=> (
+            <button key={i} className="underline underline-offset-2 mr-2 hover:text-foreground" onClick={()=>setQuestion(x)}>{x}</button>
+          ))}
+        </div>
+      </div>
+      <div className="border rounded-md">
+        <button className="w-full flex items-center justify-between px-3 py-2 text-sm" onClick={()=>setHistoryOpen(!historyOpen)}>
+          <span className="font-medium">History</span>
+          <span aria-hidden>{historyOpen ? '−' : '+'}</span>
+        </button>
+        {historyOpen && (
+          <ul className="divide-y">
+            {history.length === 0 && <li className="p-3 text-sm text-muted-foreground">No prior Q&A yet.</li>}
+            {history.map((h, idx)=> (
+              <li key={idx} className="p-3 text-sm">
+                <div className="font-medium">Q: {h.q}</div>
+                {h.a && <div className="text-muted-foreground mt-1">A: {h.a}</div>}
+                <div className="text-xs text-muted-foreground mt-1">{h.t}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

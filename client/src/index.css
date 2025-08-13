@@ -23,7 +23,7 @@
     --primary: var(--brand-primary);
     --primary-foreground: 0 0% 100%;
     --secondary: var(--brand-secondary);
-    --secondary-foreground: 0 0% 0%;
+    --secondary-foreground: 0 0% 100%;
     --muted: var(--brand-secondary);
     --muted-foreground: 0 0% 0%;
     --accent: var(--brand-secondary);
@@ -32,6 +32,20 @@
     /* Semantic tokens constrained to allowed palette */
     --destructive: 0 0% 0%; /* black */
     --destructive-foreground: 0 0% 100%; /* white */
+
+    /* New semantic brand tokens */
+    --brand: var(--brand-primary);
+    --brand-foreground: 0 0% 100%;
+    --success: 142 72% 29%; /* tailwind green-600 */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%; /* amber-500 */
+    --warning-foreground: 0 0% 0%;
+    --danger: 0 72% 51%; /* red-500 */
+    --danger-foreground: 0 0% 100%;
+    --info: 213 94% 68%; /* sky-400 */
+    --info-foreground: 0 0% 0%;
+    --surface: 0 0% 100%;
+    --surface-foreground: 0 0% 0%;
 
     --border: var(--brand-secondary);
     --input: var(--brand-secondary);
@@ -46,5 +60,11 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1,h2,h3,h4 {
+    @apply text-foreground font-bold tracking-tight;
+  }
+  section + section {
+    @apply mt-10 pt-6 border-t;
   }
 }

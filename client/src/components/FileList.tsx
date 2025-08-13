@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import { UploadedFile } from '../hooks/useFileUpload';
 
 const API_BASE_URL = 'http://localhost:3001/api';
@@ -16,15 +17,15 @@ interface FileListProps {
 export function FileList({ files, loading, error, onRefresh }: FileListProps) {
   const getFileTypeIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) {
-      return { icon: 'PDF', color: 'bg-black/10 text-black' };
+        return { icon: 'PDF', color: 'bg-red-100 text-red-700' };
     } else if (mimeType.includes('csv')) {
-      return { icon: 'CSV', color: 'bg-[hsl(var(--secondary))]/30 text-foreground' };
+        return { icon: 'CSV', color: 'bg-blue-100 text-blue-700' };
     } else if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
-      return { icon: 'XLS', color: 'bg-[hsl(var(--secondary))]/30 text-foreground' };
+        return { icon: 'XLS', color: 'bg-green-100 text-green-700' };
     } else if (mimeType.includes('document')) {
-      return { icon: 'DOC', color: 'bg-[hsl(var(--secondary))]/30 text-foreground' };
+        return { icon: 'DOC', color: 'bg-purple-100 text-purple-700' };
     } else {
-      return { icon: 'FILE', color: 'bg-foreground/5 text-foreground/60' };
+        return { icon: 'FILE', color: 'bg-foreground/5 text-foreground/60' };
     }
   };
 
@@ -155,7 +156,7 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
         const hasAnalysis = file.analyses && file.analyses.length > 0;
         
         return (
-          <div key={file.id} className="relative flex items-center justify-between p-3 bg-[hsl(var(--secondary))]/10 rounded-lg hover:bg-[hsl(var(--secondary))]/20 transition-colors">
+          <div key={file.id} className="relative flex items-center justify-between p-3 bg-[hsl(var(--secondary))]/10 rounded-lg hover:bg-[hsl(var(--secondary))]/20 transition-colors group">
             <div className="flex items-center space-x-3 flex-1">
               <div className={`w-8 h-8 rounded flex items-center justify-center ${color}`}>
                 <span className="text-xs font-semibold">{icon}</span>
@@ -164,9 +165,7 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
                 <div className="flex items-center space-x-2">
                   <p className="font-medium text-foreground truncate" title={file.original_name}>{file.original_name}</p>
                   {file.file_type && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[hsl(var(--secondary))]/30 text-foreground">
-                      {getFileTypeLabel(file.file_type)}
-                    </span>
+                    <Badge variant="secondary">{getFileTypeLabel(file.file_type)}</Badge>
                   )}
                 </div>
                 <div className="flex items-center space-x-4 text-sm text-foreground/60">
@@ -176,13 +175,13 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
                   {hasAnalysis && (
                     <>
                       <span>•</span>
-                      <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--secondary))]/30 text-foreground text-xs">Parsed</span>
+                      <Badge variant="success">Parsed</Badge>
                     </>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
@@ -217,8 +216,8 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
                         setMenuPos(null);
                       }
                     }}
-                  >
-                    Download
+                   >
+                     View
                   </button>
                   <button
                     className="w-full text-left px-3 py-2 text-sm text-black hover:bg-black/5"

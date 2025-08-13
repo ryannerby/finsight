@@ -118,9 +118,9 @@ export function FileDropzone({
         onDrop={handleDrop}
         onClick={() => { if (!disabled) inputRef.current?.click(); }}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          border-2 border-dashed rounded-lg p-8 text-center transition-colors outline-none
           ${isDragOver && !disabled 
-            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20' 
+            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20 ring-2 ring-[hsl(var(--primary))]/40' 
             : 'border-[hsl(var(--secondary))]/60 hover:border-[hsl(var(--secondary))]'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
