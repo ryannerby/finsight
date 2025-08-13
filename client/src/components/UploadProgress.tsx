@@ -14,15 +14,15 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
   const getStatusColor = (status: UploadProgressType['status']) => {
     switch (status) {
       case 'uploading':
-        return 'bg-blue-500';
+        return 'bg-[hsl(var(--primary))]';
       case 'processing':
-        return 'bg-yellow-500';
+        return 'bg-[hsl(var(--secondary))]';
       case 'completed':
-        return 'bg-green-500';
+        return 'bg-black';
       case 'error':
-        return 'bg-red-500';
+        return 'bg-black';
       default:
-        return 'bg-gray-500';
+        return 'bg-black/50';
     }
   };
 
@@ -45,26 +45,26 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
     switch (status) {
       case 'uploading':
         return (
-          <svg className="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-4 w-4 text-[hsl(var(--primary))]" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         );
       case 'processing':
         return (
-          <svg className="animate-pulse h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="animate-pulse h-4 w-4 text-[hsl(var(--secondary))]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
         );
       case 'completed':
         return (
-          <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         );
       case 'error':
         return (
-          <svg className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-4 w-4 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         );
@@ -81,18 +81,18 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
     <div className="space-y-4">
       {/* Summary */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600">
-          {completedCount > 0 && <span className="text-green-600">{completedCount} completed</span>}
+        <div className="text-sm text-foreground/70">
+          {completedCount > 0 && <span className="text-black">{completedCount} completed</span>}
           {errorCount > 0 && (
             <>
               {completedCount > 0 && <span className="mx-2">•</span>}
-              <span className="text-red-600">{errorCount} failed</span>
+              <span className="text-black">{errorCount} failed</span>
             </>
           )}
           {inProgressCount > 0 && (
             <>
               {(completedCount > 0 || errorCount > 0) && <span className="mx-2">•</span>}
-              <span className="text-blue-600">{inProgressCount} in progress</span>
+              <span className="text-[hsl(var(--primary))]">{inProgressCount} in progress</span>
             </>
           )}
         </div>
@@ -106,21 +106,21 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
       {/* Upload items */}
       <div className="space-y-3">
         {uploads.map((upload, index) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-4">
+          <div key={index} className="border border-[hsl(var(--secondary))]/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-3">
                 {getStatusIcon(upload.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {upload.file.name}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-foreground/60">
                     {(upload.file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-foreground/60">
                   {getStatusText(upload.status)}
                 </span>
                 {onRemove && (upload.status === 'completed' || upload.status === 'error') && (
@@ -140,7 +140,7 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
 
             {/* Progress bar */}
             {(upload.status === 'uploading' || upload.status === 'processing') && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-[hsl(var(--secondary))]/30 rounded-full h-2">
                 <div 
                   className={`h-2 rounded-full transition-all duration-300 ${getStatusColor(upload.status)}`}
                   style={{ width: `${upload.progress}%` }}
@@ -150,14 +150,14 @@ export function UploadProgress({ uploads, onRemove, onClear }: UploadProgressPro
 
             {/* Error message */}
             {upload.status === 'error' && upload.error && (
-              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600">
+              <div className="mt-2 p-2 bg-black/5 border border-black/10 rounded text-xs text-black">
                 {upload.error}
               </div>
             )}
 
             {/* Success info */}
             {upload.status === 'completed' && upload.uploadedFile && (
-              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-700">
+              <div className="mt-2 p-2 bg-[hsl(var(--secondary))]/20 border border-[hsl(var(--secondary))]/40 rounded text-xs text-foreground">
                 File uploaded successfully
                 {upload.uploadedFile.analyses && upload.uploadedFile.analyses.length > 0 && (
                   <span> and parsed</span>

@@ -4,35 +4,38 @@
 
 @layer base {
   :root {
-    /* Finsight brand palette */
-    /* Mirage #16232A */
-    --mirage: 205 30% 12%;
-    /* Deep Sea Green #075056 */
-    --deep-sea: 185 86% 19%;
-    /* Blaze Orange #FF5B04 */
-    --blaze: 19 100% 50%;
-    /* Wild Sand #E4EEF0 */
-    --wild-sand: 195 33% 91%;
+    /* Brand colors */
+    /* Primary: #062650 */
+    --brand-primary: 214 86% 17%;
+    /* Secondary: #7495B5 */
+    --brand-secondary: 210 31% 58%;
 
-    --background: var(--wild-sand);
-    --foreground: var(--mirage);
+    /* Core surfaces and text */
+    --background: 0 0% 100%; /* white */
+    --foreground: 0 0% 0%;   /* black */
+
     --card: 0 0% 100%;
-    --card-foreground: var(--mirage);
+    --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;
-    --popover-foreground: var(--mirage);
-    --primary: var(--deep-sea);
+    --popover-foreground: 0 0% 0%;
+
+    /* Brand-driven tokens */
+    --primary: var(--brand-primary);
     --primary-foreground: 0 0% 100%;
-    --secondary: var(--wild-sand);
-    --secondary-foreground: var(--mirage);
-    --muted: var(--wild-sand);
-    --muted-foreground: 205 14% 40%;
-    --accent: var(--blaze);
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 200 15% 85%;
-    --input: 200 15% 85%;
-    --ring: var(--deep-sea);
+    --secondary: var(--brand-secondary);
+    --secondary-foreground: 0 0% 0%;
+    --muted: var(--brand-secondary);
+    --muted-foreground: 0 0% 0%;
+    --accent: var(--brand-secondary);
+    --accent-foreground: 0 0% 0%;
+
+    /* Semantic tokens constrained to allowed palette */
+    --destructive: 0 0% 0%; /* black */
+    --destructive-foreground: 0 0% 100%; /* white */
+
+    --border: var(--brand-secondary);
+    --input: var(--brand-secondary);
+    --ring: var(--brand-primary);
     --radius: 0.5rem;
   }
 }

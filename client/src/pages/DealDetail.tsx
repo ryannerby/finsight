@@ -115,6 +115,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
   const inventory = findLatestByType('doc_inventory');
   const ddSignals = findLatestByType('dd_signals');
+  const ddChecklist = findLatestByType('dd_checklist');
   const summary = (() => {
     let latest: any | null = null;
     for (const f of files) {
@@ -257,6 +258,62 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Due Diligence Checklist (LLM) */}
+      {ddChecklist && ddChecklist.analysis_result && (
+        <div className="bg-card text-card-foreground border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+            <span className="text-sm text-muted-foreground">Updated {new Date(ddChecklist.created_at).toLocaleString()}</span>
+          </div>
+          {(() => {
+            const items = (ddChecklist.analysis_result.items || []) as Array<any>;
+            const groups: Record<string, any[]> = { todo: [], in_progress: [], done: [], na: [] };
+            items.forEach(it => { if (groups[it.status]) groups[it.status].push(it); });
+            const chip = (label: string, count: number, color: string) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>{label}: {count}</span>
+            );
+            const riskItems = [...groups.todo, ...groups.in_progress].slice(0, 5);
+            const oppItems = groups.done.slice(0, 5);
+            return (
+              <>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
+                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
+                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
+                  {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-2">Top risks</h4>
+                    <ul className="space-y-2">
+                      {riskItems.map((it, idx) => (
+                        <li key={`riskc-${idx}`} className="border rounded-lg p-3">
+                          <div className="font-medium">{it.label}</div>
+                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        </li>
+                      ))}
+                      {riskItems.length === 0 && <div className="text-sm text-muted-foreground">No immediate risks identified.</div>}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Top opportunities</h4>
+                    <ul className="space-y-2">
+                      {oppItems.map((it, idx) => (
+                        <li key={`oppc-${idx}`} className="border rounded-lg p-3">
+                          <div className="font-medium">{it.label}</div>
+                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        </li>
+                      ))}
+                      {oppItems.length === 0 && <div className="text-sm text-muted-foreground">No completed items yet.</div>}
+                    </ul>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
