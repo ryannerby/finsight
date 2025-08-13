@@ -99,6 +99,22 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
   const metrics = financial?.analysis_result?.metrics || {};
   const coverage = financial?.analysis_result?.coverage || {};
+  const findLatestByType = (type: string) => {
+    let latest: any | null = null;
+    for (const f of files) {
+      for (const a of f.analyses || []) {
+        if (a.analysis_type === type) {
+          if (!latest || new Date(a.created_at) > new Date(latest.created_at)) {
+            latest = a;
+          }
+        }
+      }
+    }
+    return latest;
+  };
+
+  const inventory = findLatestByType('doc_inventory');
+  const ddSignals = findLatestByType('dd_signals');
   const summary = (() => {
     let latest: any | null = null;
     for (const f of files) {
@@ -112,6 +128,17 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     }
     return latest;
   })();
+
+  const formatMetric = (key: string, val: number): string => {
+    if (val == null || Number.isNaN(val)) return 'n/a';
+    const asPct = (n: number) => `${(n * 100).toFixed(1)}%`;
+    const asX = (n: number) => `${n.toFixed(2)}x`;
+    const asDays = (n: number) => `${Math.round(n)} days`;
+    if (['gross_margin','net_margin','revenue_cagr_3y'].includes(key)) return asPct(val);
+    if (['current_ratio','debt_to_equity'].includes(key)) return asX(val);
+    if (['ar_days','ap_days','dio_days','ccc_days'].includes(key)) return asDays(val);
+    return String(val.toFixed(3));
+  };
 
   return (
     <div className="space-y-8">
@@ -131,7 +158,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               <div key={k} className="border rounded-lg p-4">
                 <div className="text-sm text-muted-foreground mb-1">{k.replace(/_/g,' ')}</div>
                 <div className="text-xl font-semibold">
-                  {metrics[k] == null ? '—' : typeof metrics[k] === 'number' ? metrics[k].toFixed(3) : String(metrics[k])}
+                  {metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
                 </div>
               </div>
             ))}
@@ -196,6 +223,91 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         </div>
       )}
 
+      {/* Deterministic Due Diligence Signals */}
+      {ddSignals && ddSignals.analysis_result && (
+        <div className="bg-card text-card-foreground border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Due Diligence Signals</h3>
+            <span className="text-sm text-muted-foreground">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
+              const status = v?.status as string;
+              const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
+              const formatSignalValue = (name: string, value: any) => {
+                if (typeof value !== 'number') return null;
+                if (name === 'working_capital_ccc') return `${Math.round(value)} days`;
+                if (name === 'current_ratio' || name === 'dscr_proxy') return `${value.toFixed(2)}x`;
+                if (name === 'seasonality' || name === 'accrual_vs_cash_delta') return `${(value * 100).toFixed(1)}%`;
+                return value.toFixed(3);
+              };
+              return (
+                <div key={k} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm text-muted-foreground">{String(k).replace(/_/g,' ')}</div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{status?.toUpperCase() || 'NA'}</span>
+                  </div>
+                  {v?.value != null && (
+                    <div className="text-xl font-semibold">{formatSignalValue(k, v.value)}</div>
+                  )}
+                  {v?.detail && (
+                    <div className="text-xs text-muted-foreground mt-1">{v.detail}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Document Inventory */}
+      {inventory && inventory.analysis_result && (
+        <div className="bg-card text-card-foreground border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Document Inventory</h3>
+            <span className="text-sm text-muted-foreground">Updated {new Date(inventory.created_at).toLocaleString()}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-2">Expected</div>
+              <div className="flex flex-wrap gap-2">
+                {(inventory.analysis_result.expected || []).map((x: string) => (
+                  <span key={`exp-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-muted">{x.replace(/_/g,' ')}</span>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-2">Present</div>
+              <div className="flex flex-wrap gap-2">
+                {(inventory.analysis_result.present || []).map((x: string) => (
+                  <span key={`pre-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-green-100 text-green-700">{x.replace(/_/g,' ')}</span>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg p-4">
+              <div className="text-sm text-muted-foreground mb-2">Missing</div>
+              <div className="flex flex-wrap gap-2">
+                {(inventory.analysis_result.missing || []).map((x: string) => (
+                  <span key={`mis-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-red-100 text-red-700">{x.replace(/_/g,' ')}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+          {inventory.analysis_result.coverage && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(inventory.analysis_result.coverage).map(([k, v]: any) => (
+                <div key={`cov-${k}`} className="border rounded-lg p-4">
+                  <div className="text-sm text-muted-foreground mb-1">{String(k).replace(/_/g,' ')}</div>
+                  <div className="text-sm text-muted-foreground">periods: {v?.periods ?? '—'}</div>
+                  <div className="text-sm text-muted-foreground">years: {v?.years ?? '—'}</div>
+                  <div className="text-sm text-muted-foreground">periodicity: {v?.periodicity ?? '—'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-card text-card-foreground border rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Deal Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -234,13 +346,14 @@ const QATab = () => {
 export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'upload' | 'summary' | 'qa'>('upload');
+  // Single-page layout: Summary is the main, embed Upload and Q&A sections
   const [deal, setDeal] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisRefresh, setAnalysisRefresh] = useState(0);
+  const [showUploadOnly, setShowUploadOnly] = useState(false);
 
   const handleBackToDeals = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -262,6 +375,13 @@ export default function DealDetail() {
       .finally(() => setLoading(false));
   }, [dealId]);
 
+  // If there are no files uploaded yet, default to upload-only onboarding view
+  const userId = 'user_123';
+  const { files, refreshFiles } = useFiles(dealId, userId);
+  useEffect(() => {
+    setShowUploadOnly((files || []).length === 0);
+  }, [files]);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
@@ -280,16 +400,12 @@ export default function DealDetail() {
     );
   }
 
-  const tabs = [
-    { id: 'upload', label: 'Upload', icon: '📁' },
-    { id: 'summary', label: 'Summary', icon: '📊' },
-    { id: 'qa', label: 'Q&A', icon: '💬' }
-  ] as const;
+  // Tabs removed in favor of a single consolidated page
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
             <div>
@@ -314,8 +430,8 @@ export default function DealDetail() {
                     body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
                   });
                   if (!res.ok) throw new Error(await res.text());
-                  setActiveTab('summary');
                   setAnalysisRefresh((x) => x + 1);
+                  setShowUploadOnly(false); // navigate to overview state
                 } catch (e) {
                   alert(`Analyze failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
                 } finally {
@@ -329,32 +445,45 @@ export default function DealDetail() {
           </div>
         </div>
 
-        <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
-          <div className="border-b">
-            <nav className="flex gap-8 px-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))]'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+        {/* Upload-only onboarding state */}
+        {showUploadOnly ? (
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Upload</h3>
+            <UploadTab dealId={deal.id} />
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
+            </div>
           </div>
+        ) : (
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+            <div className="p-6">
+              <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+            </div>
+          </div>
+        )}
 
-          <div className="p-6">
-            {activeTab === 'upload' && <UploadTab dealId={deal.id} />}
-            {activeTab === 'summary' && <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />}
-            {activeTab === 'qa' && <QATab />}
+        {/* Embedded Upload and Q&A sections (compact) */}
+        {!showUploadOnly && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">Upload</h3>
+                <Button size="sm" variant="outline" onClick={() => setShowUploadOnly(true)}>Upload more files</Button>
+              </div>
+              <div className="max-h-[480px] overflow-auto pr-1">
+                <UploadTab dealId={deal.id} />
+              </div>
+            </div>
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">Q&A</h3>
+              </div>
+              <div className="max-h-[480px] overflow-auto pr-1">
+                <QATab />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
         {/* Low-key delete at bottom-right */}
         <div className="flex justify-end mt-4">
           <Button

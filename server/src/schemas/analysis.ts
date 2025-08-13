@@ -52,6 +52,56 @@ export const Summary = z.object({
   recommendation: z.enum(['Proceed','Caution','Pass'])
 });
 
+// Additive schemas for deterministic foundation
+export const InventoryCoverage = z.object({
+  periods: z.number().optional(),
+  years: z.number().optional(),
+  periodicity: z.enum(['monthly','quarterly','annual']).optional()
+}).partial();
+
+export const DocumentInventory = z.object({
+  deal_id: z.string().uuid(),
+  expected: z.array(z.enum(['income_statement','balance_sheet','cash_flow'])).default(['income_statement','balance_sheet','cash_flow']),
+  present: z.array(z.enum(['income_statement','balance_sheet','cash_flow'])).default([]),
+  missing: z.array(z.enum(['income_statement','balance_sheet','cash_flow'])).default([]),
+  coverage: z.object({
+    income_statement: InventoryCoverage.optional(),
+    balance_sheet: InventoryCoverage.optional(),
+    cash_flow: InventoryCoverage.optional()
+  }).partial(),
+  notes: z.array(z.string()).optional()
+});
+
+const SignalResult = z.object({
+  status: z.enum(['pass','caution','fail','na']),
+  value: z.number().nullable().optional(),
+  detail: z.string().optional()
+});
+
+export const DDSignals = z.object({
+  deal_id: z.string().uuid(),
+  dscr_proxy: SignalResult,
+  concentration: SignalResult,
+  working_capital_ccc: SignalResult,
+  current_ratio: SignalResult,
+  seasonality: SignalResult,
+  accrual_vs_cash_delta: SignalResult,
+  data_sufficiency: SignalResult
+});
+
+export const DueDiligenceChecklist = z.object({
+  deal_id: z.string().uuid(),
+  items: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    status: z.enum(['todo','in_progress','done','na']).default('todo'),
+    notes: z.string().optional()
+  }))
+});
+
 export type TStatementExtraction = z.infer<typeof StatementExtraction>;
 export type TDealMetrics = z.infer<typeof DealMetrics>;
 export type TSummary = z.infer<typeof Summary>;
+export type TDocumentInventory = z.infer<typeof DocumentInventory>;
+export type TDDSignals = z.infer<typeof DDSignals>;
+export type TDueDiligenceChecklist = z.infer<typeof DueDiligenceChecklist>;

@@ -6,7 +6,9 @@ import Papa from 'papaparse';
 import { normalizeLines, type Canon } from '../lib/normalize/accounts';
 import { computeAllMetrics } from '../lib/math/computeMetrics';
 import type { PeriodKey, Periodicity, CanonByPeriod } from '../lib/math/ratios';
-import { Summary } from '../schemas/analysis';
+import { Summary, DocumentInventory, DDSignals } from '../schemas/analysis';
+import { buildDocumentInventory } from '../services/documentInventory';
+import { computeDDSignals } from '../services/ddSignals';
 import { jsonCall } from '../services/anthropic';
 
 export const analyzeRouter = Router();
@@ -104,6 +106,45 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       .single();
 
     if (insErr) return res.status(500).json({ error: 'Failed to save financial analysis' });
+
+    // Build Document Inventory (based on what we parsed)
+    const byType: any = {};
+    // Very naive mapping: if we see net_income/gross_profit assume income_statement; cash/accounts_receivable -> balance_sheet; cfo -> cash_flow
+    if (periods.some(p=> mergedCanon[p]?.revenue != null || mergedCanon[p]?.gross_profit != null || mergedCanon[p]?.net_income != null)) {
+      byType['income_statement'] = { canon: mergedCanon, periods };
+    }
+    if (periods.some(p=> mergedCanon[p]?.current_assets != null || mergedCanon[p]?.current_liabilities != null || mergedCanon[p]?.total_assets != null)) {
+      byType['balance_sheet'] = { canon: mergedCanon, periods };
+    }
+    if (periods.some(p=> mergedCanon[p]?.cfo != null || mergedCanon[p]?.net_change_in_cash != null)) {
+      byType['cash_flow'] = { canon: mergedCanon, periods };
+    }
+
+    let inv = buildDocumentInventory({ dealId, canonByDocType: byType });
+    try { inv = DocumentInventory.parse(inv); } catch {}
+
+    await supabase
+      .from('analyses')
+      .insert({
+        document_id: representativeDocId,
+        analysis_type: 'doc_inventory',
+        parsed_text: null,
+        analysis_result: inv
+      });
+
+    // If enabled, compute DD signals
+    if (process.env.DD_RULES_ENABLED === 'true') {
+      let sig = computeDDSignals({ dealId, periods, canon: mergedCanon });
+      try { sig = DDSignals.parse(sig); } catch {}
+      await supabase
+        .from('analyses')
+        .insert({
+          document_id: representativeDocId,
+          analysis_type: 'dd_signals',
+          parsed_text: null,
+          analysis_result: sig
+        });
+    }
 
     // Generate summary using Anthropic
     // Load summary prompt from file (works in dev and after build)

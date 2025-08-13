@@ -2,6 +2,8 @@ export type Canon = {
   // Income Statement
   revenue?: number; cogs?: number; gross_profit?: number;
   sga?: number; operating_expenses?: number; net_income?: number;
+  ebitda?: number;
+  interest_expense?: number;
   // Balance Sheet
   cash?: number; marketable_securities?: number;
   accounts_receivable?: number; inventory?: number;
@@ -25,6 +27,8 @@ const ALIASES: Record<string, keyof Canon> = {
   "sga": "sga",
   "operating expenses": "operating_expenses",
   "net income": "net_income",
+  "ebitda": "ebitda",
+  "interest expense": "interest_expense",
 
   "cash and cash equivalents": "cash",
   "cash": "cash",
