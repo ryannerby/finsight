@@ -12,6 +12,7 @@ import { dealsRouter } from './routes/deals';
 import { filesRouter } from './routes/files';
 import { analyzeRouter } from './routes/analyze';
 import { qaRouter } from './routes/qa';
+import { exportRouter } from './routes/export';
 import { initializeDatabase } from './database/init';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/deals', dealsRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/qa', qaRouter);
+app.use('/api/export', exportRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
