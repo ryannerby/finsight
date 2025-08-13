@@ -45,20 +45,24 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     if (!dealId || !userId) return res.status(400).json({ error: 'dealId and userId are required' });
 
     // Verify the deal belongs to the user
+    let t0 = Date.now();
     const { data: deal, error: dealError } = await supabase
       .from('deals')
       .select('id,user_id')
       .eq('id', dealId)
       .eq('user_id', userId)
       .single();
+    console.log(`[analyze] verify_deal ${Date.now() - t0}ms ${dealError ? 'fail' : 'ok'}`);
 
     if (dealError || !deal) return res.status(404).json({ error: 'Deal not found or access denied' });
 
     // Get documents for this deal
+    t0 = Date.now();
     const { data: documents, error: docsError } = await supabase
       .from('documents')
       .select('*')
       .eq('deal_id', dealId);
+    console.log(`[analyze] fetch_documents ${Date.now() - t0}ms ${docsError ? 'fail' : 'ok'}`);
 
     if (docsError) return res.status(500).json({ error: 'Failed to fetch documents' });
     if (!documents || documents.length === 0) return res.status(400).json({ error: 'No documents found for analysis' });
@@ -68,7 +72,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     for (const doc of documents) {
       if (!doc.mime_type) continue;
       if (doc.mime_type.startsWith('text/csv') || doc.mime_type === 'application/csv') {
+        t0 = Date.now();
         const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+        console.log(`[analyze] download_csv ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
         if (dlErr || !fileData) continue;
         const csvText = await fileData.text();
         const { canon } = canonFromCsv(csvText);
@@ -80,7 +86,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
         doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
         doc.mime_type === 'application/vnd.ms-excel'
       ) {
+        t0 = Date.now();
         const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+        console.log(`[analyze] download_xlsx ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
         if (dlErr || !fileData) continue;
         const buf = Buffer.from(await fileData.arrayBuffer());
         const rows = parseXlsxToRows(buf);
@@ -102,7 +110,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No structured data found (upload CSV/XLSX or enable PDF extraction)' });
     }
     const periodicity = detectPeriodicity(periods);
+    t0 = Date.now();
     const metrics = computeAllMetrics({ periods, periodicity, canon: mergedCanon });
+    console.log(`[analyze] compute_metrics ${Date.now() - t0}ms ok`);
 
     // Save financial analysis row, anchored to a representative document
     const representativeDocId = documents[0].id;
@@ -113,6 +123,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       coverage: { periodicity }
     };
 
+    t0 = Date.now();
     const { data: financialRow, error: insErr } = await supabase
       .from('analyses')
       .insert({
@@ -123,6 +134,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       })
       .select()
       .single();
+    console.log(`[analyze] save_financial ${Date.now() - t0}ms ${insErr ? 'fail' : 'ok'}`);
 
     if (insErr) return res.status(500).json({ error: 'Failed to save financial analysis' });
 
@@ -142,6 +154,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     let inv = buildDocumentInventory({ dealId, canonByDocType: byType });
     try { inv = DocumentInventory.parse(inv); } catch {}
 
+    t0 = Date.now();
     await supabase
       .from('analyses')
       .insert({
@@ -150,11 +163,13 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
         parsed_text: null,
         analysis_result: inv
       });
+    console.log(`[analyze] save_doc_inventory ${Date.now() - t0}ms ok`);
 
     // If enabled, compute DD signals
     if (process.env.DD_RULES_ENABLED === 'true') {
       let sig = computeDDSignals({ dealId, periods, canon: mergedCanon });
       try { sig = DDSignals.parse(sig); } catch {}
+      t0 = Date.now();
       await supabase
         .from('analyses')
         .insert({
@@ -163,6 +178,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
           parsed_text: null,
           analysis_result: sig
         });
+      console.log(`[analyze] save_dd_signals ${Date.now() - t0}ms ok`);
     }
 
     // Generate summary using Anthropic
@@ -194,7 +210,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
     const userPayload = `${summaryUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "health_score": <0-100 number>,\n  "traffic_lights": { "revenue_quality": "green|yellow|red", ... },\n  "top_strengths": [{ "title": string, "evidence": string, "page": number? }],\n  "top_risks": [{ "title": string, "evidence": string, "page": number? }],\n  "recommendation": "Proceed|Caution|Pass"\n}\n\nComputedMetrics (source of truth, use these numbers):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS (optional citations):\n${JSON.stringify(excerpts)}`;
 
+    t0 = Date.now();
     const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
+    console.log(`[analyze] anthropic_summary ${Date.now() - t0}ms ok`);
     // Extract text content from Anthropic response
     let textOut = '';
     const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];

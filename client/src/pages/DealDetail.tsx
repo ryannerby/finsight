@@ -234,7 +234,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
               const status = v?.status as string;
-              const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
+              const color = status === 'pass' ? 'bg-[hsl(var(--secondary))]/30 text-foreground' : status === 'caution' ? 'bg-[hsl(var(--secondary))]/20 text-foreground/80' : status === 'fail' ? 'bg-black/10 text-black' : 'bg-muted text-foreground/70';
               const formatSignalValue = (name: string, value: any) => {
                 if (typeof value !== 'number') return null;
                 if (name === 'working_capital_ccc') return `${Math.round(value)} days`;
@@ -280,9 +280,9 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
             return (
               <>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
-                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
-                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
+                  {chip('To do', groups.todo.length, 'bg-black/10 text-black')}
+                  {chip('In progress', groups.in_progress.length, 'bg-[hsl(var(--secondary))]/20 text-foreground/80')}
+                  {chip('Done', groups.done.length, 'bg-[hsl(var(--secondary))]/30 text-foreground')}
                   {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -337,7 +337,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               <div className="text-sm text-muted-foreground mb-2">Present</div>
               <div className="flex flex-wrap gap-2">
                 {(inventory.analysis_result.present || []).map((x: string) => (
-                  <span key={`pre-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-green-100 text-green-700">{x.replace(/_/g,' ')}</span>
+                  <span key={`pre-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-[hsl(var(--secondary))]/30 text-foreground">{x.replace(/_/g,' ')}</span>
                 ))}
               </div>
             </div>
@@ -345,7 +345,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               <div className="text-sm text-muted-foreground mb-2">Missing</div>
               <div className="flex flex-wrap gap-2">
                 {(inventory.analysis_result.missing || []).map((x: string) => (
-                  <span key={`mis-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-red-100 text-red-700">{x.replace(/_/g,' ')}</span>
+                  <span key={`mis-${x}`} className="px-2.5 py-1 rounded-full text-xs bg-black/10 text-black">{x.replace(/_/g,' ')}</span>
                 ))}
               </div>
             </div>

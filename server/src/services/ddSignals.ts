@@ -15,6 +15,7 @@ export function computeDDSignals(input: {
   dealId: string;
   periods: PeriodKey[];
   canon: CanonByPeriod;
+  concentrationRatio?: number; // optional: top customer or product revenue share (0..1)
 }): TDDSignals {
   const { periods, canon, dealId } = input;
   const flat = computeAllMetrics({ periods, periodicity: inferPeriodicity(periods), canon });
@@ -25,8 +26,8 @@ export function computeDDSignals(input: {
   const dscrProxy = (ebitdaLatest == null || interestLatest == null || interestLatest === 0) ? null : (ebitdaLatest / interestLatest);
   const dscrStatus: Status = dscrProxy == null ? 'na' : (dscrProxy >= 2.0 ? 'pass' : (dscrProxy >= 1.25 ? 'caution' : 'fail'));
 
-  // Concentration: top customer or product ratio — here proxied by revenue concentration if available in metrics later; fallback NA
-  const concentration = null; // placeholder until specific input available
+  // Concentration: top customer or product ratio — allow caller to provide
+  const concentration = input.concentrationRatio ?? null;
   const concentrationStatus: Status = concentration == null ? 'na' : (concentration <= 0.20 ? 'pass' : (concentration <= 0.30 ? 'caution' : 'fail'));
 
   // Working capital: CCC and Current ratio
