@@ -6,7 +6,10 @@ import Papa from 'papaparse';
 import { normalizeLines, type Canon } from '../lib/normalize/accounts';
 import { computeAllMetrics } from '../lib/math/computeMetrics';
 import type { PeriodKey, Periodicity, CanonByPeriod } from '../lib/math/ratios';
-import { Summary } from '../schemas/analysis';
+import { Summary, DocumentInventory, DDSignals, DueDiligenceChecklist } from '../schemas/analysis';
+import { buildDocumentInventory } from '../services/documentInventory';
+import { computeDDSignals } from '../services/ddSignals';
+import { parseXlsxToRows } from '../services/xlsxParser';
 import { jsonCall } from '../services/anthropic';
 
 export const analyzeRouter = Router();
@@ -42,20 +45,24 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     if (!dealId || !userId) return res.status(400).json({ error: 'dealId and userId are required' });
 
     // Verify the deal belongs to the user
+    let t0 = Date.now();
     const { data: deal, error: dealError } = await supabase
       .from('deals')
       .select('id,user_id')
       .eq('id', dealId)
       .eq('user_id', userId)
       .single();
+    console.log(`[analyze] verify_deal ${Date.now() - t0}ms ${dealError ? 'fail' : 'ok'}`);
 
     if (dealError || !deal) return res.status(404).json({ error: 'Deal not found or access denied' });
 
     // Get documents for this deal
+    t0 = Date.now();
     const { data: documents, error: docsError } = await supabase
       .from('documents')
       .select('*')
       .eq('deal_id', dealId);
+    console.log(`[analyze] fetch_documents ${Date.now() - t0}ms ${docsError ? 'fail' : 'ok'}`);
 
     if (docsError) return res.status(500).json({ error: 'Failed to fetch documents' });
     if (!documents || documents.length === 0) return res.status(400).json({ error: 'No documents found for analysis' });
@@ -65,15 +72,37 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     for (const doc of documents) {
       if (!doc.mime_type) continue;
       if (doc.mime_type.startsWith('text/csv') || doc.mime_type === 'application/csv') {
+        t0 = Date.now();
         const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+        console.log(`[analyze] download_csv ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
         if (dlErr || !fileData) continue;
         const csvText = await fileData.text();
         const { canon } = canonFromCsv(csvText);
         for (const [period, values] of Object.entries(canon)) {
           mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
         }
+      } else if (
+        doc.mime_type.includes('spreadsheet') ||
+        doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        doc.mime_type === 'application/vnd.ms-excel'
+      ) {
+        t0 = Date.now();
+        const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+        console.log(`[analyze] download_xlsx ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
+        if (dlErr || !fileData) continue;
+        const buf = Buffer.from(await fileData.arrayBuffer());
+        const rows = parseXlsxToRows(buf);
+        const canon: CanonByPeriod = {} as any;
+        for (const r of rows) {
+          if (!canon[r.period]) canon[r.period] = {};
+          const norm = normalizeLines([{ account: r.account, value: r.value }]);
+          Object.assign(canon[r.period], norm);
+        }
+        for (const [period, values] of Object.entries(canon)) {
+          mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
+        }
       }
-      // TODO: add XLSX → canon; PDF (LLM extraction) → canon
+      // TODO: add PDF (LLM extraction) → canon
     }
 
     const periods = Object.keys(mergedCanon);
@@ -81,7 +110,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No structured data found (upload CSV/XLSX or enable PDF extraction)' });
     }
     const periodicity = detectPeriodicity(periods);
+    t0 = Date.now();
     const metrics = computeAllMetrics({ periods, periodicity, canon: mergedCanon });
+    console.log(`[analyze] compute_metrics ${Date.now() - t0}ms ok`);
 
     // Save financial analysis row, anchored to a representative document
     const representativeDocId = documents[0].id;
@@ -92,6 +123,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       coverage: { periodicity }
     };
 
+    t0 = Date.now();
     const { data: financialRow, error: insErr } = await supabase
       .from('analyses')
       .insert({
@@ -102,8 +134,52 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       })
       .select()
       .single();
+    console.log(`[analyze] save_financial ${Date.now() - t0}ms ${insErr ? 'fail' : 'ok'}`);
 
     if (insErr) return res.status(500).json({ error: 'Failed to save financial analysis' });
+
+    // Build Document Inventory (based on what we parsed)
+    const byType: any = {};
+    // Very naive mapping: if we see net_income/gross_profit assume income_statement; cash/accounts_receivable -> balance_sheet; cfo -> cash_flow
+    if (periods.some(p=> mergedCanon[p]?.revenue != null || mergedCanon[p]?.gross_profit != null || mergedCanon[p]?.net_income != null)) {
+      byType['income_statement'] = { canon: mergedCanon, periods };
+    }
+    if (periods.some(p=> mergedCanon[p]?.current_assets != null || mergedCanon[p]?.current_liabilities != null || mergedCanon[p]?.total_assets != null)) {
+      byType['balance_sheet'] = { canon: mergedCanon, periods };
+    }
+    if (periods.some(p=> mergedCanon[p]?.cfo != null || mergedCanon[p]?.net_change_in_cash != null)) {
+      byType['cash_flow'] = { canon: mergedCanon, periods };
+    }
+
+    let inv = buildDocumentInventory({ dealId, canonByDocType: byType });
+    try { inv = DocumentInventory.parse(inv); } catch {}
+
+    t0 = Date.now();
+    await supabase
+      .from('analyses')
+      .insert({
+        document_id: representativeDocId,
+        analysis_type: 'doc_inventory',
+        parsed_text: null,
+        analysis_result: inv
+      });
+    console.log(`[analyze] save_doc_inventory ${Date.now() - t0}ms ok`);
+
+    // If enabled, compute DD signals
+    if (process.env.DD_RULES_ENABLED === 'true') {
+      let sig = computeDDSignals({ dealId, periods, canon: mergedCanon });
+      try { sig = DDSignals.parse(sig); } catch {}
+      t0 = Date.now();
+      await supabase
+        .from('analyses')
+        .insert({
+          document_id: representativeDocId,
+          analysis_type: 'dd_signals',
+          parsed_text: null,
+          analysis_result: sig
+        });
+      console.log(`[analyze] save_dd_signals ${Date.now() - t0}ms ok`);
+    }
 
     // Generate summary using Anthropic
     // Load summary prompt from file (works in dev and after build)
@@ -134,7 +210,9 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
     const userPayload = `${summaryUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "health_score": <0-100 number>,\n  "traffic_lights": { "revenue_quality": "green|yellow|red", ... },\n  "top_strengths": [{ "title": string, "evidence": string, "page": number? }],\n  "top_risks": [{ "title": string, "evidence": string, "page": number? }],\n  "recommendation": "Proceed|Caution|Pass"\n}\n\nComputedMetrics (source of truth, use these numbers):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS (optional citations):\n${JSON.stringify(excerpts)}`;
 
+    t0 = Date.now();
     const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
+    console.log(`[analyze] anthropic_summary ${Date.now() - t0}ms ok`);
     // Extract text content from Anthropic response
     let textOut = '';
     const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];
@@ -178,6 +256,78 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       .single();
 
     if (sumErr) return res.status(500).json({ error: 'Failed to save summary analysis' });
+
+    // Optional DD Checklist generation (LLM) — additive
+    if (process.env.DD_CHECKLIST_ENABLED === 'true') {
+      // Load checklist prompt
+      const ddPaths = [
+        path.resolve(__dirname, '../prompts/dd_checklist.md'),
+        path.resolve(__dirname, '../../src/prompts/dd_checklist.md'),
+        path.resolve(process.cwd(), 'server/src/prompts/dd_checklist.md')
+      ];
+      let ddSystem = 'You output strict JSON for due diligence checklists.';
+      let ddUser = '';
+      for (const p of ddPaths) {
+        try {
+          if (fs.existsSync(p)) {
+            const fileText = fs.readFileSync(p, 'utf8');
+            const lines = fileText.split(/\r?\n/);
+            if (lines[0]?.startsWith('System:')) {
+              ddSystem = lines[0].replace(/^System:\s*/, '').trim();
+              ddUser = lines.slice(1).join('\n');
+            } else {
+              ddUser = fileText;
+            }
+            break;
+          }
+        } catch {}
+      }
+
+      const ddPayload = `${ddUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "items": [ { "id": string, "label": string, "status": "todo"|"in_progress"|"done"|"na", "notes": string? } ]\n}\n\nComputedMetrics (source of truth):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nDocumentInventory:\n${JSON.stringify(inv, null, 2)}`;
+
+      async function callChecklist(payload: string) {
+        const resp = await jsonCall({ system: ddSystem, prompt: payload });
+        let textOut = '';
+        const blocks: any[] = Array.isArray((resp as any)?.content) ? (resp as any).content : [];
+        for (const b of blocks) {
+          if (b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string') {
+            textOut += (textOut ? '\n' : '') + b.text;
+          }
+        }
+        let parsed: any = undefined;
+        if (textOut) { try { parsed = JSON.parse(textOut); } catch {} }
+        if (!parsed && textOut) {
+          const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
+          try { parsed = JSON.parse(fenced); } catch {}
+        }
+        return parsed;
+      }
+
+      let ddParsed = await callChecklist(ddPayload);
+      let ddValid: any = null;
+      if (ddParsed) {
+        try { ddValid = DueDiligenceChecklist.parse({ deal_id: dealId, ...ddParsed }); } catch {}
+      }
+      if (!ddValid) {
+        // single repair attempt: append guidance
+        const repair = `${ddPayload}\n\nIf your previous output did not validate, fix keys/types and re-output strict JSON again.`;
+        ddParsed = await callChecklist(repair);
+        if (ddParsed) {
+          try { ddValid = DueDiligenceChecklist.parse({ deal_id: dealId, ...ddParsed }); } catch {}
+        }
+      }
+
+      if (ddValid) {
+        await supabase
+          .from('analyses')
+          .insert({
+            document_id: representativeDocId,
+            analysis_type: 'dd_checklist',
+            parsed_text: null,
+            analysis_result: ddValid
+          });
+      }
+    }
 
     return res.json({ financial: financialRow, summary: summaryRow });
   } catch (error) {

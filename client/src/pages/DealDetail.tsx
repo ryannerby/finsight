@@ -3,6 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+import { MetricCard } from '@/components/ui/metric-card';
+import { HealthScoreRing } from '@/components/ui/health-score-ring';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip } from '@/components/ui/tooltip';
 
 import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
@@ -75,7 +79,12 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
 
 const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
   const userId = 'user_123';
-  const { files, loading, error, refreshFiles } = useFiles(deal.id, userId);
+  const { files, refreshFiles } = useFiles(deal.id, userId);
+  const [showInventoryDetails, setShowInventoryDetails] = useState(false);
+  const [showInventoryWhy, setShowInventoryWhy] = useState(false);
+  const [execOpen, setExecOpen] = useState(true);
+  const [signalsOpen, setSignalsOpen] = useState(true);
+  const [inventoryOpen, setInventoryOpen] = useState(true);
 
   useEffect(() => {
     // when refreshKey changes, refetch files/analyses
@@ -99,6 +108,23 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
   const metrics = financial?.analysis_result?.metrics || {};
   const coverage = financial?.analysis_result?.coverage || {};
+  const findLatestByType = (type: string) => {
+    let latest: any | null = null;
+    for (const f of files) {
+      for (const a of f.analyses || []) {
+        if (a.analysis_type === type) {
+          if (!latest || new Date(a.created_at) > new Date(latest.created_at)) {
+            latest = a;
+          }
+        }
+      }
+    }
+    return latest;
+  };
+
+  const inventory = findLatestByType('doc_inventory');
+  const ddSignals = findLatestByType('dd_signals');
+  const ddChecklist = findLatestByType('dd_checklist');
   const summary = (() => {
     let latest: any | null = null;
     for (const f of files) {
@@ -113,11 +139,22 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     return latest;
   })();
 
+  const formatMetric = (key: string, val: number): string => {
+    if (val == null || Number.isNaN(val)) return 'n/a';
+    const asPct = (n: number) => `${(n * 100).toFixed(1)}%`;
+    const asX = (n: number) => `${n.toFixed(2)}x`;
+    const asDays = (n: number) => `${Math.round(n)} days`;
+    if (['gross_margin','net_margin','revenue_cagr_3y'].includes(key)) return asPct(val);
+    if (['current_ratio','debt_to_equity'].includes(key)) return asX(val);
+    if (['ar_days','ap_days','dio_days','ccc_days'].includes(key)) return asDays(val);
+    return String(val.toFixed(3));
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div className="bg-card text-card-foreground border rounded-lg p-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Deal Summary</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold tracking-tight">Deal Summary</h3>
           {financial && (
             <span className="text-sm text-muted-foreground">Updated {new Date(financial.created_at).toLocaleString()}</span>
           )}
@@ -126,20 +163,102 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           <p className="text-muted-foreground">No analysis yet. Click Analyze on the top right to compute metrics.</p>
         )}
         {financial && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {['gross_margin','net_margin','current_ratio','debt_to_equity','revenue_cagr_3y'].map((k) => (
-              <div key={k} className="border rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">{k.replace(/_/g,' ')}</div>
-                <div className="text-xl font-semibold">
-                  {metrics[k] == null ? '—' : typeof metrics[k] === 'number' ? metrics[k].toFixed(3) : String(metrics[k])}
+          <>
+            {/* Health score + recommendation */}
+            {summary && summary.analysis_result && (
+              <div className="flex items-center gap-6 mb-8">
+                <HealthScoreRing
+                  score={summary.analysis_result.health_score}
+                  tooltip="Overall deal health based on liquidity, margins, growth, and volatility"
+                />
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Recommendation</div>
+                  <Badge
+                    variant={summary.analysis_result.recommendation === 'Proceed' ? 'success' : summary.analysis_result.recommendation === 'Caution' ? 'warning' : 'destructive'}
+                    aria-label={`Recommendation: ${summary.analysis_result.recommendation}`}
+                    className="text-sm px-3 py-1"
+                  >
+                    {summary.analysis_result.recommendation}
+                  </Badge>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
+                      <Tooltip key={k} content={`Factor: ${String(k).replace(/_/g,' ')}`}>
+                        <Badge variant={v === 'green' ? 'success' : v === 'yellow' ? 'warning' : 'destructive'}>
+                          {String(k).replace(/_/g, ' ')}
+                        </Badge>
+                      </Tooltip>
+                    ))}
+                  </div>
                 </div>
               </div>
-            ))}
-            <div className="border rounded-lg p-4">
-              <div className="text-sm text-muted-foreground mb-1">periodicity</div>
-              <div className="text-xl font-semibold">{coverage.periodicity || '—'}</div>
+            )}
+
+            {/* Metrics grouped */}
+            <div className="space-y-6">
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={`m-${k}`}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                    <MetricCard
+                      key={`l-${k}`}
+                      label={k.replace(/_/g,' ')}
+                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      label={k.replace(/_/g,' ')}
+                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -147,24 +266,14 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
       {summary && summary.analysis_result && (
         <div className="bg-card text-card-foreground border rounded-lg p-6">
           <div className="flex flex-wrap items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Executive Summary</h3>
-            <span className="text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div className={`text-2xl font-bold ${summary.analysis_result.health_score >= 80 ? 'text-green-600' : summary.analysis_result.health_score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-              Health score: {Math.round(summary.analysis_result.health_score)}
+            <h3 className="text-lg font-bold">Executive Summary</h3>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
+              <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setExecOpen(v=>!v)}>{execOpen ? 'Hide' : 'Show'}</Button>
             </div>
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${summary.analysis_result.recommendation === 'Proceed' ? 'bg-green-100 text-green-700' : summary.analysis_result.recommendation === 'Caution' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-              {summary.analysis_result.recommendation}
-            </span>
           </div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
-              <span key={k} className={`px-2.5 py-1 rounded-full text-xs font-medium ${v === 'green' ? 'bg-green-100 text-green-700' : v === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
-                {String(k).replace(/_/g, ' ')}
-              </span>
-            ))}
-          </div>
+          <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(summary.created_at).toLocaleString()}</span>
+          <div className={execOpen ? '' : 'hidden sm:block'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold mb-2">Top strengths</h4>
@@ -193,39 +302,276 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               </ul>
             </div>
           </div>
+          </div>
         </div>
       )}
 
-      <div className="bg-card text-card-foreground border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Deal Overview</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Title</label>
-            <p className="text-lg">{deal.title}</p>
+      {/* Deterministic Due Diligence Signals */}
+      {ddSignals && ddSignals.analysis_result && (
+        <div className="bg-card text-card-foreground border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold">Due Diligence Signals</h3>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+              <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setSignalsOpen(v=>!v)}>{signalsOpen ? 'Hide' : 'Show'}</Button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Created</label>
-            <p className="text-lg">{new Date(deal.created_at).toLocaleString()}</p>
+          <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
+          <div className={signalsOpen ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
+            {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
+              const status = v?.status as string;
+              const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
+              const formatSignalValue = (name: string, value: any) => {
+                if (typeof value !== 'number') return null;
+                if (name === 'working_capital_ccc') return `${Math.round(value)} days`;
+                if (name === 'current_ratio' || name === 'dscr_proxy') return `${value.toFixed(2)}x`;
+                if (name === 'seasonality' || name === 'accrual_vs_cash_delta') return `${(value * 100).toFixed(1)}%`;
+                return value.toFixed(3);
+              };
+              return (
+                <div key={k} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      {status === 'pass' && <span aria-hidden>✓</span>}
+                      {status === 'caution' && <span aria-hidden>⚠</span>}
+                      {(!status || status === 'na') && <span aria-hidden>—</span>}
+                      <span>{String(k).replace(/_/g,' ')}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`} aria-label={`Status ${status || 'NA'}`}>{status?.toUpperCase() || 'NA'}</span>
+                  </div>
+                  {v?.value != null && (
+                    <div className="text-xl font-semibold text-foreground">{formatSignalValue(k, v.value)}</div>
+                  )}
+                  {v?.detail && (
+                    <div className="text-xs text-muted-foreground mt-1">{v.detail}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
-        {deal.description && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
-            <p className="text-muted-foreground leading-relaxed">{deal.description}</p>
+      )}
+
+      {/* Due Diligence Checklist (LLM) */}
+      {ddChecklist && ddChecklist.analysis_result && (
+        <div className="bg-card text-card-foreground border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+            <span className="text-sm text-muted-foreground">Updated {new Date(ddChecklist.created_at).toLocaleString()}</span>
           </div>
-        )}
-        {error && <div className="text-destructive mt-3 text-sm">{error}</div>}
-        {loading && <div className="text-muted-foreground mt-3 text-sm">Loading latest analyses…</div>}
-      </div>
+          {(() => {
+            const items = (ddChecklist.analysis_result.items || []) as Array<any>;
+            const groups: Record<string, any[]> = { todo: [], in_progress: [], done: [], na: [] };
+            items.forEach(it => { if (groups[it.status]) groups[it.status].push(it); });
+            const chip = (label: string, count: number, color: string) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>{label}: {count}</span>
+            );
+            const riskItems = [...groups.todo, ...groups.in_progress].slice(0, 5);
+            const oppItems = groups.done.slice(0, 5);
+            return (
+              <>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
+                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
+                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
+                  {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-2">Top risks</h4>
+                    <ul className="space-y-2">
+                      {riskItems.map((it, idx) => (
+                        <li key={`riskc-${idx}`} className="border rounded-lg p-3">
+                          <div className="font-medium">{it.label}</div>
+                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        </li>
+                      ))}
+                      {riskItems.length === 0 && <div className="text-sm text-muted-foreground">No immediate risks identified.</div>}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Top opportunities</h4>
+                    <ul className="space-y-2">
+                      {oppItems.map((it, idx) => (
+                        <li key={`oppc-${idx}`} className="border rounded-lg p-3">
+                          <div className="font-medium">{it.label}</div>
+                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        </li>
+                      ))}
+                      {oppItems.length === 0 && <div className="text-sm text-muted-foreground">No completed items yet.</div>}
+                    </ul>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Document Inventory (compact with optional details) */}
+      {inventory && inventory.analysis_result && (() => {
+        const expected: string[] = inventory.analysis_result.expected || [];
+        const present: string[] = inventory.analysis_result.present || [];
+        const missing: string[] = inventory.analysis_result.missing || [];
+        const expectedCount = expected.length;
+        const presentCount = present.length;
+        const missingCount = missing.length;
+        const completionPct = expectedCount > 0 ? Math.round((presentCount / expectedCount) * 100) : 0;
+        const cov: Record<string, any> = inventory.analysis_result.coverage || {};
+        const periodicities = Object.values(cov).map((v: any) => v?.periodicity).filter(Boolean) as string[];
+        const periodicitySummary = periodicities.length === 0 ? '—' : new Set(periodicities).size === 1 ? periodicities[0] as string : 'mixed';
+        return (
+          <div className="bg-card text-card-foreground border rounded-lg p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">Document Inventory</h3>
+                <button
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setShowInventoryWhy((v) => !v)}
+                >
+                  {showInventoryWhy ? 'Hide why' : 'Why this matters'}
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(inventory.created_at).toLocaleString()}</span>
+                <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setInventoryOpen(v=>!v)}>{inventoryOpen ? 'Hide' : 'Show'}</Button>
+              </div>
+            </div>
+            <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(inventory.created_at).toLocaleString()}</span>
+            {showInventoryWhy && (
+              <div className="text-sm text-muted-foreground mb-4">
+                Ensures you have the minimum financial statements needed to compute metrics and run diligence. Missing items often block ratio analysis, cohort views, and cash conversion calculations.
+              </div>
+            )}
+            {/* Summary strip */}
+            <div className="space-y-3 mb-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Completion</span>
+                  <span className="text-muted-foreground">{presentCount}/{expectedCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="success">present: {presentCount}</Badge>
+                  <Badge variant="destructive">missing: {missingCount}</Badge>
+                  <Badge variant="muted">periodicity: {periodicitySummary}</Badge>
+                </div>
+              </div>
+              <div className="h-3 w-full bg-muted/30 rounded">
+                <div
+                  className={`h-3 rounded transition-all duration-300 ${completionPct >= 80 ? 'bg-green-500' : completionPct >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  style={{ width: `${completionPct}%` }}
+                />
+              </div>
+              <div className="text-right text-xs text-muted-foreground">{completionPct}%</div>
+            </div>
+            <div className={inventoryOpen ? '' : 'hidden sm:block'}>
+            {/* Details toggle */}
+            <div className="flex items-center justify-end mb-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowInventoryDetails((v) => !v)}>
+                {showInventoryDetails ? 'Hide details' : 'Show details'}
+              </Button>
+            </div>
+            {showInventoryDetails && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Expected</div>
+                    <div className="flex flex-wrap gap-2">
+                      {expected.map((x: string) => (
+                        <Badge key={`exp-${x}`} variant="muted">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Present</div>
+                    <div className="flex flex-wrap gap-2">
+                      {present.map((x: string) => (
+                        <Badge key={`pre-${x}`} variant="success">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <div className="text-sm text-muted-foreground mb-2">Missing</div>
+                    <div className="flex flex-wrap gap-2">
+                      {missing.map((x: string) => (
+                        <Badge key={`mis-${x}`} variant="destructive">{x.replace(/_/g,' ')}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {Object.keys(cov).length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(cov).map(([k, v]: any) => (
+                      <div key={`cov-${k}`} className="border rounded-lg p-3">
+                        <div className="text-sm font-medium mb-1">{String(k).replace(/_/g,' ')}</div>
+                        <div className="text-xs text-muted-foreground">{v?.periods ?? '—'} periods over {v?.years ?? '—'} years</div>
+                        <div className="text-xs text-muted-foreground">periodicity: {v?.periodicity ?? '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            </div>
+          </div>
+        );
+      })()}
+
+      
     </div>
   );
 };
 
 const QATab = () => {
+  const [question, setQuestion] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(true);
+  const [history, setHistory] = useState<Array<{ q: string; a?: string; t: string }>>([]);
+  const exampleQs = [
+    'How have gross margins trended over the last 3 years?',
+    'Is working capital improving? What is the CCC?',
+    'Any red flags in seasonality or accruals?'
+  ];
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Q&A Section</h3>
+        <label htmlFor="qa-input" className="sr-only">Ask a question about this deal’s financials</label>
+        <div className="flex items-start gap-2">
+          <input
+            id="qa-input"
+            value={question}
+            onChange={(e)=>setQuestion(e.target.value)}
+            placeholder="Ask a question about this deal’s financials…"
+            className="flex-1 rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Q&A input"
+          />
+          <Button disabled={!question.trim()} onClick={()=>{
+            setHistory([{ q: question.trim(), t: new Date().toLocaleString() }, ...history]);
+            setQuestion("");
+          }}>Ask</Button>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          Examples: {exampleQs.map((x, i)=> (
+            <button key={i} className="underline underline-offset-2 mr-2 hover:text-foreground" onClick={()=>setQuestion(x)}>{x}</button>
+          ))}
+        </div>
+      </div>
+      <div className="border rounded-md">
+        <button className="w-full flex items-center justify-between px-3 py-2 text-sm" onClick={()=>setHistoryOpen(!historyOpen)}>
+          <span className="font-medium">History</span>
+          <span aria-hidden>{historyOpen ? '−' : '+'}</span>
+        </button>
+        {historyOpen && (
+          <ul className="divide-y">
+            {history.length === 0 && <li className="p-3 text-sm text-muted-foreground">No prior Q&A yet.</li>}
+            {history.map((h, idx)=> (
+              <li key={idx} className="p-3 text-sm">
+                <div className="font-medium">Q: {h.q}</div>
+                {h.a && <div className="text-muted-foreground mt-1">A: {h.a}</div>}
+                <div className="text-xs text-muted-foreground mt-1">{h.t}</div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -234,13 +580,14 @@ const QATab = () => {
 export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'upload' | 'summary' | 'qa'>('upload');
+  // Single-page layout: Summary is the main, embed Upload and Q&A sections
   const [deal, setDeal] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisRefresh, setAnalysisRefresh] = useState(0);
+  const [showUploadOnly, setShowUploadOnly] = useState(false);
 
   const handleBackToDeals = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -262,6 +609,13 @@ export default function DealDetail() {
       .finally(() => setLoading(false));
   }, [dealId]);
 
+  // If there are no files uploaded yet, default to upload-only onboarding view
+  const userId = 'user_123';
+  const { files, refreshFiles } = useFiles(dealId, userId);
+  useEffect(() => {
+    setShowUploadOnly((files || []).length === 0);
+  }, [files]);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   }
@@ -280,16 +634,12 @@ export default function DealDetail() {
     );
   }
 
-  const tabs = [
-    { id: 'upload', label: 'Upload', icon: '📁' },
-    { id: 'summary', label: 'Summary', icon: '📊' },
-    { id: 'qa', label: 'Q&A', icon: '💬' }
-  ] as const;
+  // Tabs removed in favor of a single consolidated page
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
             <div>
@@ -314,8 +664,8 @@ export default function DealDetail() {
                     body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
                   });
                   if (!res.ok) throw new Error(await res.text());
-                  setActiveTab('summary');
                   setAnalysisRefresh((x) => x + 1);
+                  setShowUploadOnly(false); // navigate to overview state
                 } catch (e) {
                   alert(`Analyze failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
                 } finally {
@@ -329,32 +679,45 @@ export default function DealDetail() {
           </div>
         </div>
 
-        <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
-          <div className="border-b">
-            <nav className="flex gap-8 px-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))]'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+        {/* Upload-only onboarding state */}
+        {showUploadOnly ? (
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Upload</h3>
+            <UploadTab dealId={deal.id} />
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
+            </div>
           </div>
+        ) : (
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+            <div className="p-6">
+              <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+            </div>
+          </div>
+        )}
 
-          <div className="p-6">
-            {activeTab === 'upload' && <UploadTab dealId={deal.id} />}
-            {activeTab === 'summary' && <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />}
-            {activeTab === 'qa' && <QATab />}
+        {/* Embedded Upload and Q&A sections (compact) */}
+        {!showUploadOnly && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">Upload</h3>
+                <Button size="sm" variant="outline" onClick={() => setShowUploadOnly(true)}>Upload more files</Button>
+              </div>
+              <div className="max-h-[480px] overflow-auto pr-1">
+                <UploadTab dealId={deal.id} />
+              </div>
+            </div>
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">Q&A</h3>
+              </div>
+              <div className="max-h-[480px] overflow-auto pr-1">
+                <QATab />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
         {/* Low-key delete at bottom-right */}
         <div className="flex justify-end mt-4">
           <Button

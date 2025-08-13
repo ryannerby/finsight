@@ -13,17 +13,22 @@ async function main() {
     createDeal('FinAnalytics Pilot', 'Seeded deal - product pilot', userId),
   ]);
 
-  // 2) Prepare sample CSV files
-  const samplesDir = path.join(process.cwd(), '..', '..');
-  const csv1 = path.join(samplesDir, 'sample1.csv');
-  const csv2 = path.join(samplesDir, 'sample2.csv');
-  fs.writeFileSync(csv1, 'header1,header2\n10,20\n30,40\n');
-  fs.writeFileSync(csv2, 'header1,header2\n5,15\n25,35\n');
+  // 2) Use fixtures: multi-year financials and top customers
+  const fixturesDir = path.resolve(__dirname, '../../../docs/fixtures');
+  const csvDir = path.join(fixturesDir, 'sample_csv');
+  const pnl = path.join(csvDir, 'sample_pnl.csv');
+  const bs = path.join(csvDir, 'sample_bs.csv');
+  const cf = path.join(csvDir, 'sample_cf.csv');
+  const topCustomersCsv = path.join(csvDir, 'top_customers.csv');
+  if (!fs.existsSync(topCustomersCsv)) {
+    fs.writeFileSync(topCustomersCsv, 'customer,share\nA Corp,0.18\nB LLC,0.12\nC Inc,0.10\n');
+  }
 
   // 3) Upload and parse one file per deal
-  for (const [idx, deal] of deals.entries()) {
-    const filePath = idx === 0 ? csv1 : csv2;
-    await uploadAndParse(deal.id, filePath, userId);
+  for (const deal of deals) {
+    for (const filePath of [pnl, bs, cf, topCustomersCsv]) {
+      await uploadAndParse(deal.id, filePath, userId);
+    }
   }
 
   // 4) Fetch documents for the first deal to verify

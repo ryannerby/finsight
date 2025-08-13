@@ -1,9 +1,13 @@
 import { RATIO_REGISTRY, type PeriodKey, type Periodicity, type CanonByPeriod } from "./ratios";
 
-function pickLatest<T extends Record<PeriodKey, number|null>>(periods: PeriodKey[], map: T) {
+function pickLatestNonNull<T extends Record<PeriodKey, number|null>>(periods: PeriodKey[], map: T) {
   const sorted = [...periods].sort();
-  const last = sorted[sorted.length - 1];
-  return map[last] ?? null;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const key = sorted[i]!;
+    const val = map[key];
+    if (typeof val === "number") return val;
+  }
+  return null;
 }
 
 export function computeAllMetrics(input: {
@@ -21,7 +25,7 @@ export function computeAllMetrics(input: {
       flat[def.id] = out as number|null;
     } else {
       const per = out as Record<PeriodKey, number|null>;
-      flat[def.id] = pickLatest(periods, per);
+      flat[def.id] = pickLatestNonNull(periods, per);
     }
   }
 

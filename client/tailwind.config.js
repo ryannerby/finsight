@@ -23,6 +23,31 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        // Semantic palette
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          foreground: "hsl(var(--brand-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          foreground: "hsl(var(--surface-foreground))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -52,10 +77,23 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      fontSize: {
+        // Typography scale
+        title: ["24px", { lineHeight: "28px", fontWeight: "600" }],
+        section: ["18px", { lineHeight: "24px", fontWeight: "600" }],
+        label: ["12px", { lineHeight: "16px", fontWeight: "500" }],
+        value: ["22px", { lineHeight: "28px", fontWeight: "700" }],
+        caption: ["11px", { lineHeight: "14px", fontWeight: "500" }],
+      },
+      spacing: {
+        // Spacing system
+        'section-y': '1.5rem', // py-6
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        '2xl': '1rem',
       },
       keyframes: {
         "accordion-down": {
