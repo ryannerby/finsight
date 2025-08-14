@@ -18,7 +18,8 @@ import { reportSectionsRouter } from './routes/report-sections';
 import { evidenceItemsRouter } from './routes/evidence-items';
 import { analysesRouter } from './routes/analyses';
 import { logsRouter } from './routes/logs';
-import { initializeDatabase } from './database/init';
+// Temporarily comment out database initialization to get Q&A working
+// import { initializeDatabase } from './database/init';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,11 +50,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 async function startServer() {
   try {
-    // Initialize database tables
-    await initializeDatabase();
+    // Temporarily comment out database initialization to get Q&A working
+    // await initializeDatabase();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Q&A service available at http://localhost:${PORT}/api/qa`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
