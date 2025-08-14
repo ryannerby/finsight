@@ -1,11 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockEnhancedReport } from './mockEnhancedReport';
-import { HealthScore } from './HealthScore';
-import { TrafficLights } from './TrafficLights';
+import { HealthPanel } from '../results/HealthPanel';
 import { StrengthsRisks } from './StrengthsRisks';
 import { Recommendation } from './Recommendation';
-import ReportDashboard from './ReportDashboard';
+import { ReportDashboard } from './ReportDashboard';
 
 /**
  * Demo page showcasing all enhanced report components
@@ -40,15 +39,10 @@ export default function ReportDemo() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Health Score */}
+            {/* Health Panel - Consolidated Component */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Health Score Component</h3>
-              <HealthScore healthScore={mockEnhancedReport.health_score} size="md" />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-3">Traffic Lights Component</h3>
-              <TrafficLights trafficLights={mockEnhancedReport.traffic_lights} />
+              <h3 className="text-lg font-semibold mb-3">Health Panel Component</h3>
+              <HealthPanel summaryReport={mockEnhancedReport} />
             </div>
 
             <div className="border-t pt-6">
@@ -76,9 +70,7 @@ export default function ReportDemo() {
           </CardHeader>
           <CardContent>
             <ReportDashboard
-              dealId="demo-deal-123"
-              summaryReport={mockEnhancedReport}
-              onExport={handleExport}
+              report={mockEnhancedReport}
               onRefresh={handleRefresh}
             />
           </CardContent>

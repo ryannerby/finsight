@@ -3,11 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { SummaryReport } from '../../../../shared/src/types/SummaryReport';
-import { HealthScore } from './HealthScore';
-import { TrafficLights } from './TrafficLights';
+import { HealthPanel } from '../results/HealthPanel';
 import { StrengthsRisks } from './StrengthsRisks';
 import { Recommendation } from './Recommendation';
 import { ExportButtons } from './ExportButtons';
@@ -64,12 +62,12 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   if (error || hasError) {
     return (
       <div className="space-y-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error || errorDetails || 'An error occurred while loading the report'}
-          </AlertDescription>
-        </Alert>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error || errorDetails || 'An error occurred while loading the report'}</span>
+          </div>
+        </div>
         
         {onRefresh && (
           <div className="flex gap-2">
@@ -117,61 +115,31 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             </p>
           </div>
           <ExportButtons 
-            report={report}
-            isExporting={isExporting}
-            onExportStart={() => setIsExporting(true)}
-            onExportComplete={() => setIsExporting(false)}
-            onExportError={(error) => {
-              setExportError(error);
-              setIsExporting(false);
-            }}
+            dealId="mock-deal-id"
+            summaryReport={report}
+            computedMetrics={{}}
           />
         </div>
 
         {/* Export Error Alert */}
         {exportError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Export failed: {exportError}
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-center gap-2 text-red-800">
+              <AlertCircle className="h-4 w-4" />
+              <span>Export failed: {exportError}</span>
               <Button 
                 variant="link" 
-                className="p-0 h-auto ml-2"
+                className="p-0 h-auto ml-2 text-red-800"
                 onClick={() => setExportError(null)}
               >
                 Dismiss
               </Button>
-            </AlertDescription>
-          </Alert>
+            </div>
+          </div>
         )}
 
-        {/* Health Score */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Financial Health Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <HealthScore healthScore={report.health_score} />
-          </CardContent>
-        </Card>
-
-        <Separator />
-
-        {/* Traffic Lights */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Risk Assessment</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Traffic light system for key financial indicators
-            </p>
-          </CardHeader>
-          <CardContent>
-            <TrafficLights trafficLights={report.traffic_lights} />
-          </CardContent>
-        </Card>
+        {/* Health Panel - Consolidated Health Score and Traffic Lights */}
+        <HealthPanel summaryReport={report} />
 
         <Separator />
 
@@ -182,7 +150,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <CardTitle className="text-green-700">Key Strengths</CardTitle>
             </CardHeader>
             <CardContent>
-              <StrengthsRisks items={report.top_strengths} type="strength" />
+              <StrengthsRisks strengths={report.top_strengths} risks={[]} />
             </CardContent>
           </Card>
 
@@ -191,7 +159,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <CardTitle className="text-red-700">Key Risks</CardTitle>
             </CardHeader>
             <CardContent>
-              <StrengthsRisks items={report.top_risks} type="risk" />
+              <StrengthsRisks strengths={[]} risks={report.top_risks} />
             </CardContent>
           </Card>
         </div>

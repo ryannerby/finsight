@@ -14,8 +14,7 @@ import { UploadProgress } from '@/components/UploadProgress';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useFiles } from '@/hooks/useFiles';
 import { useAnalysisReport } from '@/hooks/useAnalysisReport';
-import { HealthScore } from '@/components/report/HealthScore';
-import { TrafficLights } from '@/components/report/TrafficLights';
+import { HealthPanel } from '@/components/results/HealthPanel';
 import { StrengthsRisks } from '@/components/report/StrengthsRisks';
 import { Recommendation } from '@/components/report/Recommendation';
 import { AppShell } from '@/components/layout/AppShell';
@@ -904,64 +903,100 @@ const EnhancedReportTab = ({ deal, refreshKey }: { deal: any; refreshKey: number
 
       {/* Report Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Health Score */}
+        {/* Health Panel - Consolidated Health Score and Traffic Lights */}
         <div className="lg:col-span-2">
-          <HealthScore 
-            healthScore={{
-              overall: mockData.healthScore,
-              components: {
-                profitability: 80,
-                growth: 85,
-                liquidity: 70,
-                leverage: 40,
-                efficiency: 75,
-                data_quality: 90
+          <HealthPanel 
+            summaryReport={{
+              health_score: {
+                overall: mockData.healthScore,
+                components: {
+                  profitability: 80,
+                  growth: 85,
+                  liquidity: 70,
+                  leverage: 40,
+                  efficiency: 75,
+                  data_quality: 90
+                },
+                methodology: 'Weighted average of financial health indicators'
               },
-              methodology: 'Weighted average of financial health indicators'
-            }}
-            size="lg" 
-          />
-        </div>
-
-        {/* Traffic Lights */}
-        <div className="lg:col-span-2">
-          <TrafficLights 
-            trafficLights={{
-              revenue_quality: {
-                status: 'green',
-                score: 85,
-                reasoning: 'Strong revenue growth with consistent patterns',
-                evidence: [{ type: 'metric', ref: 'revenue_cagr_3y', confidence: 0.9 }]
+              traffic_lights: {
+                revenue_quality: {
+                  status: 'green',
+                  score: 85,
+                  reasoning: 'Strong revenue growth with consistent patterns',
+                  evidence: [{ type: 'metric', ref: 'revenue_cagr_3y', confidence: 0.9 }]
+                },
+                margin_trends: {
+                  status: 'yellow',
+                  score: 65,
+                  reasoning: 'Gross margins strong but net margins declining',
+                  evidence: [{ type: 'metric', ref: 'gross_margin', confidence: 0.85 }]
+                },
+                liquidity: {
+                  status: 'green',
+                  score: 80,
+                  reasoning: 'Healthy current ratio and working capital',
+                  evidence: [{ type: 'metric', ref: 'current_ratio', confidence: 0.8 }]
+                },
+                leverage: {
+                  status: 'red',
+                  score: 35,
+                  reasoning: 'High debt-to-equity ratio exceeds benchmarks',
+                  evidence: [{ type: 'metric', ref: 'debt_to_equity', confidence: 0.95 }]
+                },
+                working_capital: {
+                  status: 'yellow',
+                  score: 60,
+                  reasoning: 'Working capital adequate but could be optimized',
+                  evidence: [{ type: 'metric', ref: 'working_capital', confidence: 0.7 }]
+                },
+                data_quality: {
+                  status: 'green',
+                  score: 90,
+                  reasoning: 'Comprehensive financial data with good coverage',
+                  evidence: [{ type: 'metric', ref: 'data_quality', confidence: 0.9 }]
+                }
               },
-              margin_trends: {
-                status: 'yellow',
-                score: 65,
-                reasoning: 'Gross margins strong but net margins declining',
-                evidence: [{ type: 'metric', ref: 'gross_margin', confidence: 0.85 }]
+              top_strengths: mockData.strengths.map(s => ({
+                title: s.title,
+                description: s.description,
+                impact: s.impact,
+                evidence: s.evidence
+              })),
+              top_risks: mockData.risks.map(r => ({
+                title: r.title,
+                description: r.description,
+                impact: r.impact,
+                evidence: r.evidence
+              })),
+              recommendation: {
+                decision: mockData.recommendation.decision,
+                confidence: mockData.recommendation.confidence,
+                rationale: mockData.recommendation.rationale,
+                key_factors: mockData.recommendation.key_factors,
+                valuation_impact: 'Moderate impact on valuation',
+                deal_structure_notes: 'Consider protective covenants'
               },
-              liquidity: {
-                status: 'green',
-                score: 80,
-                reasoning: 'Healthy current ratio and working capital',
-                evidence: [{ type: 'metric', ref: 'current_ratio', confidence: 0.8 }]
+              analysis_metadata: {
+                period_range: { start: '2021-01-01', end: '2023-12-31', total_periods: 12 },
+                data_quality: { completeness: 0.9, consistency: 0.85, recency: 0.95, missing_periods: [], data_gaps: [], reliability_notes: [] },
+                assumptions: ['Historical trends continue', 'No major market disruptions'],
+                limitations: ['Limited forward-looking data', 'Industry benchmarks may vary'],
+                followup_questions: ['What are the growth drivers?', 'How sustainable are current margins?']
               },
-              leverage: {
-                status: 'red',
-                score: 35,
-                reasoning: 'High debt-to-equity ratio exceeds benchmarks',
-                evidence: [{ type: 'metric', ref: 'debt_to_equity', confidence: 0.95 }]
+              confidence: {
+                overall: 0.85,
+                sections: { profitability: 0.9, growth: 0.8, liquidity: 0.85, leverage: 0.9, efficiency: 0.8, data_quality: 0.95 },
+                reliability_factors: ['High data completeness', 'Consistent reporting periods']
               },
-              working_capital: {
-                status: 'yellow',
-                score: 60,
-                reasoning: 'Working capital adequate but could be optimized',
-                evidence: [{ type: 'metric', ref: 'working_capital', confidence: 0.7 }]
-              },
-              data_quality: {
-                status: 'green',
-                score: 90,
-                reasoning: 'Comprehensive financial data with good coverage',
-                evidence: [{ type: 'metric', ref: 'data_quality', confidence: 0.9 }]
+              export_ready: {
+                pdf_title: 'Financial Health Analysis',
+                executive_summary: 'Comprehensive financial health assessment with evidence-backed insights',
+                key_metrics_table: [
+                  { metric: 'Health Score', value: mockData.healthScore.toString(), trend: 'stable' as const },
+                  { metric: 'Revenue Growth', value: '12.5%', trend: 'improving' as const },
+                  { metric: 'Gross Margin', value: '42%', trend: 'stable' as const }
+                ]
               }
             }}
           />
