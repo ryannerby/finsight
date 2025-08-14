@@ -801,9 +801,160 @@ export default function DealDetail() {
             </div>
           </div>
         ) : (
-          <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
-            <div className="p-6">
-              <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+          <div className="space-y-6">
+            {/* Main Dashboard Overview */}
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold tracking-tight">Deal Overview</h3>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {files.length > 0 ? `${files.length} documents uploaded` : 'No documents yet'}
+                  </span>
+                  {files.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          // Generate HTML content for PDF export
+                          const dashboardContent = document.querySelector('.bg-card.text-card-foreground.border.rounded-lg.shadow-sm.p-6')?.innerHTML || '';
+                          const htmlContent = `
+                            <!DOCTYPE html>
+                            <html>
+                              <head>
+                                <meta charset="utf-8">
+                                <title>Deal Overview - ${deal.title}</title>
+                                <style>
+                                  body { font-family: Arial, sans-serif; margin: 20px; }
+                                  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
+                                  .metric-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; }
+                                  .health-score { font-size: 24px; font-weight: bold; margin: 20px 0; }
+                                  .recommendation { margin: 20px 0; }
+                                  .traffic-lights { margin: 20px 0; }
+                                  .traffic-light { display: inline-block; margin: 5px; padding: 5px 10px; border-radius: 4px; }
+                                  .green { background-color: #dcfce7; color: #166534; }
+                                  .yellow { background-color: #fef3c7; color: #92400e; }
+                                  .red { background-color: #fee2e2; color: #991b1b; }
+                                </style>
+                              </head>
+                              <body>
+                                <h1>Deal Overview - ${deal.title}</h1>
+                                <div class="health-score">Documents: ${files.length}</div>
+                                ${dashboardContent}
+                              </body>
+                            </html>
+                          `;
+                          
+                          const response = await fetch('http://localhost:3001/api/export', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ html: htmlContent })
+                          });
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to generate PDF');
+                          }
+                          
+                          // Create blob and download
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `deal-overview-${deal.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          document.body.removeChild(a);
+                        } catch (error) {
+                          console.error('PDF export failed:', error);
+                          alert('Failed to export PDF. Please try again.');
+                        }
+                      }}
+                    >
+                      Export PDF
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Revenue Chart Section */}
+              {(() => {
+                // Find the latest financial analysis
+                let financial: any = null;
+                for (const f of files) {
+                  for (const a of f.analyses || []) {
+                    if (a.analysis_type === 'financial') {
+                      if (!financial || new Date(a.created_at) > new Date(financial.created_at)) {
+                        financial = a;
+                      }
+                    }
+                  }
+                }
+                
+                // Extract revenue data for chart
+                const getRevenueData = (): { year: string; revenue: number }[] => {
+                  if (!financial?.analysis_result?.revenue_data) {
+                    return [];
+                  }
+
+                  try {
+                    const revenueData = financial.analysis_result.revenue_data;
+                    if (Array.isArray(revenueData)) {
+                      return revenueData.map((item: any) => ({
+                        year: item.year || item.period || 'Unknown',
+                        revenue: typeof item.revenue === 'number' ? item.revenue : 0
+                      })).filter(item => item.revenue > 0);
+                    }
+                    
+                    // If it's an object with years as keys
+                    if (typeof revenueData === 'object') {
+                      return Object.entries(revenueData)
+                        .map(([year, revenue]) => ({
+                          year,
+                          revenue: typeof revenue === 'number' ? revenue : 0
+                        }))
+                        .filter(item => item.revenue > 0)
+                        .sort((a, b) => a.year.localeCompare(b.year));
+                    }
+                  } catch (error) {
+                    console.error('Error parsing revenue data:', error);
+                  }
+                  
+                  return [];
+                };
+
+                const revenueData = getRevenueData();
+                
+                return (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold">Financial Analysis</h4>
+                    {!financial ? (
+                      <p className="text-muted-foreground">No financial analysis yet. Click Analyze to compute metrics.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-sm text-muted-foreground">
+                          Last updated: {new Date(financial.created_at).toLocaleString()}
+                        </div>
+                        {revenueData.length > 0 && (
+                          <div>
+                            <RevenueChart data={revenueData} title="Revenue Trend" />
+                          </div>
+                        )}
+                        {revenueData.length === 0 && (
+                          <p className="text-muted-foreground">No revenue data available for charting.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+            
+            {/* Summary Tab for detailed analysis */}
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+              <div className="p-6">
+                <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+              </div>
             </div>
           </div>
         )}
