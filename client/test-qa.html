@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Module Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        button.primary { background-color: #007bff; color: white; }
+        button.success { background-color: #28a745; color: white; }
+        .response { margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Q&A Module Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Test Q&A Service Connection</h3>
+        <button class="primary" onclick="testConnection()">Test Connection</button>
+        <div id="connection-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Test Q&A Endpoint</h3>
+        <button class="primary" onclick="testQAEndpoint()">Test Q&A Endpoint</button>
+        <div id="qa-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test Frontend Integration</h3>
+        <button class="primary" onclick="testFrontend()">Test Frontend</button>
+        <div id="frontend-result"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3001/api';
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = '<div class="loading">Testing connection...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/qa/test`);
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<div class="success">
+                        <strong>✅ Connection Successful!</strong><br>
+                        Status: ${data.status}<br>
+                        Message: ${data.message}<br>
+                        Features: ${data.features.join(', ')}
+                    </div>`;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">
+                    <strong>❌ Connection Failed!</strong><br>
+                    Error: ${error.message}<br>
+                    Make sure the server is running on port 3001
+                </div>`;
+            }
+        }
+
+        async function testQAEndpoint() {
+            const resultDiv = document.getElementById('qa-result');
+            resultDiv.innerHTML = '<div class="loading">Testing Q&A endpoint...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/qa/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        deal_id: 'test-deal-123',
+                        question: 'How are gross margins trending?'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<div class="success">
+                        <strong>✅ Q&A Endpoint Working!</strong><br>
+                        Question: ${data.question}<br>
+                        Confidence: ${Math.round(data.confidence * 100)}%<br>
+                        Response Length: ${data.answer.length} characters<br>
+                        <div class="response">
+                            <strong>AI Response Preview:</strong><br>
+                            ${data.answer.substring(0, 200)}...
+                        </div>
+                    </div>`;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">
+                    <strong>❌ Q&A Endpoint Failed!</strong><br>
+                    Error: ${error.message}
+                </div>`;
+            }
+        }
+
+        async function testFrontend() {
+            const resultDiv = document.getElementById('frontend-result');
+            resultDiv.innerHTML = '<div class="loading">Testing frontend integration...</div>';
+            
+            try {
+                // Test if we can access the Q&A demo page
+                const response = await fetch('http://localhost:5173/qa-demo');
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div class="success">
+                        <strong>✅ Frontend Integration Working!</strong><br>
+                        Q&A Demo page is accessible<br>
+                        <a href="http://localhost:5173/qa-demo" target="_blank">Open Q&A Demo</a>
+                    </div>`;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">
+                    <strong>❌ Frontend Integration Failed!</strong><br>
+                    Error: ${error.message}<br>
+                    Make sure the client is running on port 5173
+                </div>`;
+            }
+        }
+
+        // Auto-run connection test on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>
