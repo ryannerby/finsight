@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+import { RevenueChart } from '@/components/ui/revenue-chart';
 import { MetricCard } from '@/components/ui/metric-card';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { Badge } from '@/components/ui/badge';
@@ -150,14 +151,118 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     return String(val.toFixed(3));
   };
 
+  // Extract revenue data from financial analysis for chart
+  const getRevenueData = (): { year: string; revenue: number }[] => {
+    if (!financial?.analysis_result?.revenue_data) {
+      return [];
+    }
+
+    try {
+      const revenueData = financial.analysis_result.revenue_data;
+      if (Array.isArray(revenueData)) {
+        return revenueData.map((item: any) => ({
+          year: item.year || item.period || 'Unknown',
+          revenue: typeof item.revenue === 'number' ? item.revenue : 0
+        })).filter(item => item.revenue > 0);
+      }
+      
+      // If it's an object with years as keys
+      if (typeof revenueData === 'object') {
+        return Object.entries(revenueData)
+          .map(([year, revenue]) => ({
+            year,
+            revenue: typeof revenue === 'number' ? revenue : 0
+          }))
+          .filter(item => item.revenue > 0)
+          .sort((a, b) => a.year.localeCompare(b.year));
+      }
+    } catch (error) {
+      console.error('Error parsing revenue data:', error);
+    }
+    
+    return [];
+  };
+
   return (
     <div className="space-y-10">
       <div className="bg-card text-card-foreground border rounded-lg p-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold tracking-tight">Deal Summary</h3>
-          {financial && (
-            <span className="text-sm text-muted-foreground">Updated {new Date(financial.created_at).toLocaleString()}</span>
-          )}
+          <div className="flex items-center gap-3">
+            {financial && (
+              <span className="text-sm text-muted-foreground">Updated {new Date(financial.created_at).toLocaleString()}</span>
+            )}
+            {financial && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    // Generate HTML content for PDF export
+                    const summaryContent = document.querySelector('.bg-card.text-card-foreground.border.rounded-lg.p-8')?.innerHTML || '';
+                    const htmlContent = `
+                      <!DOCTYPE html>
+                      <html>
+                        <head>
+                          <meta charset="utf-8">
+                          <title>Deal Summary - ${deal.title}</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
+                            .metric-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; }
+                            .health-score { font-size: 24px; font-weight: bold; margin: 20px 0; }
+                            .recommendation { margin: 20px 0; }
+                            .traffic-lights { margin: 20px 0; }
+                            .traffic-light { display: inline-block; margin: 5px; padding: 5px 10px; border-radius: 4px; }
+                            .green { background-color: #dcfce7; color: #166534; }
+                            .yellow { background-color: #fef3c7; color: #92400e; }
+                            .red { background-color: #fee2e2; color: #991b1b; }
+                          </style>
+                        </head>
+                        <body>
+                          <h1>Deal Summary - ${deal.title}</h1>
+                          <div class="health-score">Health Score: ${summary?.analysis_result?.health_score || 'N/A'}/100</div>
+                          <div class="recommendation">Recommendation: ${summary?.analysis_result?.recommendation || 'N/A'}</div>
+                          <div class="traffic-lights">
+                            ${Object.entries(summary?.analysis_result?.traffic_lights || {}).map(([k, v]: any) => 
+                              `<span class="traffic-light ${v}">${String(k).replace(/_/g, ' ')}: ${v}</span>`
+                            ).join('')}
+                          </div>
+                          ${summaryContent}
+                        </body>
+                      </html>
+                    `;
+                    
+                    const response = await fetch('http://localhost:3001/api/export', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ html: htmlContent })
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to generate PDF');
+                    }
+                    
+                    // Create blob and download
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `deal-summary-${deal.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } catch (error) {
+                    console.error('PDF export failed:', error);
+                    alert('Failed to export PDF. Please try again.');
+                  }
+                }}
+              >
+                Export PDF
+              </Button>
+            )}
+          </div>
         </div>
         {!financial && (
           <p className="text-muted-foreground">No analysis yet. Click Analyze on the top right to compute metrics.</p>
@@ -258,6 +363,13 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 </div>
               </div>
             </div>
+
+            {/* Revenue Trend Chart */}
+            {financial && getRevenueData().length > 0 && (
+              <div className="mt-8">
+                <RevenueChart data={getRevenueData()} title="Revenue Trend" />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -611,7 +723,7 @@ export default function DealDetail() {
 
   // If there are no files uploaded yet, default to upload-only onboarding view
   const userId = 'user_123';
-  const { files, refreshFiles } = useFiles(dealId, userId);
+  const { files } = useFiles(dealId, userId);
   useEffect(() => {
     setShowUploadOnly((files || []).length === 0);
   }, [files]);
@@ -688,7 +800,7 @@ export default function DealDetail() {
               <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
             </div>
           </div>
-        ) : (
+                ) : (
           <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
             <div className="p-6">
               <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />

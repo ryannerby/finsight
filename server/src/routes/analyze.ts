@@ -11,6 +11,9 @@ import { buildDocumentInventory } from '../services/documentInventory';
 import { computeDDSignals } from '../services/ddSignals';
 import { parseXlsxToRows } from '../services/xlsxParser';
 import { jsonCall } from '../services/anthropic';
+import { rateLimiter } from '../services/rateLimiter';
+import { AnalysisErrorHandler, type AnalysisError } from '../services/errorHandler';
+import { withTimeout, TIMEOUTS } from '../services/timeoutWrapper';
 
 export const analyzeRouter = Router();
 
@@ -44,6 +47,18 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const { dealId, userId } = req.body;
     if (!dealId || !userId) return res.status(400).json({ error: 'dealId and userId are required' });
 
+    // Rate limiting: one analysis per minute per deal
+    if (!rateLimiter.isAllowed(dealId)) {
+      const retryAfter = Math.ceil(rateLimiter.getTimeRemaining(dealId) / 1000);
+      const error = AnalysisErrorHandler.createRateLimitError(retryAfter);
+      return res.status(AnalysisErrorHandler.getHttpStatus(error))
+        .json({ 
+          error: error.message, 
+          type: error.type, 
+          retryAfter: error.retryAfter 
+        });
+    }
+
     // Verify the deal belongs to the user
     let t0 = Date.now();
     const { data: deal, error: dealError } = await supabase
@@ -67,42 +82,75 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     if (docsError) return res.status(500).json({ error: 'Failed to fetch documents' });
     if (!documents || documents.length === 0) return res.status(400).json({ error: 'No documents found for analysis' });
 
+    // Check file sizes and validate documents
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    for (const doc of documents) {
+      if (doc.file_size && doc.file_size > MAX_FILE_SIZE) {
+        const error = AnalysisErrorHandler.createFileTooLargeError(doc.file_size, MAX_FILE_SIZE);
+        return res.status(AnalysisErrorHandler.getHttpStatus(error))
+          .json({ 
+            error: error.message, 
+            type: error.type, 
+            details: error.details 
+          });
+      }
+    }
+
     // Build a consolidated canon from CSVs (PDF/XLSX can be added next)
     const mergedCanon: CanonByPeriod = {};
     for (const doc of documents) {
       if (!doc.mime_type) continue;
-      if (doc.mime_type.startsWith('text/csv') || doc.mime_type === 'application/csv') {
-        t0 = Date.now();
-        const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
-        console.log(`[analyze] download_csv ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
-        if (dlErr || !fileData) continue;
-        const csvText = await fileData.text();
-        const { canon } = canonFromCsv(csvText);
-        for (const [period, values] of Object.entries(canon)) {
-          mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
+      
+      try {
+        if (doc.mime_type.startsWith('text/csv') || doc.mime_type === 'application/csv') {
+          t0 = Date.now();
+          const fileProcessingPromise = (async () => {
+            const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+            if (dlErr || !fileData) throw new Error('Failed to download CSV file');
+            const csvText = await fileData.text();
+            const { canon } = canonFromCsv(csvText);
+            return canon;
+          })();
+
+          const canon = await withTimeout(fileProcessingPromise, TIMEOUTS.FILE_PROCESSING, 'CSV processing');
+          console.log(`[analyze] download_csv ${Date.now() - t0}ms ok`);
+          
+          for (const [period, values] of Object.entries(canon)) {
+            mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
+          }
+        } else if (
+          doc.mime_type.includes('spreadsheet') ||
+          doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+          doc.mime_type === 'application/vnd.ms-excel'
+        ) {
+          t0 = Date.now();
+          const fileProcessingPromise = (async () => {
+            const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
+            if (dlErr || !fileData) throw new Error('Failed to download Excel file');
+            const buf = Buffer.from(await fileData.arrayBuffer());
+            const rows = parseXlsxToRows(buf);
+            const canon: CanonByPeriod = {} as any;
+            for (const r of rows) {
+              if (!canon[r.period]) canon[r.period] = {};
+              const norm = normalizeLines([{ account: r.account, value: r.value }]);
+              Object.assign(canon[r.period], norm);
+            }
+            return canon;
+          })();
+
+          const canon = await withTimeout(fileProcessingPromise, TIMEOUTS.FILE_PROCESSING, 'Excel processing');
+          console.log(`[analyze] download_xlsx ${Date.now() - t0}ms ok`);
+          
+          for (const [period, values] of Object.entries(canon)) {
+            mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
+          }
         }
-      } else if (
-        doc.mime_type.includes('spreadsheet') ||
-        doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        doc.mime_type === 'application/vnd.ms-excel'
-      ) {
-        t0 = Date.now();
-        const { data: fileData, error: dlErr } = await supabaseAdmin.storage.from('documents').download(doc.file_path);
-        console.log(`[analyze] download_xlsx ${Date.now() - t0}ms ${dlErr ? 'fail' : 'ok'}`);
-        if (dlErr || !fileData) continue;
-        const buf = Buffer.from(await fileData.arrayBuffer());
-        const rows = parseXlsxToRows(buf);
-        const canon: CanonByPeriod = {} as any;
-        for (const r of rows) {
-          if (!canon[r.period]) canon[r.period] = {};
-          const norm = normalizeLines([{ account: r.account, value: r.value }]);
-          Object.assign(canon[r.period], norm);
-        }
-        for (const [period, values] of Object.entries(canon)) {
-          mergedCanon[period] = { ...(mergedCanon[period] || {}), ...values };
-        }
+        // TODO: add PDF (LLM extraction) → canon
+      } catch (error) {
+        console.error(`Error processing document ${doc.id}:`, error);
+        // Continue with other documents instead of failing completely
+        continue;
       }
-      // TODO: add PDF (LLM extraction) → canon
     }
 
     const periods = Object.keys(mergedCanon);
@@ -110,17 +158,48 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'No structured data found (upload CSV/XLSX or enable PDF extraction)' });
     }
     const periodicity = detectPeriodicity(periods);
+    
+    // Compute metrics with timeout
     t0 = Date.now();
-    const metrics = computeAllMetrics({ periods, periodicity, canon: mergedCanon });
-    console.log(`[analyze] compute_metrics ${Date.now() - t0}ms ok`);
+    let metrics;
+    try {
+      const metricsPromise = Promise.resolve(computeAllMetrics({ periods, periodicity, canon: mergedCanon }));
+      metrics = await withTimeout(metricsPromise, TIMEOUTS.METRICS_COMPUTATION, 'metrics computation');
+      console.log(`[analyze] compute_metrics ${Date.now() - t0}ms ok`);
+    } catch (error) {
+      console.error('Error computing metrics:', error);
+      const analysisError = error instanceof Error && error.message.includes('Timeout') 
+        ? AnalysisErrorHandler.createTimeoutError('metrics computation')
+        : AnalysisErrorHandler.createInvalidDataError('metrics computation', { periods, periodicity });
+      
+      return res.status(AnalysisErrorHandler.getHttpStatus(analysisError))
+        .json({ 
+          error: analysisError.message, 
+          type: analysisError.type, 
+          details: analysisError.details 
+        });
+    }
 
     // Save financial analysis row, anchored to a representative document
     const representativeDocId = documents[0].id;
 
+    // Extract revenue data for charting
+    const revenueData: { year: string; revenue: number }[] = [];
+    for (const period of periods) {
+      const revenue = mergedCanon[period]?.revenue;
+      if (typeof revenue === 'number' && revenue > 0) {
+        revenueData.push({
+          year: period,
+          revenue: revenue
+        });
+      }
+    }
+
     const dealMetrics = {
       deal_id: dealId,
       metrics,
-      coverage: { periodicity }
+      coverage: { periodicity },
+      revenue_data: revenueData
     };
 
     t0 = Date.now();
@@ -210,9 +289,27 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const excerpts: Array<{ page: number; text: string }> = []; // placeholder for now
     const userPayload = `${summaryUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "health_score": <0-100 number>,\n  "traffic_lights": { "revenue_quality": "green|yellow|red", ... },\n  "top_strengths": [{ "title": string, "evidence": string, "page": number? }],\n  "top_risks": [{ "title": string, "evidence": string, "page": number? }],\n  "recommendation": "Proceed|Caution|Pass"\n}\n\nComputedMetrics (source of truth, use these numbers):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nEXCERPTS (optional citations):\n${JSON.stringify(excerpts)}`;
 
+    // Generate summary using Anthropic with timeout and error handling
     t0 = Date.now();
-    const llmResp = await jsonCall({ system: summarySystem, prompt: userPayload });
-    console.log(`[analyze] anthropic_summary ${Date.now() - t0}ms ok`);
+    let llmResp;
+    try {
+      const aiPromise = jsonCall({ system: summarySystem, prompt: userPayload });
+      llmResp = await withTimeout(aiPromise, TIMEOUTS.AI_SUMMARY, 'AI summary generation');
+      console.log(`[analyze] anthropic_summary ${Date.now() - t0}ms ok`);
+    } catch (error) {
+      console.error('Error calling AI for summary:', error);
+      const analysisError = error instanceof Error && error.message.includes('Timeout')
+        ? AnalysisErrorHandler.createTimeoutError('AI summary generation')
+        : AnalysisErrorHandler.createAIError(error);
+      
+      return res.status(AnalysisErrorHandler.getHttpStatus(analysisError))
+        .json({ 
+          error: analysisError.message, 
+          type: analysisError.type, 
+          details: analysisError.details 
+        });
+    }
+
     // Extract text content from Anthropic response
     let textOut = '';
     const blocks: any[] = Array.isArray((llmResp as any)?.content) ? (llmResp as any).content : [];
@@ -233,7 +330,13 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       try { parsed = JSON.parse(fenced); } catch {}
     }
     if (!parsed) {
-      return res.status(500).json({ error: 'Failed to parse summary JSON from model' });
+      const error = AnalysisErrorHandler.createAIError(new Error('Failed to parse summary JSON from model'));
+      return res.status(AnalysisErrorHandler.getHttpStatus(error))
+        .json({ 
+          error: error.message, 
+          type: error.type, 
+          details: error.details 
+        });
     }
 
     // Validate with Zod
@@ -241,7 +344,16 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     try {
       validSummary = Summary.parse({ deal_id: dealId, ...parsed });
     } catch (e) {
-      return res.status(500).json({ error: 'Summary validation failed', details: (e as any)?.errors ?? String(e) });
+      const error = AnalysisErrorHandler.createInvalidDataError('summary validation', { 
+        validationErrors: (e as any)?.errors ?? String(e),
+        parsedData: parsed 
+      });
+      return res.status(AnalysisErrorHandler.getHttpStatus(error))
+        .json({ 
+          error: error.message, 
+          type: error.type, 
+          details: error.details 
+        });
     }
 
     const { data: summaryRow, error: sumErr } = await supabase
@@ -286,21 +398,29 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
       const ddPayload = `${ddUser}\n\nReturn ONLY strict JSON matching this shape (no prose):\n{\n  "items": [ { "id": string, "label": string, "status": "todo"|"in_progress"|"done"|"na", "notes": string? } ]\n}\n\nComputedMetrics (source of truth):\n${JSON.stringify(dealMetrics.metrics, null, 2)}\n\nDocumentInventory:\n${JSON.stringify(inv, null, 2)}`;
 
       async function callChecklist(payload: string) {
-        const resp = await jsonCall({ system: ddSystem, prompt: payload });
-        let textOut = '';
-        const blocks: any[] = Array.isArray((resp as any)?.content) ? (resp as any).content : [];
-        for (const b of blocks) {
-          if (b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string') {
-            textOut += (textOut ? '\n' : '') + b.text;
+        try {
+          const aiPromise = jsonCall({ system: ddSystem, prompt: payload });
+          const resp = await withTimeout(aiPromise, TIMEOUTS.AI_CHECKLIST, 'AI checklist generation');
+          
+          let textOut = '';
+          const blocks: any[] = Array.isArray((resp as any)?.content) ? (resp as any).content : [];
+          for (const b of blocks) {
+            if (b && typeof b === 'object' && b.type === 'text' && typeof b.text === 'string') {
+              textOut += (textOut ? '\n' : '') + b.text;
+            }
           }
+          let parsed: any = undefined;
+          if (textOut) { try { parsed = JSON.parse(textOut); } catch {} }
+          if (!parsed && textOut) {
+            const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
+            try { parsed = JSON.parse(fenced); } catch {}
+          }
+          return parsed;
+        } catch (error) {
+          console.error('Error calling AI for checklist:', error);
+          // Don't fail the entire analysis if checklist fails
+          return null;
         }
-        let parsed: any = undefined;
-        if (textOut) { try { parsed = JSON.parse(textOut); } catch {} }
-        if (!parsed && textOut) {
-          const fenced = textOut.trim().replace(/^```json\s*|```$/g, '').trim();
-          try { parsed = JSON.parse(fenced); } catch {}
-        }
-        return parsed;
       }
 
       let ddParsed = await callChecklist(ddPayload);
@@ -332,7 +452,13 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     return res.json({ financial: financialRow, summary: summaryRow });
   } catch (error) {
     console.error('Error in analyze:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    const analysisError = AnalysisErrorHandler.createUnknownError(error);
+    res.status(AnalysisErrorHandler.getHttpStatus(analysisError))
+      .json({ 
+        error: analysisError.message, 
+        type: analysisError.type, 
+        details: analysisError.details 
+      });
   }
 });
 

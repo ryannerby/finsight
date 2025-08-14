@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 import { Badge } from "./badge"
 import { Tooltip } from "./tooltip"
 
@@ -16,5 +16,6 @@ export function TrafficLightBadge({ label, level, tooltip }: TrafficLightBadgePr
   if (!tooltip) return content
   return <Tooltip content={tooltip}>{content}</Tooltip>
 }
+
 
 

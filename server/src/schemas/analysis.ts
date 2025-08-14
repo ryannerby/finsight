@@ -40,7 +40,11 @@ export const DealMetrics = z.object({
   coverage: z.object({
     has_3y_data: z.boolean().optional(),
     periodicity: z.enum(['monthly','quarterly','annual']).optional()
-  }).partial()
+  }).partial(),
+  revenue_data: z.array(z.object({
+    year: z.string(),
+    revenue: z.number()
+  })).optional()
 });
 
 export const Summary = z.object({

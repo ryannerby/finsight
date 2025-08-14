@@ -1,4 +1,4 @@
-import * as React from "react"
+import React from "react"
 
 interface InlineErrorProps {
   message: string
@@ -16,5 +16,6 @@ export function InlineError({ message }: InlineErrorProps) {
     </div>
   )
 }
+
 
 
