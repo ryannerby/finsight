@@ -118,6 +118,54 @@ filesRouter.post('/confirm-upload', async (req: Request, res: Response) => {
   }
 });
 
+// Create document record directly (for seeding/testing)
+filesRouter.post('/', async (req: Request, res: Response) => {
+  try {
+    const { deal_id, filename, original_name, file_path, file_size, mime_type, file_type, user_id } = req.body;
+
+    if (!deal_id || !filename || !original_name || !file_path || !user_id) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Verify the deal belongs to the user
+    const { data: deal, error: dealError } = await supabase
+      .from('deals')
+      .select('id')
+      .eq('id', deal_id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (dealError || !deal) {
+      return res.status(404).json({ error: 'Deal not found or access denied' });
+    }
+
+    // Create document record
+    const { data, error } = await supabase
+      .from('documents')
+      .insert({
+        deal_id,
+        filename,
+        original_name,
+        file_path,
+        file_size,
+        mime_type,
+        file_type: file_type || detectFileType(original_name, mime_type)
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating document record:', error);
+      return res.status(500).json({ error: 'Failed to create document record' });
+    }
+
+    res.status(201).json(data);
+  } catch (error) {
+    console.error('Error creating document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Parse a document
 filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
   try {

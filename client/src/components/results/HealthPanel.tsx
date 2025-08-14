@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { EvidencePopover } from '../report/EvidencePopover';
+import { EvidenceDrawer } from './EvidenceDrawer';
 import { StatusChip } from '@/components/ui/status-chip';
 import { cn } from '@/lib/utils';
 import { SummaryReport, Evidence } from '../../../../shared/src/types';
@@ -37,6 +37,9 @@ interface MetricItem {
  */
 export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
+  const [currentEvidenceItems, setCurrentEvidenceItems] = useState<any[]>([]);
+  const [currentEvidenceTitle, setCurrentEvidenceTitle] = useState('');
 
   // Tab configuration
   const tabs = [
@@ -81,6 +84,31 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
       case 'risk': return 'risk';
       default: return 'info';
     }
+  };
+
+  // Helper function to transform evidence for EvidenceDrawer
+  const transformEvidenceForDrawer = (evidence: Evidence[], metricLabel: string) => {
+    return evidence.map((item, idx) => ({
+      id: item.ref || `evidence-${idx}`,
+      excerpt: item.context || item.quote || `Evidence from ${item.type}`,
+      metricId: item.ref,
+      sourceDocName: item.document_id || 'Unknown Document',
+      page: item.page,
+      row: undefined, // Not available in current Evidence type
+      link: undefined, // Could be enhanced with document viewer route
+      confidence: item.confidence,
+      type: item.type,
+      documentId: item.document_id,
+      extractedAt: undefined, // Not available in current Evidence type
+      extractedBy: undefined // Not available in current Evidence type
+    }));
+  };
+
+  // Handler for opening evidence drawer
+  const handleOpenEvidence = (evidence: Evidence[], metricLabel: string) => {
+    setCurrentEvidenceItems(transformEvidenceForDrawer(evidence, metricLabel));
+    setCurrentEvidenceTitle(`Evidence for ${metricLabel}`);
+    setEvidenceDrawerOpen(true);
   };
 
   // Overview metrics - health score components and key traffic lights
@@ -300,28 +328,16 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
                 {/* Evidence Button */}
                 {metric.evidence && metric.evidence.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <EvidencePopover
-                      evidence={metric.evidence.map((evidence, idx) => ({
-                        id: evidence.ref || `evidence-${idx}`,
-                        title: `${evidence.type} - ${evidence.ref}`,
-                        description: evidence.context || evidence.quote || `Evidence from ${evidence.type}`,
-                        confidence: evidence.confidence,
-                        source: evidence.document_id,
-                        page: evidence.page,
-                        documentType: evidence.type
-                      }))}
-                      trigger={
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-7 px-2"
-                        >
-                          <Info className="w-3 h-3 mr-1" />
-                          Evidence
-                          <ChevronRight className="w-3 h-3 ml-1" />
-                        </Button>
-                      }
-                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7 px-2"
+                      onClick={() => handleOpenEvidence(metric.evidence!, metric.label)}
+                    >
+                      <Info className="w-3 h-3 mr-1" />
+                      Evidence
+                      <ChevronRight className="w-3 h-3 ml-1" />
+                    </Button>
                     
                     <Badge variant="outline" className="text-xs">
                       {metric.evidence.length} item{metric.evidence.length !== 1 ? 's' : ''}
@@ -351,6 +367,14 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
           </div>
         </div>
       </CardContent>
+      
+      {/* Evidence Drawer */}
+      <EvidenceDrawer
+        open={evidenceDrawerOpen}
+        onOpenChange={setEvidenceDrawerOpen}
+        items={currentEvidenceItems}
+        title={currentEvidenceTitle}
+      />
     </Card>
   );
 }

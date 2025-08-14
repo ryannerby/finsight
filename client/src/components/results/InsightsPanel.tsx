@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, AlertTriangle, Eye, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StrengthRisk } from '../../../../shared/src/types';
+import { StrengthRisk, Evidence } from '../../../../shared/src/types';
+import { EvidenceDrawer } from './EvidenceDrawer';
 
 interface InsightsPanelProps {
   strengths: StrengthRisk[];
@@ -23,6 +24,10 @@ export function InsightsPanel({
   className,
   onViewEvidence 
 }: InsightsPanelProps) {
+  const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
+  const [currentEvidenceItems, setCurrentEvidenceItems] = useState<any[]>([]);
+  const [currentEvidenceTitle, setCurrentEvidenceTitle] = useState('');
+
   // Limit to top 5 items each
   const topStrengths = strengths.slice(0, 5);
   const topRisks = risks.slice(0, 5);
@@ -53,7 +58,32 @@ export function InsightsPanel({
     }
   };
 
+  // Helper function to transform evidence for EvidenceDrawer
+  const transformEvidenceForDrawer = (evidence: Evidence[], itemTitle: string) => {
+    return evidence.map((item, idx) => ({
+      id: item.ref || `evidence-${idx}`,
+      excerpt: item.context || item.quote || `Evidence from ${item.type}`,
+      metricId: item.ref,
+      sourceDocName: item.document_id || 'Unknown Document',
+      page: item.page,
+      row: undefined, // Not available in current Evidence type
+      link: undefined, // Could be enhanced with document viewer route
+      confidence: item.confidence,
+      type: item.type,
+      documentId: item.document_id,
+      extractedAt: undefined, // Not available in current Evidence type
+      extractedBy: undefined // Not available in current Evidence type
+    }));
+  };
+
   const handleViewEvidence = (item: StrengthRisk) => {
+    // Transform evidence for the drawer
+    const evidenceItems = transformEvidenceForDrawer(item.evidence, item.title);
+    setCurrentEvidenceItems(evidenceItems);
+    setCurrentEvidenceTitle(`Evidence for ${item.title}`);
+    setEvidenceDrawerOpen(true);
+
+    // Also call the parent handler if provided
     if (onViewEvidence) {
       onViewEvidence(item);
     }
@@ -174,6 +204,14 @@ export function InsightsPanel({
           </div>
         </CardContent>
       </Card>
+      
+      {/* Evidence Drawer */}
+      <EvidenceDrawer
+        open={evidenceDrawerOpen}
+        onOpenChange={setEvidenceDrawerOpen}
+        items={currentEvidenceItems}
+        title={currentEvidenceTitle}
+      />
     </div>
   );
 }

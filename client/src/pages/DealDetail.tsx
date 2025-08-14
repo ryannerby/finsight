@@ -19,6 +19,8 @@ import { InsightsPanel } from '@/components/results/InsightsPanel';
 import { Recommendation } from '@/components/report/Recommendation';
 import { AppShell } from '@/components/layout/AppShell';
 import { ResultsHeader } from '@/components/results';
+import { ResultsHeaderSkeleton } from '@/components/skeletons';
+import { AnalysisProgress, type AnalysisState } from '@/components/processing';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -84,7 +86,7 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
   );
 };
 
-const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
+const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: number; isAnalyzing?: boolean }) => {
   const userId = 'user_123';
   const { files, refreshFiles } = useFiles(deal.id, userId);
   const [showInventoryDetails, setShowInventoryDetails] = useState(false);
@@ -188,6 +190,32 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     
     return [];
   };
+
+  // Show skeleton loading state when analyzing
+  if (isAnalyzing) {
+    return (
+      <div className="space-y-10">
+        <div className="bg-card text-card-foreground border rounded-lg p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-8 bg-muted/20 rounded animate-pulse w-32" />
+            <div className="h-4 bg-muted/20 rounded animate-pulse w-48" />
+          </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-3">
+                  <div className="h-6 bg-muted/20 rounded animate-pulse w-24" />
+                  <div className="h-8 bg-muted/20 rounded animate-pulse w-16" />
+                  <div className="h-4 bg-muted/20 rounded animate-pulse w-full" />
+                </div>
+              ))}
+            </div>
+            <div className="h-64 bg-muted/20 rounded animate-pulse w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -640,7 +668,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
   );
 };
 
-const EnhancedReportTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
+const EnhancedReportTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: number; isAnalyzing?: boolean }) => {
   const userId = 'user_123';
   const { 
     report, 
@@ -789,6 +817,31 @@ const EnhancedReportTab = ({ deal, refreshKey }: { deal: any; refreshKey: number
     },
     rationale: 'While the company shows strong revenue growth and healthy gross margins, the high debt levels and declining net margins pose significant risks that require careful consideration before proceeding.'
   };
+
+  // Show skeleton loading state when analyzing
+  if (isAnalyzing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-6 bg-muted/20 rounded animate-pulse w-48" />
+            <div className="h-4 bg-muted/20 rounded animate-pulse w-80" />
+          </div>
+          <div className="h-10 bg-muted/20 rounded animate-pulse w-32" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <div className="h-64 bg-muted/20 rounded animate-pulse w-full" />
+            <div className="h-32 bg-muted/20 rounded animate-pulse w-full" />
+          </div>
+          <div className="lg:col-span-2 space-y-4">
+            <div className="h-48 bg-muted/20 rounded animate-pulse w-full" />
+            <div className="h-32 bg-muted/20 rounded animate-pulse w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -1101,6 +1154,9 @@ export default function DealDetail() {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisState, setAnalysisState] = useState<AnalysisState>('queued');
+  const [analysisProgress, setAnalysisProgress] = useState<number>(0);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisRefresh, setAnalysisRefresh] = useState(0);
   const [showUploadOnly, setShowUploadOnly] = useState(false);
   const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
@@ -1109,6 +1165,17 @@ export default function DealDetail() {
     e.preventDefault();
     e.stopPropagation();
     navigate('/deals');
+  };
+
+  const handleRetryAnalysis = () => {
+    setAnalysisError(null);
+    setAnalysisState('queued');
+    setAnalysisProgress(0);
+    // Trigger the analysis button click again
+    const analyzeButton = document.querySelector('[data-analyze-button]') as HTMLButtonElement;
+    if (analyzeButton) {
+      analyzeButton.click();
+    }
   };
 
   useEffect(() => {
@@ -1221,22 +1288,57 @@ export default function DealDetail() {
               Created: {new Date(deal.created_at).toLocaleDateString()}
             </span>
             <Button
+              data-analyze-button
               onClick={async () => {
                 try {
                   setAnalyzing(true);
+                  setAnalysisError(null);
+                  setAnalysisState('queued');
+                  setAnalysisProgress(0);
+                  
+                  // Simulate analysis progress states
+                  setTimeout(() => setAnalysisState('parsing'), 1000);
+                  setTimeout(() => setAnalysisState('computing'), 3000);
+                  setTimeout(() => setAnalysisState('summarizing'), 6000);
+                  
+                  // Simulate progress updates
+                  const progressInterval = setInterval(() => {
+                    setAnalysisProgress(prev => {
+                      if (prev >= 100) {
+                        clearInterval(progressInterval);
+                        return 100;
+                      }
+                      return prev + Math.random() * 15;
+                    });
+                  }, 500);
+                  
                   const res = await fetch(`${API_BASE_URL}/analyze`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
                   });
+                  
                   if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
                     throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
                   }
-                  setAnalysisRefresh((x) => x + 1);
-                  setShowUploadOnly(false); // navigate to overview state
+                  
+                  // Complete the analysis
+                  setAnalysisState('complete');
+                  setAnalysisProgress(100);
+                  clearInterval(progressInterval);
+                  
+                  setTimeout(() => {
+                    setAnalysisRefresh((x) => x + 1);
+                    setShowUploadOnly(false); // navigate to overview state
+                    setAnalyzing(false);
+                  }, 2000);
+                  
                 } catch (e) {
                   const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+                  setAnalysisError(errorMessage);
+                  setAnalysisState('error');
+                  
                   // Check if it's a rate limit error
                   if (errorMessage.includes('Rate limit exceeded') || errorMessage.includes('once per minute')) {
                     // Extract retryAfter from the error message if available
@@ -1245,12 +1347,7 @@ export default function DealDetail() {
                       const retryAfter = parseInt(retryMatch[1]);
                       setRateLimitCooldown(retryAfter);
                     }
-                    alert(`Rate limit exceeded: Please wait before analyzing this deal again. ${errorMessage}`);
-                  } else {
-                    alert(`Analyze failed: ${errorMessage}`);
                   }
-                } finally {
-                  setAnalyzing(false);
                 }
               }}
               disabled={analyzing || rateLimitCooldown > 0}
@@ -1279,17 +1376,28 @@ export default function DealDetail() {
               error={null}
             />
             
+            {/* Analysis Progress */}
+            {analyzing && (
+              <AnalysisProgress
+                state={analysisState}
+                progress={analysisProgress}
+                error={analysisError}
+                onRetry={handleRetryAnalysis}
+                className="mb-6"
+              />
+            )}
+            
             {/* Summary Tab */}
             <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
               <div className="p-6">
-                <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+                <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} isAnalyzing={analyzing} />
               </div>
             </div>
             
             {/* Enhanced Report Tab */}
             <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
               <div className="p-6">
-                <EnhancedReportTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+                <EnhancedReportTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} isAnalyzing={analyzing} />
               </div>
             </div>
           </div>

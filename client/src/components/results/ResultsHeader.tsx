@@ -5,6 +5,7 @@ import { CheckCircle, AlertTriangle, XCircle, TrendingUp, AlertCircle, BarChart3
 import { cn } from '@/lib/utils';
 import { SummaryReport } from '../../../../shared/src/types/SummaryReport';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
+import { ResultsHeaderSkeleton } from '@/components/skeletons';
 
 interface ResultsHeaderProps {
   summaryReport: SummaryReport | null;
@@ -13,10 +14,7 @@ interface ResultsHeaderProps {
   className?: string;
 }
 
-// Skeleton component for loading states
-const Skeleton = ({ className }: { className?: string }) => (
-  <div className={cn("animate-pulse bg-muted/20 rounded", className)} />
-);
+
 
 // Recommendation pill with icon
 const RecommendationPill = ({ recommendation }: { recommendation: SummaryReport['recommendation'] }) => {
@@ -129,29 +127,7 @@ const TopHighlights = ({ summaryReport }: { summaryReport: SummaryReport }) => {
   );
 };
 
-// Loading skeleton for the entire header
-const ResultsHeaderSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-card rounded-lg border">
-    {/* Left - Recommendation skeleton */}
-    <div className="flex flex-col items-center space-y-2">
-      <Skeleton className="w-24 h-8 rounded-full" />
-      <Skeleton className="w-20 h-4" />
-    </div>
-    
-    {/* Center - Health score skeleton */}
-    <div className="flex flex-col items-center space-y-2">
-      <Skeleton className="w-20 h-20 rounded-full" />
-      <Skeleton className="w-16 h-4" />
-    </div>
-    
-    {/* Right - Highlights skeleton */}
-    <div className="flex flex-col space-y-3">
-      {[1, 2, 3].map((i) => (
-        <Skeleton key={i} className="w-full h-16 rounded" />
-      ))}
-    </div>
-  </div>
-);
+// Loading skeleton for the entire header - now imported from skeletons
 
 export function ResultsHeader({ 
   summaryReport, 

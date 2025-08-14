@@ -4,6 +4,9 @@ import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
 import DesignSystem from './pages/DesignSystem';
+import EvidenceDrawerDemo from './pages/EvidenceDrawerDemo';
+import QADemo from './pages/QADemo';
+import IntegrationTest from './components/results/IntegrationTest';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
@@ -62,6 +65,39 @@ function SetupPage() {
           >
             Design System
           </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/evidence-demo');
+            }}
+          >
+            Evidence Drawer Demo
+          </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/integration-test');
+            }}
+          >
+            Integration Test
+          </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/qa-demo');
+            }}
+          >
+            Q&A Module Demo
+          </Button>
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
@@ -101,6 +137,9 @@ export default function App() {
           <Route path="/" element={<SetupPage />} />
           <Route path="/login" element={<SetupPage />} />
           <Route path="/design-system" element={<DesignSystem />} />
+          <Route path="/evidence-demo" element={<EvidenceDrawerDemo />} />
+          <Route path="/qa-demo" element={<QADemo />} />
+          <Route path="/integration-test" element={<IntegrationTest />} />
           <Route path="/deals" element={<DealsList />} />
           <Route path="/deals/new" element={<CreateDeal />} />
           <Route path="/deals/:dealId" element={<DealDetail />} />
@@ -123,6 +162,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/design-system" element={<DesignSystem />} />
+          <Route path="/evidence-demo" element={<EvidenceDrawerDemo />} />
+          <Route path="/qa-demo" element={<QADemo />} />
           <Route path="/deals" element={<Protected><DealsList /></Protected>} />
           <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
           <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />

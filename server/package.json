@@ -9,6 +9,9 @@
     "start": "node dist/index.js",
     "db:generate": "supabase gen types typescript --local > src/types/supabase.ts",
     "seed": "tsx scripts/seedData.ts",
+    "cleanup": "tsx scripts/cleanupDuplicates.ts",
+    "cleanup:all": "tsx scripts/cleanupAll.ts",
+    "add-analyses": "tsx scripts/addAnalyses.ts",
     "schemas:validate": "tsx src/services/validateSchemas.ts"
   },
   "dependencies": {

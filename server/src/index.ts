@@ -13,6 +13,11 @@ import { filesRouter } from './routes/files';
 import { analyzeRouter } from './routes/analyze';
 import { qaRouter } from './routes/qa';
 import { exportRouter } from './routes/export';
+import { analysisReportsRouter } from './routes/analysis-reports';
+import { reportSectionsRouter } from './routes/report-sections';
+import { evidenceItemsRouter } from './routes/evidence-items';
+import { analysesRouter } from './routes/analyses';
+import { logsRouter } from './routes/logs';
 import { initializeDatabase } from './database/init';
 
 const app = express();
@@ -30,6 +35,11 @@ app.use('/api/files', filesRouter);
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/qa', qaRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/analysis-reports', analysisReportsRouter);
+app.use('/api/report-sections', reportSectionsRouter);
+app.use('/api/evidence-items', evidenceItemsRouter);
+app.use('/api/analyses', analysesRouter);
+app.use('/api/logs', logsRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

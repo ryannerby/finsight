@@ -148,7 +148,10 @@ dealsRouter.get('/:id', async (req: Request, res: Response) => {
       .from('deals')
       .select(`
         *,
-        documents:documents(*),
+        documents:documents(
+          *,
+          analyses:analyses(*)
+        ),
         qas:qas(*)
       `)
       .eq('id', id)
