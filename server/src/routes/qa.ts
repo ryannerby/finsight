@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../config/supabase';
-import { anthropicService } from '../services/anthropic';
+// Temporarily comment out all external dependencies to debug
+// import { supabase } from '../config/supabase';
+// import { anthropicService } from '../services/anthropic';
 
 export const qaRouter = Router();
 
@@ -149,123 +150,57 @@ qaRouter.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// AI-powered Q&A endpoint
-qaRouter.post('/ask', async (req: Request, res: Response) => {
+// Simple test endpoint first
+qaRouter.post('/ask-simple', async (req: Request, res: Response) => {
+  console.log('Q&A /ask-simple endpoint called');
   try {
-    const { deal_id, question, context, evidence } = req.body;
+    res.json({ 
+      status: 'ok', 
+      message: 'Simple Q&A endpoint working',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Simple endpoint failed' });
+  }
+});
+
+// Simplified Q&A endpoint for debugging
+qaRouter.post('/ask', async (req: Request, res: Response) => {
+  console.log('Q&A /ask endpoint called');
+  
+  try {
+    const { deal_id, question } = req.body;
 
     if (!deal_id || !question) {
       return res.status(400).json({ error: 'deal_id and question are required' });
     }
 
-    // Build context from deal data or use provided context
-    let dealContext = context;
-    
-    if (!dealContext) {
-      try {
-        // Try to get deal information for context
-        const { data: dealData, error: dealError } = await supabase
-          .from('deals')
-          .select('*')
-          .eq('id', deal_id)
-          .single();
+    console.log('Processing question:', question);
 
-        if (dealError) {
-          console.warn('Could not fetch deal data, using fallback context:', dealError);
-          dealContext = `
-            Deal: ${deal_id}
-            Description: Financial Analysis
-            Industry: General
-            Deal Size: Unknown
-          `;
-        } else {
-          dealContext = `
-            Deal: ${dealData.title || 'Untitled'}
-            Description: ${dealData.description || 'No description'}
-            Industry: ${dealData.industry || 'Unknown'}
-            Deal Size: ${dealData.deal_size || 'Unknown'}
-          `;
-        }
-      } catch (error) {
-        console.warn('Error accessing database, using fallback context:', error);
-        dealContext = `
-          Deal: ${deal_id}
-          Description: Financial Analysis
-          Industry: General
-          Deal Size: Unknown
-        `;
-      }
-    }
-
-    // Generate AI response (with fallback for missing API key)
-    let aiResponse;
-    try {
-      aiResponse = await anthropicService.generateQAInsights(
-        question,
-        dealContext,
-        evidence || []
-      );
-    } catch (error) {
-      console.warn('AI service unavailable, using fallback response:', error);
-      // Fallback response when AI service is not available
-      aiResponse = {
-        content: generateFallbackResponse(question, dealContext),
-        confidence: 0.7,
-        metadata: { fallback: true }
-      };
-    }
-
-    // Try to create Q&A entry with AI response (optional for testing)
-    let qaData = null;
-    try {
-      const { data, error: qaError } = await supabase
-        .from('qas')
-        .insert({
-          deal_id,
-          question,
-          answer: aiResponse.content,
-          context: JSON.stringify({
-            deal_context: dealContext,
-            evidence: evidence || [],
-            ai_confidence: aiResponse.confidence,
-            ai_metadata: aiResponse.metadata
-          })
-        })
-        .select()
-        .single();
-
-      if (qaError) {
-        console.warn('Could not save Q&A entry to database:', qaError);
-        // Continue without database storage for testing
-      } else {
-        qaData = data;
-      }
-    } catch (error) {
-      console.warn('Database operation failed, continuing without storage:', error);
-      // Continue without database storage for testing
-    }
-
-    // Return the AI response with Q&A metadata
-    res.json({
-      id: qaData?.id || `temp-${Date.now()}`,
+    // Simple response without external dependencies
+    const response = {
+      id: `temp-${Date.now()}`,
       deal_id,
       question,
-      answer: aiResponse.content,
-      ai_response: aiResponse.content,
-      confidence: aiResponse.confidence,
-      sources: evidence || [],
-      created_at: qaData?.created_at || new Date().toISOString(),
-      context: qaData?.context || JSON.stringify({
-        deal_context: dealContext,
-        evidence: evidence || [],
-        ai_confidence: aiResponse.confidence,
-        ai_metadata: aiResponse.metadata
+      answer: `This is a test response to: ${question}. The Q&A service is working in debug mode.`,
+      ai_response: `This is a test response to: ${question}. The Q&A service is working in debug mode.`,
+      confidence: 0.8,
+      sources: [],
+      created_at: new Date().toISOString(),
+      context: JSON.stringify({
+        deal_context: `Deal: ${deal_id}`,
+        evidence: [],
+        ai_confidence: 0.8,
+        ai_metadata: { debug: true }
       })
-    });
+    };
+
+    console.log('Sending response:', response);
+    res.json(response);
 
   } catch (error) {
-    console.error('Error in AI Q&A:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error in simplified Q&A:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

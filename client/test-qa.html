@@ -90,8 +90,14 @@
                         Confidence: ${Math.round(data.confidence * 100)}%<br>
                         Response Length: ${data.answer.length} characters<br>
                         <div class="response">
-                            <strong>AI Response Preview:</strong><br>
+                            <strong>Response Preview:</strong><br>
                             ${data.answer.substring(0, 200)}...
+                        </div>
+                        <div class="response">
+                            <strong>Debug Info:</strong><br>
+                            ID: ${data.id}<br>
+                            Deal ID: ${data.deal_id}<br>
+                            Timestamp: ${data.created_at}
                         </div>
                     </div>`;
                 } else {
@@ -111,13 +117,20 @@
             resultDiv.innerHTML = '<div class="loading">Testing frontend integration...</div>';
             
             try {
-                // Test if we can access the Q&A demo page
-                const response = await fetch('http://localhost:5173/qa-demo');
+                // Test if we can access the Q&A demo page (try both ports)
+                let response;
+                try {
+                    response = await fetch('http://localhost:5174/qa-demo');
+                } catch (e) {
+                    response = await fetch('http://localhost:5173/qa-demo');
+                }
+                
                 if (response.ok) {
+                    const port = response.url.includes('5174') ? '5174' : '5173';
                     resultDiv.innerHTML = `<div class="success">
                         <strong>✅ Frontend Integration Working!</strong><br>
-                        Q&A Demo page is accessible<br>
-                        <a href="http://localhost:5173/qa-demo" target="_blank">Open Q&A Demo</a>
+                        Q&A Demo page is accessible on port ${port}<br>
+                        <a href="http://localhost:${port}/qa-demo" target="_blank">Open Q&A Demo</a>
                     </div>`;
                 } else {
                     throw new Error(`HTTP ${response.status}`);
@@ -126,7 +139,7 @@
                 resultDiv.innerHTML = `<div class="error">
                     <strong>❌ Frontend Integration Failed!</strong><br>
                     Error: ${error.message}<br>
-                    Make sure the client is running on port 5173
+                    Make sure the client is running on port 5173 or 5174
                 </div>`;
             }
         }
