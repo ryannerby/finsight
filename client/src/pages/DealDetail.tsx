@@ -18,6 +18,7 @@ import { HealthScore } from '@/components/report/HealthScore';
 import { TrafficLights } from '@/components/report/TrafficLights';
 import { StrengthsRisks } from '@/components/report/StrengthsRisks';
 import { Recommendation } from '@/components/report/Recommendation';
+import { AppShell } from '@/components/layout/AppShell';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -1125,14 +1126,54 @@ export default function DealDetail() {
 
   // Tabs removed in favor of a single consolidated page
 
+  // Extract summary data for AppShell
+  const summary = (() => {
+    let latest: any | null = null;
+    for (const f of files) {
+      for (const a of f.analyses || []) {
+        if (a.analysis_type === 'summary') {
+          if (!latest || new Date(a.created_at) > new Date(latest.created_at)) {
+            latest = a;
+          }
+        }
+      }
+    }
+    return latest;
+  })();
+
+  const financial = (() => {
+    let latest: any | null = null;
+    for (const f of files) {
+      for (const a of f.analyses || []) {
+        if (a.analysis_type === 'financial') {
+          if (!latest || new Date(a.created_at) > new Date(latest.created_at)) {
+            latest = a;
+          }
+        }
+      }
+    }
+    return latest;
+  })();
+
+  const healthScore = summary?.analysis_result?.health_score;
+  const recommendation = summary?.analysis_result?.recommendation;
+  const computedMetrics = financial?.analysis_result?.metrics || {};
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3">
+    <AppShell
+      dealName={deal.title}
+      healthScore={healthScore}
+      recommendation={recommendation}
+      dealId={deal.id}
+      summaryReport={summary?.analysis_result}
+      computedMetrics={computedMetrics}
+      onUploadClick={() => setShowUploadOnly(true)}
+    >
+      <div className="max-w-5xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
             <div>
-              <h1 className="text-2xl font-bold">{deal.title}</h1>
               {deal.description && <p className="text-muted-foreground">{deal.description}</p>}
             </div>
           </div>
@@ -1275,6 +1316,6 @@ export default function DealDetail() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }
