@@ -651,7 +651,7 @@ export default function DealDetail() {
 
   // If there are no files uploaded yet, default to upload-only onboarding view
   const userId = 'user_123';
-  const { files, refreshFiles } = useFiles(dealId, userId);
+  const { files } = useFiles(dealId, userId);
   useEffect(() => {
     setShowUploadOnly((files || []).length === 0);
   }, [files]);

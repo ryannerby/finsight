@@ -2,7 +2,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { UploadProgress } from '@/components/UploadProgress';
