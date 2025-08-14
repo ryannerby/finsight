@@ -19,6 +19,7 @@ import { TrafficLights } from '@/components/report/TrafficLights';
 import { StrengthsRisks } from '@/components/report/StrengthsRisks';
 import { Recommendation } from '@/components/report/Recommendation';
 import { AppShell } from '@/components/layout/AppShell';
+import { ResultsHeader } from '@/components/results';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -1236,6 +1237,13 @@ export default function DealDetail() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Results Header - Most Important Info First */}
+            <ResultsHeader 
+              summaryReport={summary?.analysis_result}
+              isLoading={analyzing}
+              error={null}
+            />
+            
             {/* Summary Tab */}
             <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
               <div className="p-6">

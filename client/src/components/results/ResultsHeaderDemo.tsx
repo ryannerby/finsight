@@ -166,16 +166,28 @@ const mockSummaryReport: SummaryReport = {
     ]
   },
   export_ready: {
-    pdf: true,
-    excel: true,
-    word: false,
-    last_export: '2024-01-15T10:30:00Z',
-    export_metadata: {
-      generated_by: 'AI Analysis Engine v2.1',
-      template_version: '2024.1',
-      includes_charts: true,
-      includes_evidence: true
-    }
+    pdf_title: 'Financial Analysis Report',
+    executive_summary: 'Comprehensive financial health assessment with key insights and recommendations.',
+    key_metrics_table: [
+      {
+        metric: 'Revenue Growth',
+        value: '15% CAGR',
+        trend: 'improving',
+        benchmark: 'Industry: 8%'
+      },
+      {
+        metric: 'Gross Margin',
+        value: '45%',
+        trend: 'stable',
+        benchmark: 'Industry: 42%'
+      },
+      {
+        metric: 'Debt-to-Equity',
+        value: '2.5x',
+        trend: 'declining',
+        benchmark: 'Industry: 1.8x'
+      }
+    ]
   }
 };
 
@@ -187,13 +199,13 @@ export function ResultsHeaderDemo() {
       {/* Loading State */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Loading State</h2>
-        <ResultsHeader isLoading={true} />
+        <ResultsHeader isLoading={true} summaryReport={null} />
       </div>
 
       {/* Error State */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Error State</h2>
-        <ResultsHeader error="Failed to load analysis data" />
+        <ResultsHeader error="Failed to load analysis data" summaryReport={null} />
       </div>
 
       {/* No Data State */}
