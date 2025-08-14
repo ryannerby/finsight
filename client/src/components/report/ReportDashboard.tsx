@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { SummaryReport } from '../../../../shared/src/types/SummaryReport';
 import { HealthPanel } from '../results/HealthPanel';
-import { StrengthsRisks } from './StrengthsRisks';
+import { InsightsPanel } from '../results/InsightsPanel';
 import { Recommendation } from './Recommendation';
 import { ExportButtons } from './ExportButtons';
 
@@ -143,26 +143,11 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
 
         <Separator />
 
-        {/* Strengths & Risks */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-green-700">Key Strengths</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StrengthsRisks strengths={report.top_strengths} risks={[]} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-red-700">Key Risks</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StrengthsRisks strengths={[]} risks={report.top_risks} />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Insights Panel - Centralized Strengths & Risks */}
+        <InsightsPanel 
+          strengths={report.top_strengths}
+          risks={report.top_risks}
+        />
 
         <Separator />
 

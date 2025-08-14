@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { mockEnhancedReport } from './mockEnhancedReport';
 import { HealthPanel } from '../results/HealthPanel';
-import { StrengthsRisks } from './StrengthsRisks';
+import { InsightsPanel } from '../results/InsightsPanel';
 import { Recommendation } from './Recommendation';
 import { ReportDashboard } from './ReportDashboard';
 
@@ -46,8 +46,8 @@ export default function ReportDemo() {
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-3">Strengths & Risks Component</h3>
-              <StrengthsRisks 
+              <h3 className="text-lg font-semibold mb-3">Insights Panel Component</h3>
+              <InsightsPanel 
                 strengths={mockEnhancedReport.top_strengths} 
                 risks={mockEnhancedReport.top_risks} 
               />

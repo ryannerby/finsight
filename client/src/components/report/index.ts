@@ -2,7 +2,7 @@
 export { ReportDashboard } from './ReportDashboard';
 export { HealthScore } from './HealthScore';
 export { TrafficLights } from './TrafficLights';
-export { StrengthsRisks } from './StrengthsRisks';
+
 export { Recommendation } from './Recommendation';
 export { ExportButtons } from './ExportButtons';
 export { EvidencePopover } from './EvidencePopover';

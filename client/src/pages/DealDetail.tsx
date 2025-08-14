@@ -15,7 +15,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { useFiles } from '@/hooks/useFiles';
 import { useAnalysisReport } from '@/hooks/useAnalysisReport';
 import { HealthPanel } from '@/components/results/HealthPanel';
-import { StrengthsRisks } from '@/components/report/StrengthsRisks';
+import { InsightsPanel } from '@/components/results/InsightsPanel';
 import { Recommendation } from '@/components/report/Recommendation';
 import { AppShell } from '@/components/layout/AppShell';
 import { ResultsHeader } from '@/components/results';
@@ -1002,9 +1002,9 @@ const EnhancedReportTab = ({ deal, refreshKey }: { deal: any; refreshKey: number
           />
         </div>
 
-        {/* Strengths and Risks */}
+        {/* Insights Panel - Centralized Strengths & Risks */}
         <div className="lg:col-span-2">
-          <StrengthsRisks 
+          <InsightsPanel 
             strengths={mockData.strengths}
             risks={mockData.risks}
           />
