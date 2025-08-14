@@ -183,10 +183,23 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     // Save financial analysis row, anchored to a representative document
     const representativeDocId = documents[0].id;
 
+    // Extract revenue data for charting
+    const revenueData: { year: string; revenue: number }[] = [];
+    for (const period of periods) {
+      const revenue = mergedCanon[period]?.revenue;
+      if (typeof revenue === 'number' && revenue > 0) {
+        revenueData.push({
+          year: period,
+          revenue: revenue
+        });
+      }
+    }
+
     const dealMetrics = {
       deal_id: dealId,
       metrics,
-      coverage: { periodicity }
+      coverage: { periodicity },
+      revenue_data: revenueData
     };
 
     t0 = Date.now();
