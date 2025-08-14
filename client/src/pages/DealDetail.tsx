@@ -8,6 +8,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
+import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
 
 import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
@@ -185,9 +186,20 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
   return (
     <div className="space-y-10">
-      <div className="bg-card text-card-foreground border rounded-lg p-8">
+      {/* Disclaimers */}
+      <div className="space-y-4">
+        <FinancialDisclaimer />
+        <AnalysisDisclaimer />
+      </div>
+
+      <div className="bg-card text-card-foreground border rounded-lg p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold tracking-tight">Deal Summary</h3>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight">Deal Summary</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Comprehensive financial analysis and due diligence overview
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             {financial && (
               <span className="text-sm text-muted-foreground">Updated {new Date(financial.created_at).toLocaleString()}</span>
@@ -198,8 +210,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 variant="outline"
                 onClick={async () => {
                   try {
-                    // Generate HTML content for PDF export
-                    const summaryContent = document.querySelector('.bg-card.text-card-foreground.border.rounded-lg.p-8')?.innerHTML || '';
+                    // Generate enhanced HTML content for PDF export
                     const htmlContent = `
                       <!DOCTYPE html>
                       <html>
@@ -207,28 +218,168 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                           <meta charset="utf-8">
                           <title>Deal Summary - ${deal.title}</title>
                           <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0; }
-                            .metric-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; }
-                            .health-score { font-size: 24px; font-weight: bold; margin: 20px 0; }
-                            .recommendation { margin: 20px 0; }
-                            .traffic-lights { margin: 20px 0; }
-                            .traffic-light { display: inline-block; margin: 5px; padding: 5px 10px; border-radius: 4px; }
-                            .green { background-color: #dcfce7; color: #166534; }
-                            .yellow { background-color: #fef3c7; color: #92400e; }
-                            .red { background-color: #fee2e2; color: #991b1b; }
+                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                            * { margin: 0; padding: 0; box-sizing: border-box; }
+                            body { 
+                              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+                              line-height: 1.6; 
+                              color: #1f2937; 
+                              background: #ffffff;
+                              padding: 40px;
+                            }
+                            .header { 
+                              text-align: center; 
+                              margin-bottom: 40px; 
+                              padding-bottom: 20px;
+                              border-bottom: 2px solid #e5e7eb;
+                            }
+                            .header h1 { 
+                              font-size: 32px; 
+                              font-weight: 700; 
+                              color: #111827; 
+                              margin-bottom: 8px;
+                            }
+                            .header .subtitle { 
+                              font-size: 16px; 
+                              color: #6b7280; 
+                              font-weight: 500;
+                            }
+                            .disclaimer {
+                              background: #fef3c7;
+                              border: 1px solid #f59e0b;
+                              border-radius: 8px;
+                              padding: 16px;
+                              margin-bottom: 30px;
+                              font-size: 14px;
+                              color: #92400e;
+                            }
+                            .disclaimer strong { font-weight: 600; }
+                            .health-section {
+                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                              border-radius: 12px;
+                              padding: 24px;
+                              margin-bottom: 30px;
+                              text-align: center;
+                            }
+                            .health-score {
+                              font-size: 48px;
+                              font-weight: 700;
+                              color: #059669;
+                              margin-bottom: 8px;
+                            }
+                            .recommendation {
+                              font-size: 20px;
+                              font-weight: 600;
+                              margin-bottom: 16px;
+                            }
+                            .traffic-lights {
+                              display: flex;
+                              justify-content: center;
+                              gap: 12px;
+                              flex-wrap: wrap;
+                            }
+                            .traffic-light {
+                              padding: 8px 16px;
+                              border-radius: 20px;
+                              font-size: 12px;
+                              font-weight: 600;
+                              text-transform: uppercase;
+                            }
+                            .green { background: #dcfce7; color: #166534; }
+                            .yellow { background: #fef3c7; color: #92400e; }
+                            .red { background: #fee2e2; color: #991b1b; }
+                            .metrics-section {
+                              margin-bottom: 30px;
+                            }
+                            .metrics-grid {
+                              display: grid;
+                              grid-template-columns: repeat(3, 1fr);
+                              gap: 20px;
+                              margin: 20px 0;
+                            }
+                            .metric-card {
+                              background: #ffffff;
+                              border: 1px solid #e5e7eb;
+                              border-radius: 12px;
+                              padding: 20px;
+                              text-align: center;
+                              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .metric-label {
+                              font-size: 14px;
+                              color: #6b7280;
+                              font-weight: 500;
+                              margin-bottom: 8px;
+                              text-transform: uppercase;
+                              letter-spacing: 0.5px;
+                            }
+                            .metric-value {
+                              font-size: 24px;
+                              font-weight: 700;
+                              color: #111827;
+                            }
+                            .section-title {
+                              font-size: 20px;
+                              font-weight: 600;
+                              color: #111827;
+                              margin-bottom: 16px;
+                              padding-bottom: 8px;
+                              border-bottom: 1px solid #e5e7eb;
+                            }
+                            .footer {
+                              margin-top: 40px;
+                              padding-top: 20px;
+                              border-top: 1px solid #e5e7eb;
+                              text-align: center;
+                              font-size: 12px;
+                              color: #6b7280;
+                            }
+                            .page-break { page-break-before: always; }
                           </style>
                         </head>
                         <body>
-                          <h1>Deal Summary - ${deal.title}</h1>
-                          <div class="health-score">Health Score: ${summary?.analysis_result?.health_score || 'N/A'}/100</div>
-                          <div class="recommendation">Recommendation: ${summary?.analysis_result?.recommendation || 'N/A'}</div>
-                          <div class="traffic-lights">
-                            ${Object.entries(summary?.analysis_result?.traffic_lights || {}).map(([k, v]: any) => 
-                              `<span class="traffic-light ${v}">${String(k).replace(/_/g, ' ')}: ${v}</span>`
-                            ).join('')}
+                          <div class="header">
+                            <h1>Deal Summary</h1>
+                            <div class="subtitle">${deal.title}</div>
+                            <div style="margin-top: 8px; font-size: 14px; color: #6b7280;">
+                              Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+                            </div>
                           </div>
-                          ${summaryContent}
+
+                          <div class="disclaimer">
+                            <strong>⚠️ Not Financial Advice:</strong> This analysis is for informational purposes only and should not be considered as financial, investment, or legal advice. Always consult with qualified professionals before making investment decisions.
+                          </div>
+
+                          <div class="health-section">
+                            <div class="health-score">${summary?.analysis_result?.health_score || 'N/A'}/100</div>
+                            <div class="recommendation">${summary?.analysis_result?.recommendation || 'N/A'}</div>
+                            <div class="traffic-lights">
+                              ${Object.entries(summary?.analysis_result?.traffic_lights || {}).map(([k, v]: any) => 
+                                `<span class="traffic-light ${v}">${String(k).replace(/_/g, ' ')}</span>`
+                              ).join('')}
+                            </div>
+                          </div>
+
+                          <div class="metrics-section">
+                            <div class="section-title">Key Financial Metrics</div>
+                            <div class="metrics-grid">
+                              ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity'].map(k => {
+                                const value = metrics[k];
+                                const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+                                return `
+                                  <div class="metric-card">
+                                    <div class="metric-label">${k.replace(/_/g, ' ')}</div>
+                                    <div class="metric-value">${formattedValue}</div>
+                                  </div>
+                                `;
+                              }).join('')}
+                            </div>
+                          </div>
+
+                          <div class="footer">
+                            <p>Generated by Finsight - Financial Analysis Platform</p>
+                            <p>This report contains AI-generated analysis and should be reviewed by qualified professionals.</p>
+                          </div>
                         </body>
                       </html>
                     `;
@@ -376,9 +527,14 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
       {/* Executive summary (LLM) */}
       {summary && summary.analysis_result && (
-        <div className="bg-card text-card-foreground border rounded-lg p-6">
-          <div className="flex flex-wrap items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">Executive Summary</h3>
+        <div className="bg-card text-card-foreground border rounded-lg p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold">Executive Summary</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI-generated insights and key findings
+              </p>
+            </div>
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
               <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setExecOpen(v=>!v)}>{execOpen ? 'Hide' : 'Show'}</Button>
@@ -388,26 +544,32 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           <div className={execOpen ? '' : 'hidden sm:block'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold mb-2">Top strengths</h4>
-              <ul className="space-y-2">
+              <h4 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Top Strengths
+              </h4>
+              <ul className="space-y-3">
                 {(summary.analysis_result.top_strengths || []).map((it: any, idx: number) => (
-                  <li key={`str-${idx}`} className="border rounded-lg p-3">
-                    <div className="font-medium">{it.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {it.evidence} {it.page ? <span className="ml-2">(page {it.page})</span> : null}
+                  <li key={`str-${idx}`} className="border border-green-200 rounded-lg p-4 bg-green-50/50">
+                    <div className="font-medium text-green-900">{it.title}</div>
+                    <div className="text-sm text-green-700 mt-1">
+                      {it.evidence} {it.page ? <span className="ml-2 text-green-600">(page {it.page})</span> : null}
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Top risks</h4>
-              <ul className="space-y-2">
+              <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                Top Risks
+              </h4>
+              <ul className="space-y-3">
                 {(summary.analysis_result.top_risks || []).map((it: any, idx: number) => (
-                  <li key={`risk-${idx}`} className="border rounded-lg p-3">
-                    <div className="font-medium">{it.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {it.evidence} {it.page ? <span className="ml-2">(page {it.page})</span> : null}
+                  <li key={`risk-${idx}`} className="border border-red-200 rounded-lg p-4 bg-red-50/50">
+                    <div className="font-medium text-red-900">{it.title}</div>
+                    <div className="text-sm text-red-700 mt-1">
+                      {it.evidence} {it.page ? <span className="ml-2 text-red-600">(page {it.page})</span> : null}
                     </div>
                   </li>
                 ))}
@@ -420,9 +582,14 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
       {/* Deterministic Due Diligence Signals */}
       {ddSignals && ddSignals.analysis_result && (
-        <div className="bg-card text-card-foreground border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold">Due Diligence Signals</h3>
+        <div className="bg-card text-card-foreground border rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold">Due Diligence Signals</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Automated financial health indicators and risk assessment
+              </p>
+            </div>
             <div className="flex items-center gap-3">
               <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
               <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setSignalsOpen(v=>!v)}>{signalsOpen ? 'Hide' : 'Show'}</Button>
@@ -432,7 +599,35 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           <div className={signalsOpen ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
             {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
               const status = v?.status as string;
-              const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
+              const getStatusConfig = (status: string) => {
+                switch (status) {
+                  case 'pass': return {
+                    bg: 'bg-green-50 border-green-200',
+                    text: 'text-green-800',
+                    badge: 'bg-green-100 text-green-700',
+                    icon: '✓'
+                  };
+                  case 'caution': return {
+                    bg: 'bg-yellow-50 border-yellow-200',
+                    text: 'text-yellow-800',
+                    badge: 'bg-yellow-100 text-yellow-700',
+                    icon: '⚠'
+                  };
+                  case 'fail': return {
+                    bg: 'bg-red-50 border-red-200',
+                    text: 'text-red-800',
+                    badge: 'bg-red-100 text-red-700',
+                    icon: '✗'
+                  };
+                  default: return {
+                    bg: 'bg-gray-50 border-gray-200',
+                    text: 'text-gray-600',
+                    badge: 'bg-gray-100 text-gray-600',
+                    icon: '—'
+                  };
+                }
+              };
+              const config = getStatusConfig(status);
               const formatSignalValue = (name: string, value: any) => {
                 if (typeof value !== 'number') return null;
                 if (name === 'working_capital_ccc') return `${Math.round(value)} days`;
@@ -441,21 +636,21 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 return value.toFixed(3);
               };
               return (
-                <div key={k} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      {status === 'pass' && <span aria-hidden>✓</span>}
-                      {status === 'caution' && <span aria-hidden>⚠</span>}
-                      {(!status || status === 'na') && <span aria-hidden>—</span>}
+                <div key={k} className={`border rounded-lg p-4 ${config.bg}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`text-sm font-medium ${config.text} flex items-center gap-2`}>
+                      <span aria-hidden>{config.icon}</span>
                       <span>{String(k).replace(/_/g,' ')}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`} aria-label={`Status ${status || 'NA'}`}>{status?.toUpperCase() || 'NA'}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${config.badge}`} aria-label={`Status ${status || 'NA'}`}>
+                      {status?.toUpperCase() || 'NA'}
+                    </span>
                   </div>
                   {v?.value != null && (
-                    <div className="text-xl font-semibold text-foreground">{formatSignalValue(k, v.value)}</div>
+                    <div className={`text-xl font-bold ${config.text}`}>{formatSignalValue(k, v.value)}</div>
                   )}
                   {v?.detail && (
-                    <div className="text-xs text-muted-foreground mt-1">{v.detail}</div>
+                    <div className={`text-xs ${config.text} opacity-80 mt-1`}>{v.detail}</div>
                   )}
                 </div>
               );
@@ -466,9 +661,14 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
       {/* Due Diligence Checklist (LLM) */}
       {ddChecklist && ddChecklist.analysis_result && (
-        <div className="bg-card text-card-foreground border rounded-lg p-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+        <div className="bg-card text-card-foreground border rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Due Diligence Checklist</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                AI-generated checklist of key due diligence items
+              </p>
+            </div>
             <span className="text-sm text-muted-foreground">Updated {new Date(ddChecklist.created_at).toLocaleString()}</span>
           </div>
           {(() => {
@@ -476,41 +676,51 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
             const groups: Record<string, any[]> = { todo: [], in_progress: [], done: [], na: [] };
             items.forEach(it => { if (groups[it.status]) groups[it.status].push(it); });
             const chip = (label: string, count: number, color: string) => (
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>{label}: {count}</span>
+              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${color}`}>{label}: {count}</span>
             );
             const riskItems = [...groups.todo, ...groups.in_progress].slice(0, 5);
             const oppItems = groups.done.slice(0, 5);
             return (
               <>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
-                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
-                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
-                  {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700 border border-red-200')}
+                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700 border border-yellow-200')}
+                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700 border border-green-200')}
+                  {chip('N/A', groups.na.length, 'bg-gray-100 text-gray-600 border border-gray-200')}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold mb-2">Top risks</h4>
-                    <ul className="space-y-2">
+                    <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      Priority Items
+                    </h4>
+                    <ul className="space-y-3">
                       {riskItems.map((it, idx) => (
-                        <li key={`riskc-${idx}`} className="border rounded-lg p-3">
-                          <div className="font-medium">{it.label}</div>
-                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        <li key={`riskc-${idx}`} className="border border-red-200 rounded-lg p-4 bg-red-50/50">
+                          <div className="font-medium text-red-900">{it.label}</div>
+                          {it.notes && <div className="text-sm text-red-700 mt-1">{it.notes}</div>}
                         </li>
                       ))}
-                      {riskItems.length === 0 && <div className="text-sm text-muted-foreground">No immediate risks identified.</div>}
+                      {riskItems.length === 0 && (
+                        <div className="text-sm text-muted-foreground italic">No immediate risks identified.</div>
+                      )}
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Top opportunities</h4>
-                    <ul className="space-y-2">
+                    <h4 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Completed Items
+                    </h4>
+                    <ul className="space-y-3">
                       {oppItems.map((it, idx) => (
-                        <li key={`oppc-${idx}`} className="border rounded-lg p-3">
-                          <div className="font-medium">{it.label}</div>
-                          {it.notes && <div className="text-xs text-muted-foreground mt-1">{it.notes}</div>}
+                        <li key={`oppc-${idx}`} className="border border-green-200 rounded-lg p-4 bg-green-50/50">
+                          <div className="font-medium text-green-900">{it.label}</div>
+                          {it.notes && <div className="text-sm text-green-700 mt-1">{it.notes}</div>}
                         </li>
                       ))}
-                      {oppItems.length === 0 && <div className="text-sm text-muted-foreground">No completed items yet.</div>}
+                      {oppItems.length === 0 && (
+                        <div className="text-sm text-muted-foreground italic">No completed items yet.</div>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -533,12 +743,17 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         const periodicities = Object.values(cov).map((v: any) => v?.periodicity).filter(Boolean) as string[];
         const periodicitySummary = periodicities.length === 0 ? '—' : new Set(periodicities).size === 1 ? periodicities[0] as string : 'mixed';
         return (
-          <div className="bg-card text-card-foreground border rounded-lg p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="bg-card text-card-foreground border rounded-lg p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold">Document Inventory</h3>
+                <div>
+                  <h3 className="text-lg font-semibold">Document Inventory</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Document completeness and coverage analysis
+                  </p>
+                </div>
                 <button
-                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-800"
                   onClick={() => setShowInventoryWhy((v) => !v)}
                 >
                   {showInventoryWhy ? 'Hide why' : 'Why this matters'}
@@ -551,62 +766,69 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
             </div>
             <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(inventory.created_at).toLocaleString()}</span>
             {showInventoryWhy && (
-              <div className="text-sm text-muted-foreground mb-4">
-                Ensures you have the minimum financial statements needed to compute metrics and run diligence. Missing items often block ratio analysis, cohort views, and cash conversion calculations.
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Why Document Inventory Matters:</p>
+                  <p>Ensures you have the minimum financial statements needed to compute metrics and run diligence. Missing items often block ratio analysis, cohort views, and cash conversion calculations.</p>
+                </div>
               </div>
             )}
             {/* Summary strip */}
-            <div className="space-y-3 mb-3">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Completion</span>
-                  <span className="text-muted-foreground">{presentCount}/{expectedCount}</span>
+            <div className="space-y-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold text-lg">Completion</span>
+                  <span className="text-2xl font-bold text-blue-600">{presentCount}/{expectedCount}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="success">present: {presentCount}</Badge>
-                  <Badge variant="destructive">missing: {missingCount}</Badge>
-                  <Badge variant="muted">periodicity: {periodicitySummary}</Badge>
+                  <Badge variant="success" className="px-3 py-1">Present: {presentCount}</Badge>
+                  <Badge variant="destructive" className="px-3 py-1">Missing: {missingCount}</Badge>
+                  <Badge variant="muted" className="px-3 py-1">Periodicity: {periodicitySummary}</Badge>
                 </div>
               </div>
-              <div className="h-3 w-full bg-muted/30 rounded">
-                <div
-                  className={`h-3 rounded transition-all duration-300 ${completionPct >= 80 ? 'bg-green-500' : completionPct >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                  style={{ width: `${completionPct}%` }}
-                />
+              <div className="space-y-2">
+                <div className="h-4 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-4 rounded-full transition-all duration-500 ${
+                      completionPct >= 80 ? 'bg-green-500' : completionPct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+                <div className="text-right text-sm font-medium text-gray-600">{completionPct}% Complete</div>
               </div>
-              <div className="text-right text-xs text-muted-foreground">{completionPct}%</div>
             </div>
             <div className={inventoryOpen ? '' : 'hidden sm:block'}>
             {/* Details toggle */}
-            <div className="flex items-center justify-end mb-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowInventoryDetails((v) => !v)}>
+            <div className="flex items-center justify-end mb-3">
+              <Button size="sm" variant="outline" onClick={() => setShowInventoryDetails((v) => !v)}>
                 {showInventoryDetails ? 'Hide details' : 'Show details'}
               </Button>
             </div>
             {showInventoryDetails && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="border rounded-lg p-3">
-                    <div className="text-sm text-muted-foreground mb-2">Expected</div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="text-sm font-semibold text-gray-700 mb-3">Expected Documents</div>
                     <div className="flex flex-wrap gap-2">
                       {expected.map((x: string) => (
-                        <Badge key={`exp-${x}`} variant="muted">{x.replace(/_/g,' ')}</Badge>
+                        <Badge key={`exp-${x}`} variant="muted" className="text-xs">{x.replace(/_/g,' ')}</Badge>
                       ))}
                     </div>
                   </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="text-sm text-muted-foreground mb-2">Present</div>
+                  <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                    <div className="text-sm font-semibold text-green-700 mb-3">Present Documents</div>
                     <div className="flex flex-wrap gap-2">
                       {present.map((x: string) => (
-                        <Badge key={`pre-${x}`} variant="success">{x.replace(/_/g,' ')}</Badge>
+                        <Badge key={`pre-${x}`} variant="success" className="text-xs">{x.replace(/_/g,' ')}</Badge>
                       ))}
                     </div>
                   </div>
-                  <div className="border rounded-lg p-3">
-                    <div className="text-sm text-muted-foreground mb-2">Missing</div>
+                  <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                    <div className="text-sm font-semibold text-red-700 mb-3">Missing Documents</div>
                     <div className="flex flex-wrap gap-2">
                       {missing.map((x: string) => (
-                        <Badge key={`mis-${x}`} variant="destructive">{x.replace(/_/g,' ')}</Badge>
+                        <Badge key={`mis-${x}`} variant="destructive" className="text-xs">{x.replace(/_/g,' ')}</Badge>
                       ))}
                     </div>
                   </div>
@@ -614,10 +836,13 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 {Object.keys(cov).length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {Object.entries(cov).map(([k, v]: any) => (
-                      <div key={`cov-${k}`} className="border rounded-lg p-3">
-                        <div className="text-sm font-medium mb-1">{String(k).replace(/_/g,' ')}</div>
-                        <div className="text-xs text-muted-foreground">{v?.periods ?? '—'} periods over {v?.years ?? '—'} years</div>
-                        <div className="text-xs text-muted-foreground">periodicity: {v?.periodicity ?? '—'}</div>
+                      <div key={`cov-${k}`} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                        <div className="text-sm font-semibold text-blue-700 mb-2">{String(k).replace(/_/g,' ')}</div>
+                        <div className="text-xs text-blue-600 space-y-1">
+                          <div>Periods: {v?.periods ?? '—'}</div>
+                          <div>Years: {v?.years ?? '—'}</div>
+                          <div>Periodicity: {v?.periodicity ?? '—'}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
