@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip } from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { qaService, type QAMessage, type Source } from '@/services/qaService';
 import { 
   MessageSquare, 
   Send, 
@@ -20,23 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Types
-interface QAMessage {
-  id: string;
-  question: string;
-  answer: string;
-  timestamp: Date;
-  sources?: Source[];
-  status: 'streaming' | 'completed' | 'error';
-}
-
-interface Source {
-  id: string;
-  title: string;
-  type: string;
-  confidence: number;
-  excerpt: string;
-}
+// Types are now imported from qaService
 
 interface QASectionProps {
   dealId?: string;
@@ -65,10 +50,40 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load Q&A history on mount
+  useEffect(() => {
+    if (dealId) {
+      loadHistory();
+    }
+  }, [dealId]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingMessage]);
+
+  // Load Q&A history from the service
+  const loadHistory = async () => {
+    if (!dealId) return;
+    
+    try {
+      const history = await qaService.getHistory(dealId);
+      const formattedMessages: QAMessage[] = history.map(item => ({
+        id: item.id,
+        question: item.question,
+        answer: item.answer,
+        timestamp: new Date(item.created_at),
+        status: 'completed',
+        sources: qaService.generateMockSources(item.question),
+        confidence: 0.9
+      }));
+      
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Failed to load Q&A history:', error);
+      // Continue with empty messages array
+    }
+  };
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -81,6 +96,12 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
   // Handle question submission
   const handleSubmit = async () => {
     if (!question.trim() || isLoading) return;
+
+    // If no dealId, use demo mode
+    if (!dealId) {
+      await handleDemoSubmit();
+      return;
+    }
 
     const newMessage: QAMessage = {
       id: Date.now().toString(),
@@ -97,57 +118,101 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
     setStreamingId(newMessage.id);
     setStreamingMessage('');
 
-    // Simulate streaming response (replace with actual API call)
-    await simulateStreamingResponse(newMessage.id);
+    try {
+      // Ask the question using the real Q&A service
+      const response = await qaService.askQuestion({
+        deal_id: dealId,
+        question: newMessage.question
+      });
+
+      // Update the message with the real response
+      setMessages(prev => prev.map(msg => 
+        msg.id === newMessage.id 
+          ? { 
+              ...msg, 
+              answer: response.ai_response, 
+              status: 'completed',
+              sources: qaService.generateMockSources(newMessage.question),
+              confidence: response.confidence
+            }
+          : msg
+      ));
+
+    } catch (error) {
+      console.error('Failed to get answer:', error);
+      
+      // Update the message with error status
+      setMessages(prev => prev.map(msg => 
+        msg.id === newMessage.id 
+          ? { ...msg, status: 'error' }
+          : msg
+      ));
+    } finally {
+      setStreamingMessage('');
+      setStreamingId(null);
+      setIsLoading(false);
+    }
   };
 
-  // Simulate streaming response (replace with actual streaming logic)
-  const simulateStreamingResponse = async (messageId: string) => {
-    const sampleAnswer = `Based on the financial analysis, I can provide insights about your question. The data shows several key trends and patterns that are worth noting. Let me break this down into the most important points for your consideration.`;
-    
-    let currentText = '';
-    const words = sampleAnswer.split(' ');
-    
-    for (let i = 0; i < words.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
-      currentText += (i > 0 ? ' ' : '') + words[i];
-      setStreamingMessage(currentText);
-    }
+  // Demo mode for testing without a dealId
+  const handleDemoSubmit = async () => {
+    const newMessage: QAMessage = {
+      id: Date.now().toString(),
+      question: question.trim(),
+      answer: '',
+      timestamp: new Date(),
+      status: 'streaming',
+      sources: []
+    };
 
-    // Complete the message
+    setMessages(prev => [newMessage, ...prev]);
+    setQuestion('');
+    setIsLoading(true);
+    setStreamingId(newMessage.id);
+
+    // Simulate AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Generate a demo response based on the question
+    const demoResponse = generateDemoResponse(newMessage.question);
+    
+    // Update the message with the demo response
     setMessages(prev => prev.map(msg => 
-      msg.id === messageId 
+      msg.id === newMessage.id 
         ? { 
             ...msg, 
-            answer: currentText, 
+            answer: demoResponse, 
             status: 'completed',
-            sources: generateMockSources()
+            sources: qaService.generateMockSources(newMessage.question),
+            confidence: 0.85
           }
         : msg
     ));
 
-    setStreamingMessage('');
     setStreamingId(null);
     setIsLoading(false);
   };
 
-  // Generate mock sources (replace with actual data)
-  const generateMockSources = (): Source[] => [
-    {
-      id: '1',
-      title: 'Financial Statements 2023',
-      type: 'Income Statement',
-      confidence: 0.95,
-      excerpt: 'Revenue growth of 15% year-over-year with improving margins...'
-    },
-    {
-      id: '2',
-      title: 'Balance Sheet Analysis',
-      type: 'Balance Sheet',
-      confidence: 0.88,
-      excerpt: 'Working capital improved by $2.3M due to better inventory management...'
+  // Generate demo responses for testing
+  const generateDemoResponse = (question: string): string => {
+    const questionLower = question.toLowerCase();
+    
+    if (questionLower.includes('margin') || questionLower.includes('gross')) {
+      return `Based on the financial analysis, gross margins have shown a positive trend over the last three years. The data indicates margins improved from 28% in 2021 to 32% in 2023, representing a 4 percentage point increase. This improvement is primarily driven by operational efficiency gains and pricing optimization strategies. The trend suggests strong cost management and pricing power, which are positive indicators for the business.`;
+    } else if (questionLower.includes('working capital') || questionLower.includes('ccc')) {
+      return `The working capital cycle analysis shows significant improvement over the past year. The cash conversion cycle (CCC) has decreased from 45 days to 38 days, indicating better working capital efficiency. This improvement is attributed to faster receivables collection (down from 32 to 28 days) and optimized inventory management (reduced from 25 to 22 days). The company has also extended payables slightly from 12 to 16 days, contributing to overall working capital optimization.`;
+    } else if (questionLower.includes('cash flow') || questionLower.includes('operations')) {
+      return `Cash flow from operations has demonstrated strong performance with a 22% year-over-year increase. The improvement is primarily driven by better working capital management and operational efficiency gains. Operating cash flow margins have expanded from 18% to 22%, indicating the business is generating more cash per dollar of revenue. This strong cash generation provides flexibility for growth investments and debt reduction.`;
+    } else if (questionLower.includes('revenue') || questionLower.includes('growth')) {
+      return `Revenue growth analysis reveals a consistent upward trajectory with 15% year-over-year growth. The growth is well-distributed across business segments, with the core product line showing 18% growth and newer services contributing 12% growth. Customer acquisition costs have remained stable while customer lifetime value has increased, suggesting sustainable growth patterns. The company has successfully expanded into new markets, contributing approximately 25% of total growth.`;
+    } else if (questionLower.includes('risk') || questionLower.includes('concern')) {
+      return `Risk assessment identifies several areas requiring attention. The primary concern is customer concentration, with the top 3 customers representing 35% of revenue. There's also moderate risk in supply chain dependencies and foreign exchange exposure. However, the company has implemented mitigation strategies including customer diversification programs and hedging strategies. The overall risk profile is considered moderate with strong risk management practices in place.`;
+    } else {
+      return `Based on the comprehensive financial analysis, I can provide insights on your question about "${question}". The data shows several positive trends including improving profitability, strong cash flow generation, and solid working capital management. The company appears to be in a strong financial position with good growth prospects. For more specific analysis, please provide additional context about what aspects you'd like me to focus on.`;
     }
-  ];
+  };
+
+  // These functions are now handled by the qaService
 
   // Handle example question click
   const handleExampleClick = (example: string) => {
@@ -195,11 +260,10 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-          <span>AI is thinking...</span>
+          <span>AI is analyzing your question...</span>
         </div>
-        <div className="text-sm text-foreground">
-          {streamingMessage}
-          <span className="animate-pulse">|</span>
+        <div className="text-sm text-muted-foreground">
+          This may take a few moments as we analyze your financial data and generate insights.
         </div>
       </div>
     );
@@ -234,6 +298,19 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Confidence Score */}
+        {message.confidence && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Confidence:</span>
+            <Badge 
+              variant={message.confidence > 0.8 ? 'success' : message.confidence > 0.6 ? 'warning' : 'destructive'}
+              className="text-xs"
+            >
+              {Math.round(message.confidence * 100)}%
+            </Badge>
           </div>
         )}
 
@@ -277,6 +354,17 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
         </div>
       </div>
 
+      {!dealId && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <span className="text-sm font-medium">Demo Mode</span>
+          </div>
+          <p className="text-sm text-yellow-700 mt-1">
+            No deal ID provided. This is a demonstration of the Q&A functionality.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Input Section */}
         <div className="lg:col-span-2 space-y-4">
@@ -290,7 +378,7 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask a question about your financial data..."
+                    placeholder={dealId ? "Ask a question about your financial data..." : "Ask a question to see the Q&A in action..."}
                     className="flex-1 min-h-[80px] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={isLoading}
                     aria-label="Ask a question about your financial data"
