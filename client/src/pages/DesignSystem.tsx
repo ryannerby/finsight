@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { logContrastValidation } from '@/utils/contrast-checker'
+import { ResultsHeaderDemo } from '@/components/results'
 
 export default function DesignSystem() {
   useEffect(() => {
@@ -227,6 +228,19 @@ export default function DesignSystem() {
               <p>This is a regular paragraph with body text styling. It provides good readability and appropriate line height for comfortable reading.</p>
               <small>This is small text, typically used for captions, metadata, or secondary information.</small>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ResultsHeader Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>ResultsHeader Component</CardTitle>
+            <CardDescription>
+              Analysis results header with recommendation, health score, and highlights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResultsHeaderDemo />
           </CardContent>
         </Card>
 
