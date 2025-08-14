@@ -13,6 +13,11 @@ import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useFiles } from '@/hooks/useFiles';
+import { useAnalysisReport } from '@/hooks/useAnalysisReport';
+import { HealthScore } from '@/components/report/HealthScore';
+import { TrafficLights } from '@/components/report/TrafficLights';
+import { StrengthsRisks } from '@/components/report/StrengthsRisks';
+import { Recommendation } from '@/components/report/Recommendation';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -634,6 +639,367 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
   );
 };
 
+const EnhancedReportTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
+  const userId = 'user_123';
+  const { 
+    report, 
+    reports, 
+    summaryReport,
+    isLoading, 
+    isGenerating, 
+    error, 
+    generateReport, 
+    generationStatus,
+    pollGenerationStatus 
+  } = useAnalysisReport({ 
+    dealId: deal.id, 
+    autoFetch: true 
+  });
+
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [reportType, setReportType] = useState<'comprehensive' | 'financial_summary' | 'risk_assessment' | 'due_diligence'>('comprehensive');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState<string | null>(null);
+
+  const handleGenerateReport = async () => {
+    const request = {
+      deal_id: deal.id,
+      report_type: reportType,
+      title: `${deal.title} - ${reportType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Report`,
+      description: `Enhanced ${reportType.replace('_', ' ')} analysis for ${deal.title}`,
+      include_evidence: true,
+      include_qa: true,
+      export_formats: ['pdf' as const, 'docx' as const],
+      generated_by: userId
+    };
+
+    try {
+      setIsGeneratingReport(true);
+      setGenerationMessage('Starting report generation...');
+      
+      const result = await generateReport(request);
+      if (result?.success) {
+        setGenerationMessage('Report generation started successfully! Check the reports tab for progress.');
+        setTimeout(() => {
+          setShowGenerateForm(false);
+          setGenerationMessage(null);
+        }, 3000);
+        console.log('Report generation started successfully:', result);
+      } else {
+        const errorMsg = result?.error || 'Unknown error';
+        setGenerationMessage(`Failed to start report generation: ${errorMsg}`);
+        console.error('Failed to start report generation:', result);
+        console.error('Full error details:', {
+          result,
+          request,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setGenerationMessage(`Error: ${errorMessage}`);
+      console.error('Error generating report:', error);
+      console.error('Full error details:', {
+        error,
+        request,
+        timestamp: new Date().toISOString()
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  // Mock data for demonstration - in real app this would come from the report
+  const mockData = {
+    healthScore: 75,
+    trafficLights: {
+      revenue_cagr_3y: 'green' as const,
+      gross_margin: 'green' as const,
+      net_margin: 'yellow' as const,
+      current_ratio: 'green' as const,
+      debt_to_equity: 'red' as const,
+      working_capital: 'yellow' as const
+    },
+    strengths: [
+      {
+        title: 'Strong Revenue Growth',
+        description: 'Revenue CAGR of 15% over the last 3 years, well above industry average',
+        impact: 'high' as const,
+        evidence: [
+          {
+            type: 'metric' as const,
+            ref: 'revenue_cagr_3y',
+            confidence: 0.9,
+            context: 'Revenue CAGR of 15% over the last 3 years'
+          }
+        ]
+      },
+      {
+        title: 'Healthy Gross Margins',
+        description: 'Gross margins maintained at 45-50% range, indicating strong pricing power',
+        impact: 'high' as const,
+        evidence: [
+          {
+            type: 'metric' as const,
+            ref: 'gross_margin',
+            confidence: 0.85,
+            context: 'Gross margins maintained at 45-50% range'
+          }
+        ]
+      }
+    ],
+    risks: [
+      {
+        title: 'High Debt Levels',
+        description: 'Debt-to-equity ratio of 2.5x exceeds industry benchmark of 1.5x',
+        impact: 'high' as const,
+        evidence: [
+          {
+            type: 'metric' as const,
+            ref: 'debt_to_equity',
+            confidence: 0.95,
+            context: 'Debt-to-equity ratio of 2.5x exceeds industry benchmark'
+          }
+        ]
+      },
+      {
+        title: 'Declining Net Margins',
+        description: 'Net margins decreased from 12% to 8% over the last 2 years',
+        impact: 'medium' as const,
+        evidence: [
+          {
+            type: 'metric' as const,
+            ref: 'net_margin',
+            confidence: 0.8,
+            context: 'Net margins decreased from 12% to 8% over the last 2 years'
+          }
+        ]
+      }
+    ],
+    recommendation: {
+      decision: 'Caution' as const,
+      confidence: 0.75,
+      rationale: 'While the company shows strong revenue growth and healthy gross margins, the high debt levels and declining net margins pose significant risks that require careful consideration before proceeding.',
+      key_factors: [
+        'High debt-to-equity ratio exceeds industry benchmarks',
+        'Declining net margins indicate operational challenges',
+        'Strong revenue growth provides some offset to risks'
+      ]
+    },
+    rationale: 'While the company shows strong revenue growth and healthy gross margins, the high debt levels and declining net margins pose significant risks that require careful consideration before proceeding.'
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading enhanced report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-600 mb-4">Error loading report: {error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    );
+  }
+
+  // If no report is available yet, show a message instead of an error
+  if (!summaryReport && !isLoading) {
+    return (
+      <div className="p-6 text-center">
+        <div className="text-muted-foreground mb-4">
+          <p className="text-lg mb-2">No analysis report available yet</p>
+          <p className="text-sm">Upload financial documents and run an analysis to generate your first report.</p>
+        </div>
+        <Button 
+          onClick={() => setShowGenerateForm(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          Generate Report
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header with Generate Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Enhanced Financial Report</h3>
+          <p className="text-sm text-muted-foreground">
+            Comprehensive analysis with evidence tracking and AI-powered insights
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {generationStatus && (
+            <div className="text-sm text-muted-foreground">
+              {generationStatus.status === 'queued' && 'Queued for generation...'}
+              {generationStatus.status === 'processing' && `Processing... ${generationStatus.progress}%`}
+              {generationStatus.status === 'completed' && 'Report ready!'}
+              {generationStatus.status === 'failed' && 'Generation failed'}
+            </div>
+          )}
+          
+          <Button 
+            onClick={() => setShowGenerateForm(!showGenerateForm)}
+            disabled={isGenerating}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {isGenerating ? 'Generating...' : 'Generate Report'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Generate Report Form */}
+      {showGenerateForm && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-3">Generate New Report</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-blue-900 mb-2">Report Type</label>
+              <select
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value as any)}
+                className="w-full p-2 border border-blue-300 rounded-md text-sm"
+              >
+                <option value="comprehensive">Comprehensive Analysis</option>
+                <option value="financial_summary">Financial Summary</option>
+                <option value="risk_assessment">Risk Assessment</option>
+                <option value="due_diligence">Due Diligence</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={handleGenerateReport}
+                disabled={isGeneratingReport}
+                className="w-full"
+              >
+                {isGeneratingReport ? 'Generating...' : 'Start Generation'}
+              </Button>
+            </div>
+          </div>
+          
+          {/* Generation Status Messages */}
+          {generationMessage && (
+            <div className={`p-3 rounded-md text-sm ${
+              generationMessage.includes('Error') || generationMessage.includes('Failed') 
+                ? 'bg-red-100 text-red-800 border border-red-200' 
+                : 'bg-green-100 text-green-800 border border-green-200'
+            }`}>
+              {generationMessage}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Report Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Health Score */}
+        <div className="lg:col-span-2">
+          <HealthScore 
+            healthScore={{
+              overall: mockData.healthScore,
+              components: {
+                profitability: 80,
+                growth: 85,
+                liquidity: 70,
+                leverage: 40,
+                efficiency: 75,
+                data_quality: 90
+              },
+              methodology: 'Weighted average of financial health indicators'
+            }}
+            size="lg" 
+          />
+        </div>
+
+        {/* Traffic Lights */}
+        <div className="lg:col-span-2">
+          <TrafficLights 
+            trafficLights={{
+              revenue_quality: {
+                status: 'green',
+                score: 85,
+                reasoning: 'Strong revenue growth with consistent patterns',
+                evidence: [{ type: 'metric', ref: 'revenue_cagr_3y', confidence: 0.9 }]
+              },
+              margin_trends: {
+                status: 'yellow',
+                score: 65,
+                reasoning: 'Gross margins strong but net margins declining',
+                evidence: [{ type: 'metric', ref: 'gross_margin', confidence: 0.85 }]
+              },
+              liquidity: {
+                status: 'green',
+                score: 80,
+                reasoning: 'Healthy current ratio and working capital',
+                evidence: [{ type: 'metric', ref: 'current_ratio', confidence: 0.8 }]
+              },
+              leverage: {
+                status: 'red',
+                score: 35,
+                reasoning: 'High debt-to-equity ratio exceeds benchmarks',
+                evidence: [{ type: 'metric', ref: 'debt_to_equity', confidence: 0.95 }]
+              },
+              working_capital: {
+                status: 'yellow',
+                score: 60,
+                reasoning: 'Working capital adequate but could be optimized',
+                evidence: [{ type: 'metric', ref: 'working_capital', confidence: 0.7 }]
+              },
+              data_quality: {
+                status: 'green',
+                score: 90,
+                reasoning: 'Comprehensive financial data with good coverage',
+                evidence: [{ type: 'metric', ref: 'data_quality', confidence: 0.9 }]
+              }
+            }}
+          />
+        </div>
+
+        {/* Strengths and Risks */}
+        <div className="lg:col-span-2">
+          <StrengthsRisks 
+            strengths={mockData.strengths}
+            risks={mockData.risks}
+          />
+        </div>
+
+        {/* Recommendation */}
+        <div className="lg:col-span-2">
+          <Recommendation 
+            recommendation={mockData.recommendation}
+          />
+        </div>
+      </div>
+
+      {/* Report Actions */}
+      <div className="flex items-center justify-center space-x-4 pt-6 border-t border-gray-200">
+        <Button variant="outline">
+          Download PDF Report
+        </Button>
+        <Button variant="outline">
+          Export to Excel
+        </Button>
+        <Button variant="outline">
+          Share Report
+        </Button>
+        <Button variant="outline">
+          Schedule Review Meeting
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const QATab = () => {
   const [question, setQuestion] = useState("");
   const [historyOpen, setHistoryOpen] = useState(true);
@@ -700,6 +1066,7 @@ export default function DealDetail() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisRefresh, setAnalysisRefresh] = useState(0);
   const [showUploadOnly, setShowUploadOnly] = useState(false);
+  const [rateLimitCooldown, setRateLimitCooldown] = useState(0);
 
   const handleBackToDeals = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -727,6 +1094,16 @@ export default function DealDetail() {
   useEffect(() => {
     setShowUploadOnly((files || []).length === 0);
   }, [files]);
+
+  // Handle rate limit cooldown countdown
+  useEffect(() => {
+    if (rateLimitCooldown > 0) {
+      const timer = setTimeout(() => {
+        setRateLimitCooldown(prev => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [rateLimitCooldown]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
@@ -775,18 +1152,34 @@ export default function DealDetail() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
                   });
-                  if (!res.ok) throw new Error(await res.text());
+                  if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+                    throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+                  }
                   setAnalysisRefresh((x) => x + 1);
                   setShowUploadOnly(false); // navigate to overview state
                 } catch (e) {
-                  alert(`Analyze failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+                  // Check if it's a rate limit error
+                  if (errorMessage.includes('Rate limit exceeded') || errorMessage.includes('once per minute')) {
+                    // Extract retryAfter from the error message if available
+                    const retryMatch = errorMessage.match(/(\d+) seconds/);
+                    if (retryMatch) {
+                      const retryAfter = parseInt(retryMatch[1]);
+                      setRateLimitCooldown(retryAfter);
+                    }
+                    alert(`Rate limit exceeded: Please wait before analyzing this deal again. ${errorMessage}`);
+                  } else {
+                    alert(`Analyze failed: ${errorMessage}`);
+                  }
                 } finally {
                   setAnalyzing(false);
                 }
               }}
-              disabled={analyzing}
+              disabled={analyzing || rateLimitCooldown > 0}
             >
-              {analyzing ? 'Analyzing…' : 'Analyze'}
+              {analyzing ? 'Analyzing…' : 
+               rateLimitCooldown > 0 ? `Wait ${rateLimitCooldown}s` : 'Analyze'}
             </Button>
           </div>
         </div>
@@ -800,10 +1193,20 @@ export default function DealDetail() {
               <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
             </div>
           </div>
-                ) : (
-          <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
-            <div className="p-6">
-              <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+        ) : (
+          <div className="space-y-6">
+            {/* Summary Tab */}
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+              <div className="p-6">
+                <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+              </div>
+            </div>
+            
+            {/* Enhanced Report Tab */}
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+              <div className="p-6">
+                <EnhancedReportTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
+              </div>
             </div>
           </div>
         )}
@@ -855,7 +1258,10 @@ export default function DealDetail() {
                   onClick={async () => {
                     try {
                       const res = await fetch(`${API_BASE_URL}/deals/${deal.id}?user_id=user_123`, { method: 'DELETE' });
-                      if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                      if (!res.ok && res.status !== 204) {
+                        const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+                        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+                      }
                       navigate('/deals');
                     } catch (e) {
                       alert(`Failed to delete: ${e instanceof Error ? e.message : 'Unknown error'}`);

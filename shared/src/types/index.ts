@@ -29,5 +29,8 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   };
 }
 
+// Enhanced Analysis Report Types
+export * from './SummaryReport';
+
 // Add more shared types as needed for your thesis project
 export type ThemeMode = 'light' | 'dark' | 'system';

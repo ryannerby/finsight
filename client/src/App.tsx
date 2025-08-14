@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
+import DesignSystem from './pages/DesignSystem';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,17 @@ function SetupPage() {
           >
             View Deal Detail (Demo)
           </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/design-system');
+            }}
+          >
+            Design System
+          </Button>
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
@@ -88,6 +100,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<SetupPage />} />
           <Route path="/login" element={<SetupPage />} />
+          <Route path="/design-system" element={<DesignSystem />} />
           <Route path="/deals" element={<DealsList />} />
           <Route path="/deals/new" element={<CreateDeal />} />
           <Route path="/deals/:dealId" element={<DealDetail />} />
@@ -106,14 +119,15 @@ export default function App() {
       afterSignUpUrl="/deals"
     >
       <AppHeader />
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/deals" element={<Protected><DealsList /></Protected>} />
-        <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
-        <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+              <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/design-system" element={<DesignSystem />} />
+          <Route path="/deals" element={<Protected><DealsList /></Protected>} />
+          <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
+          <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
     </ClerkProvider>
   );
 }

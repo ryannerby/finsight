@@ -9,7 +9,7 @@ export class AnalysisErrorHandler {
   static createRateLimitError(retryAfter: number): AnalysisError {
     return {
       type: 'rate_limit',
-      message: 'Analysis is limited to once per minute per deal',
+      message: `Rate limit exceeded. Please wait ${retryAfter} seconds before analyzing this deal again.`,
       retryAfter
     };
   }

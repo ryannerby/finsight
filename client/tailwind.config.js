@@ -76,6 +76,19 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Status colors with AA contrast compliance
+        good: {
+          DEFAULT: "hsl(var(--good))",
+          foreground: "hsl(var(--good-foreground))",
+        },
+        caution: {
+          DEFAULT: "hsl(var(--caution))",
+          foreground: "hsl(var(--caution-foreground))",
+        },
+        risk: {
+          DEFAULT: "hsl(var(--risk))",
+          foreground: "hsl(var(--risk-foreground))",
+        },
       },
       fontSize: {
         // Typography scale

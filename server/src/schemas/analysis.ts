@@ -103,9 +103,50 @@ export const DueDiligenceChecklist = z.object({
   }))
 });
 
+// Enhanced Analysis Report Integration
+export const EnhancedAnalysisRequest = z.object({
+  deal_id: z.string().uuid(),
+  analysis_type: z.enum(['comprehensive_report', 'financial_summary', 'risk_assessment', 'due_diligence']),
+  include_evidence: z.boolean().default(true),
+  include_qa_ready: z.boolean().default(true),
+  custom_prompts: z.array(z.string()).optional(),
+  export_formats: z.array(z.enum(['pdf', 'docx', 'xlsx', 'html', 'json'])).default(['pdf']),
+  metadata: z.record(z.string(), z.any()).optional()
+});
+
+export const EnhancedAnalysisResult = z.object({
+  analysis_id: z.string().uuid(),
+  report_id: z.string().uuid().optional(),
+  status: z.enum(['processing', 'completed', 'failed']),
+  progress: z.number().min(0).max(100).optional(),
+  result: z.object({
+    summary: Summary.optional(),
+    metrics: DealMetrics.optional(),
+    dd_signals: DDSignals.optional(),
+    evidence_items: z.array(z.object({
+      type: z.string(),
+      title: z.string(),
+      description: z.string(),
+      source: z.string(),
+      confidence: z.number().min(0).max(1)
+    })).optional(),
+    qa_insights: z.array(z.object({
+      question: z.string(),
+      answer: z.string(),
+      evidence: z.string(),
+      confidence: z.number().min(0).max(1)
+    })).optional()
+  }).optional(),
+  error: z.string().optional(),
+  created_at: z.string().datetime(),
+  completed_at: z.string().datetime().optional()
+});
+
 export type TStatementExtraction = z.infer<typeof StatementExtraction>;
 export type TDealMetrics = z.infer<typeof DealMetrics>;
 export type TSummary = z.infer<typeof Summary>;
 export type TDocumentInventory = z.infer<typeof DocumentInventory>;
 export type TDDSignals = z.infer<typeof DDSignals>;
 export type TDueDiligenceChecklist = z.infer<typeof DueDiligenceChecklist>;
+export type TEnhancedAnalysisRequest = z.infer<typeof EnhancedAnalysisRequest>;
+export type TEnhancedAnalysisResult = z.infer<typeof EnhancedAnalysisResult>;

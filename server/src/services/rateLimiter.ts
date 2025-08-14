@@ -34,6 +34,20 @@ class RateLimiter {
     return Math.max(0, this.WINDOW_MS - timeSinceLastRequest);
   }
 
+  /**
+   * Check if a request is allowed and throw an error if not
+   * This method is used by the analyze route for better error handling
+   */
+  async checkLimit(dealId: string): Promise<void> {
+    if (!this.isAllowed(dealId)) {
+      const retryAfter = Math.ceil(this.getTimeRemaining(dealId) / 1000);
+      const error = new Error(`Rate limit exceeded. Please wait ${retryAfter} seconds before trying again.`);
+      (error as any).type = 'rate_limit';
+      (error as any).retryAfter = retryAfter;
+      throw error;
+    }
+  }
+
   // Clean up old entries to prevent memory leaks
   cleanup() {
     const now = Date.now();
@@ -47,7 +61,7 @@ class RateLimiter {
 
 export const rateLimiter = new RateLimiter();
 
-// Clean up every 5 minutes
-setInterval(() => {
-  rateLimiter.cleanup();
-}, 5 * 60 * 1000); 
+// Clean up every 5 minutes - REMOVED FOR DEBUGGING
+// setInterval(() => {
+//   rateLimiter.cleanup();
+// }, 5 * 60 * 1000); 

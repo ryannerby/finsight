@@ -52,3 +52,30 @@ export type FileType = 'P&L' | 'balance_sheet' | 'cash_flow' | 'financial' | 'le
 export type AnalysisType = 'text_extraction' | 'financial' | 'legal' | 'technical';
 
 export type LogAction = 'created_deal' | 'uploaded_document' | 'parsed_document' | 'asked_question' | 'answered_question';
+
+export interface ComputedMetrics {
+  // Revenue metrics
+  revenue_growth_yoy?: number;
+  revenue_by_period?: Record<string, number>;
+  
+  // Margin metrics
+  gross_margin_ttm?: number;
+  net_margin_ttm?: number;
+  
+  // Liquidity metrics
+  current_ratio?: number;
+  quick_ratio?: number;
+  
+  // Leverage metrics
+  debt_to_equity_ratio?: number;
+  
+  // Efficiency metrics
+  roe_ttm?: number;
+  roa_ttm?: number;
+  
+  // Working capital metrics
+  working_capital?: number;
+  
+  // Additional computed ratios
+  [key: string]: any;
+}

@@ -77,7 +77,10 @@ export default function DealsList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
       });
-      if (!res.ok) throw new Error(await res.text());
+              if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+          throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        }
       const deal = await res.json();
 
       // Upload any selected files to the new deal
@@ -166,7 +169,10 @@ export default function DealsList() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ title: formTitle.trim(), description, user_id: userId })
                           });
-                          if (!res.ok) throw new Error(await res.text());
+                          if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+          throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        }
                           const deal = await res.json();
                           setDeals((prev) => [deal, ...prev]);
                           setCreatedDealId(deal.id);
@@ -217,7 +223,10 @@ export default function DealsList() {
                   onClick={async () => {
                     try {
                       const res = await fetch(`${API_BASE_URL}/deals/${confirmDelete.id}?user_id=${userId}`, { method: 'DELETE' });
-                      if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                      if (!res.ok && res.status !== 204) {
+          const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+          throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        }
                       setDeals((prev) => prev.filter((d) => d.id !== confirmDelete.id));
                       setConfirmDelete(null);
                     } catch (e) {
