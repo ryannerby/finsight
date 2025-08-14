@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
+import { RevenueChart } from '@/components/ui/revenue-chart';
 import { MetricCard } from '@/components/ui/metric-card';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { Badge } from '@/components/ui/badge';
@@ -150,6 +151,38 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     return String(val.toFixed(3));
   };
 
+  // Extract revenue data from financial analysis for chart
+  const getRevenueData = (): { year: string; revenue: number }[] => {
+    if (!financial?.analysis_result?.revenue_data) {
+      return [];
+    }
+
+    try {
+      const revenueData = financial.analysis_result.revenue_data;
+      if (Array.isArray(revenueData)) {
+        return revenueData.map((item: any) => ({
+          year: item.year || item.period || 'Unknown',
+          revenue: typeof item.revenue === 'number' ? item.revenue : 0
+        })).filter(item => item.revenue > 0);
+      }
+      
+      // If it's an object with years as keys
+      if (typeof revenueData === 'object') {
+        return Object.entries(revenueData)
+          .map(([year, revenue]) => ({
+            year,
+            revenue: typeof revenue === 'number' ? revenue : 0
+          }))
+          .filter(item => item.revenue > 0)
+          .sort((a, b) => a.year.localeCompare(b.year));
+      }
+    } catch (error) {
+      console.error('Error parsing revenue data:', error);
+    }
+    
+    return [];
+  };
+
   return (
     <div className="space-y-10">
       <div className="bg-card text-card-foreground border rounded-lg p-8">
@@ -258,6 +291,13 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 </div>
               </div>
             </div>
+
+            {/* Revenue Trend Chart */}
+            {financial && getRevenueData().length > 0 && (
+              <div className="mt-8">
+                <RevenueChart data={getRevenueData()} title="Revenue Trend" />
+              </div>
+            )}
           </>
         )}
       </div>
