@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { ExportMenu } from '@/components/actions/ExportMenu';
 import { UploadDialog } from '@/components/files/UploadDialog';
-import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/toast-context';
 import { Upload, FileText } from 'lucide-react';
 
 interface AppShellProps {
@@ -30,7 +30,7 @@ export function AppShell({
   onReanalyze,
   className = ''
 }: AppShellProps) {
-  const [showToast, setShowToast] = useState(false);
+  const { addToast } = useToast();
   const userId = 'user_123'; // In real app, this would come from auth context
 
   const getRecommendationVariant = (rec: string) => {
@@ -47,14 +47,22 @@ export function AppShell({
   };
 
   const handleUploadComplete = () => {
-    setShowToast(true);
+    addToast({
+      type: 'success',
+      message: 'Files uploaded successfully!',
+      details: 'You can now re-run analysis to include the new data.'
+    });
   };
 
   const handleReanalyze = () => {
     if (onReanalyze) {
       onReanalyze();
+      addToast({
+        type: 'info',
+        message: 'Analysis restarted',
+        details: 'Processing your updated financial data...'
+      });
     }
-    setShowToast(false);
   };
 
   return (
@@ -140,18 +148,7 @@ export function AppShell({
         </div>
       </main>
 
-      {/* Toast for post-upload re-analyze */}
-      {showToast && (
-        <Toast
-          message="Files uploaded — re-run analysis?"
-          action={{
-            label: "Re-analyze",
-            onClick: handleReanalyze
-          }}
-          onClose={() => setShowToast(false)}
-          duration={8000}
-        />
-      )}
+
     </div>
   );
 }

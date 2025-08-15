@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { fetchJson, FetchError } from '@/lib/fetchJson';
+import { useToast } from '@/components/ui/toast-context';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -30,6 +32,7 @@ export interface UploadProgress {
 export function useFileUpload() {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { addToast } = useToast();
 
   const uploadFiles = useCallback(async (files: File[], dealId: string, userId: string) => {
     setIsUploading(true);
@@ -50,23 +53,14 @@ export function useFileUpload() {
         
         try {
           // Step 1: Get pre-signed URL
-          const uploadUrlResponse = await fetch(`${API_BASE_URL}/files/upload-url`, {
+          const { uploadUrl, path } = await fetchJson(`${API_BASE_URL}/files/upload-url`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
               filename: file.name,
               deal_id: dealId,
               user_id: userId
             })
           });
-
-          if (!uploadUrlResponse.ok) {
-            throw new Error(`Failed to get upload URL: ${uploadUrlResponse.statusText}`);
-          }
-
-          const { uploadUrl, path } = await uploadUrlResponse.json();
 
           // Update progress
           setUploads(prev => prev.map((upload, index) => 
@@ -92,11 +86,8 @@ export function useFileUpload() {
           ));
 
           // Step 3: Confirm upload and create document record
-          const confirmResponse = await fetch(`${API_BASE_URL}/files/confirm-upload`, {
+          const uploadedFile: UploadedFile = await fetchJson(`${API_BASE_URL}/files/confirm-upload`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
               deal_id: dealId,
               filename: path.split('/').pop(),
@@ -107,12 +98,6 @@ export function useFileUpload() {
               user_id: userId
             })
           });
-
-          if (!confirmResponse.ok) {
-            throw new Error(`Failed to confirm upload: ${confirmResponse.statusText}`);
-          }
-
-          const uploadedFile: UploadedFile = await confirmResponse.json();
 
           // Update progress
           setUploads(prev => prev.map((upload, index) => 
@@ -125,27 +110,13 @@ export function useFileUpload() {
           ));
 
           // Step 4: Parse the document
-          const parseResponse = await fetch(`${API_BASE_URL}/files/parse/${uploadedFile.id}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              user_id: userId
-            })
-          });
-
-          if (!parseResponse.ok) {
-            // Parsing failed, but upload succeeded
-            setUploads(prev => prev.map((upload, index) => 
-              index === i ? { 
-                ...upload, 
-                progress: 100, 
-                status: 'completed' as const 
-              } : upload
-            ));
-          } else {
-            const analysis = await parseResponse.json();
+          try {
+            const analysis = await fetchJson(`${API_BASE_URL}/files/parse/${uploadedFile.id}`, {
+              method: 'POST',
+              body: JSON.stringify({
+                user_id: userId
+              })
+            });
             
             // Update with parsing results
             setUploads(prev => prev.map((upload, index) => 
@@ -159,14 +130,39 @@ export function useFileUpload() {
                 }
               } : upload
             ));
+          } catch (error) {
+            // Parsing failed, but upload succeeded
+            setUploads(prev => prev.map((upload, index) => 
+              index === i ? { 
+                ...upload, 
+                progress: 100, 
+                status: 'completed' as const 
+              } : upload
+            ));
           }
 
         } catch (error) {
+          const errorMessage = error instanceof FetchError 
+            ? error.message 
+            : error instanceof Error 
+              ? error.message 
+              : 'Upload failed';
+          
+          const requestId = error instanceof FetchError ? error.requestId : undefined;
+          
+          // Show error toast
+          addToast({
+            type: 'error',
+            message: `Failed to upload ${file.name}: ${errorMessage}`,
+            requestId,
+            details: `File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`
+          });
+          
           setUploads(prev => prev.map((upload, index) => 
             index === i ? { 
               ...upload, 
               status: 'error' as const,
-              error: error instanceof Error ? error.message : 'Upload failed'
+              error: errorMessage
             } : upload
           ));
         }

@@ -1,11 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip } from '@/components/ui/tooltip';
 import { EmptyState } from '@/components/ui/empty-state';
-import { qaService, type QAMessage, type Source } from '@/services/qaService';
+import { qaService, type Source } from '@/services/qaService';
+import { useToast } from '@/components/ui/toast-context';
+import { FetchError } from '@/lib/fetchJson';
 import { 
   MessageSquare, 
   Send, 
@@ -23,10 +25,31 @@ import { cn } from '@/lib/utils';
 
 // Types are now imported from qaService
 
-interface QASectionProps {
-  dealId?: string;
-  className?: string;
-  onOpenEvidenceDrawer?: (sources: Source[]) => void;
+interface QAMessage {
+  id: string;
+  question: string;
+  answer: string;
+  timestamp: Date;
+  status: 'streaming' | 'completed' | 'error';
+  sources: Source[];
+  confidence: number;
+  context?: {
+    hasSufficientData: boolean;
+    dataQuality: 'high' | 'medium' | 'low';
+    missingContext: string[];
+  };
+  guardrail_results?: {
+    passed: boolean;
+    warnings: string[];
+    suggestions: string[];
+    requiresManualReview: boolean;
+  };
+  rag_context?: {
+    enabled: boolean;
+    chunks_retrieved: number;
+    total_available_chunks: number;
+    search_confidence?: number;
+  };
 }
 
 // Example questions for onboarding
@@ -39,13 +62,14 @@ const EXAMPLE_QUESTIONS = [
   'What are the main risks in the financial statements?'
 ];
 
-export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASectionProps) {
+export function QASection({ dealId, className, onOpenEvidenceDrawer }: { dealId?: string; className?: string; onOpenEvidenceDrawer?: (sources: Source[]) => void }) {
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<QAMessage[]>([]);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [streamingId, setStreamingId] = useState<string | null>(null);
+  const { addToast } = useToast();
   
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -109,7 +133,8 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
       answer: '',
       timestamp: new Date(),
       status: 'streaming',
-      sources: []
+      sources: [],
+      confidence: 0.5
     };
 
     setMessages(prev => [newMessage, ...prev]);
@@ -132,14 +157,33 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
               ...msg, 
               answer: response.ai_response, 
               status: 'completed',
-              sources: qaService.generateMockSources(newMessage.question),
-              confidence: response.confidence
+              sources: response.sources || [],
+              confidence: response.confidence,
+              context: response.context,
+              guardrail_results: response.guardrail_results,
+              rag_context: response.rag_context
             }
           : msg
       ));
 
     } catch (error) {
       console.error('Failed to get answer:', error);
+      
+      const errorMessage = error instanceof FetchError 
+        ? error.message 
+        : error instanceof Error 
+          ? error.message 
+          : 'Failed to get answer';
+      
+      const requestId = error instanceof FetchError ? error.requestId : undefined;
+      
+      // Show error toast
+      addToast({
+        type: 'error',
+        message: `Failed to get answer: ${errorMessage}`,
+        requestId,
+        details: `Question: ${newMessage.question}`
+      });
       
       // Update the message with error status
       setMessages(prev => prev.map(msg => 
@@ -162,7 +206,8 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
       answer: '',
       timestamp: new Date(),
       status: 'streaming',
-      sources: []
+      sources: [],
+      confidence: 0.5
     };
 
     setMessages(prev => [newMessage, ...prev]);
@@ -224,9 +269,16 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
   const handleCopyAnswer = async (answer: string) => {
     try {
       await navigator.clipboard.writeText(answer);
-      // Could add a toast notification here
+      addToast({
+        type: 'success',
+        message: 'Answer copied to clipboard!'
+      });
     } catch (err) {
       console.error('Failed to copy:', err);
+      addToast({
+        type: 'error',
+        message: 'Failed to copy answer to clipboard'
+      });
     }
   };
 
@@ -339,6 +391,120 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
     );
   };
 
+  // Render message with enhanced information
+  const renderMessage = (message: QAMessage) => (
+    <div key={message.id} className="space-y-3">
+      {/* Question */}
+      <div className="bg-blue-50 p-3 rounded-lg">
+        <p className="font-medium text-blue-900">{message.question}</p>
+        <p className="text-sm text-blue-600 mt-1">
+          {message.timestamp.toLocaleTimeString()}
+        </p>
+      </div>
+
+      {/* Answer */}
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <p className="text-gray-800 whitespace-pre-wrap">{message.answer}</p>
+        
+        {/* RAG Context Info */}
+        {message.rag_context && (
+          <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="font-medium">RAG Context:</span>
+              <span className={`px-2 py-1 rounded text-xs ${
+                message.rag_context.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {message.rag_context.enabled ? 'Enabled' : 'Disabled'}
+              </span>
+            </div>
+            {message.rag_context.enabled && (
+              <div className="text-xs text-gray-500 mt-1">
+                Retrieved {message.rag_context.chunks_retrieved} of {message.rag_context.total_available_chunks} chunks
+                {message.rag_context.search_confidence && (
+                  <span> • Confidence: {(message.rag_context.search_confidence * 100).toFixed(0)}%</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Context Assessment */}
+        {message.context && (
+          <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+            <div className="flex items-center gap-2 text-blue-700">
+              <span className="font-medium">Data Quality:</span>
+              <span className={`px-2 py-1 rounded text-xs ${
+                message.context.dataQuality === 'high' ? 'bg-green-100 text-green-800' :
+                message.context.dataQuality === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {message.context.dataQuality.charAt(0).toUpperCase() + message.context.dataQuality.slice(1)}
+              </span>
+            </div>
+            {!message.context.hasSufficientData && message.context.missingContext.length > 0 && (
+              <div className="text-xs text-blue-600 mt-1">
+                Missing: {message.context.missingContext.join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Guardrail Results */}
+        {message.guardrail_results && (
+          <div className={`mt-3 p-2 rounded text-sm ${
+            message.guardrail_results.passed ? 'bg-green-50' : 'bg-yellow-50'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className={`font-medium ${
+                message.guardrail_results.passed ? 'text-green-700' : 'text-yellow-700'
+              }`}>
+                Quality Check:
+              </span>
+              <span className={`px-2 py-1 rounded text-xs ${
+                message.guardrail_results.passed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {message.guardrail_results.passed ? 'Passed' : 'Issues Found'}
+              </span>
+            </div>
+            {message.guardrail_results.warnings.length > 0 && (
+              <div className="text-xs text-yellow-700 mt-1">
+                <span className="font-medium">Warnings:</span> {message.guardrail_results.warnings.join(', ')}
+              </div>
+            )}
+            {message.guardrail_results.suggestions.length > 0 && (
+              <div className="text-xs text-blue-600 mt-1">
+                <span className="font-medium">Suggestions:</span> {message.guardrail_results.suggestions.join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Confidence and Sources */}
+        <div className="mt-3 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Confidence:</span>
+            <span className={`px-2 py-1 rounded text-xs ${
+              message.confidence >= 0.8 ? 'bg-green-100 text-green-800' :
+              message.confidence >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {(message.confidence * 100).toFixed(0)}%
+            </span>
+          </div>
+          
+          {message.sources.length > 0 && (
+            <button
+              onClick={() => onOpenEvidenceDrawer?.(message.sources)}
+              className="text-blue-600 hover:text-blue-800 text-xs underline"
+            >
+              View {message.sources.length} source{message.sources.length !== 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className={cn("space-y-6", className)}>
       {/* Header */}
@@ -389,7 +555,11 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
                     className="px-4 py-2"
                     aria-label="Submit question"
                   >
-                    <Send className="w-4 h-4" />
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
 
@@ -441,41 +611,24 @@ export function QASection({ dealId, className, onOpenEvidenceDrawer }: QASection
                 }
               />
             ) : (
-              messages.map((message) => (
-                <Card key={message.id}>
-                  <CardContent className="p-4">
-                    {/* Question */}
-                    <div className="mb-3">
-                      <div className="flex items-start gap-2">
-                        <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-xs font-medium text-blue-700">Q</span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">
-                            {message.question}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>{formatTimestamp(message.timestamp)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Answer */}
-                    <div className="ml-8">
-                      {message.status === 'streaming' && renderStreamingMessage(message)}
-                      {message.status === 'completed' && renderCompletedMessage(message)}
-                      {message.status === 'error' && (
-                        <div className="text-sm text-destructive">
-                          Sorry, I encountered an error. Please try again.
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              messages.map(renderMessage)
             )}
+            
+            {/* Streaming message */}
+            {streamingMessage && streamingId && (
+              <div className="space-y-3">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="font-medium text-blue-900">Processing...</p>
+                </div>
+                <div className="bg-white p-4 rounded-lg border shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span className="text-gray-600">Generating response...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
         </div>

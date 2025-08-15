@@ -1,5 +1,5 @@
 export interface AnalysisError {
-  type: 'rate_limit' | 'timeout' | 'ai_error' | 'file_too_large' | 'invalid_data' | 'unknown';
+  type: 'rate_limit' | 'timeout' | 'ai_error' | 'file_too_large' | 'invalid_data' | 'llm_unavailable' | 'unknown';
   message: string;
   details?: any;
   retryAfter?: number; // seconds
@@ -30,6 +30,17 @@ export class AnalysisErrorHandler {
         originalError: error?.message || String(error),
         code: error?.code,
         status: error?.status
+      }
+    };
+  }
+
+  static createLLMUnavailableError(reason: string): AnalysisError {
+    return {
+      type: 'llm_unavailable',
+      message: 'AI analysis service is currently unavailable',
+      details: {
+        reason,
+        suggestion: 'Please try again later or contact support if the issue persists'
       }
     };
   }
@@ -73,6 +84,8 @@ export class AnalysisErrorHandler {
         return 413; // Payload Too Large
       case 'invalid_data':
         return 400; // Bad Request
+      case 'llm_unavailable':
+        return 503; // Service Unavailable
       case 'timeout':
       case 'ai_error':
         return 503; // Service Unavailable

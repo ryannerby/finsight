@@ -35,3 +35,40 @@ export const supabaseAdmin = createClient(
     }
   }
 );
+
+// One-time startup connectivity test
+async function testSupabaseConnection() {
+  // Skip connectivity test if in mock mode
+  if (process.env.ENABLE_MOCK_MODE === 'true') {
+    console.log('🔍 Skipping Supabase connectivity test in mock mode');
+    return;
+  }
+
+  try {
+    console.log('🔍 Testing Supabase connectivity...');
+    
+    // Test basic connectivity with a simple query
+    const { data, error } = await supabaseAdmin
+      .from('deals')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      // If deals table doesn't exist, try a simpler test
+      const { error: simpleError } = await supabaseAdmin.rpc('version');
+      if (simpleError) {
+        throw new Error(`Supabase connection failed: ${simpleError.message}`);
+      }
+    }
+    
+    console.log('✅ Supabase connectivity test passed');
+  } catch (error) {
+    const errorMessage = `🚨 CRITICAL: Supabase connection failed during startup. Server cannot continue.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease check:\n- SUPABASE_URL is correct\n- SUPABASE_SERVICE_ROLE_KEY is valid\n- Supabase service is running\n- Network connectivity`;
+    
+    console.error(errorMessage);
+    process.exit(1);
+  }
+}
+
+// Run the connectivity test immediately
+testSupabaseConnection();

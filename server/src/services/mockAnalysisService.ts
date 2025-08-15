@@ -1,8 +1,7 @@
 import { 
   TReportGenerationRequest, 
   TReportGenerationResponse,
-  SummaryReport,
-  ComputedMetrics
+  SummaryReport
 } from '../types/analysis';
 
 /**
@@ -74,33 +73,71 @@ export class MockAnalysisService {
    */
   private generateMockSummaryReport(): SummaryReport {
     return {
-      health_score: 75,
-      traffic_lights: {
-        financial_health: 'green',
-        operational_efficiency: 'yellow',
-        market_position: 'green',
-        risk_factors: 'red'
+      health_score: {
+        overall: 75,
+        components: {
+          profitability: 80,
+          growth: 70,
+          liquidity: 75,
+          leverage: 60,
+          efficiency: 70,
+          data_quality: 85
+        },
+        methodology: 'Mock analysis methodology'
       },
-      strengths: [
-        'Strong revenue growth',
-        'Healthy profit margins',
-        'Solid market position'
+      traffic_lights: {
+        revenue_quality: { status: 'green', score: 85, reasoning: 'Strong revenue growth', evidence: [] },
+        margin_trends: { status: 'yellow', score: 65, reasoning: 'Margins stable but could improve', evidence: [] },
+        liquidity: { status: 'green', score: 80, reasoning: 'Good cash position', evidence: [] },
+        leverage: { status: 'red', score: 40, reasoning: 'High debt levels', evidence: [] },
+        working_capital: { status: 'yellow', score: 60, reasoning: 'Working capital needs attention', evidence: [] },
+        data_quality: { status: 'green', score: 85, reasoning: 'High quality data', evidence: [] }
+      },
+      top_strengths: [
+        { title: 'Strong revenue growth', description: 'Consistent revenue growth over periods', impact: 'high', evidence: [] },
+        { title: 'Healthy profit margins', description: 'Maintained strong profit margins', impact: 'high', evidence: [] },
+        { title: 'Solid market position', description: 'Established market presence', impact: 'medium', evidence: [] }
       ],
-      risks: [
-        'High debt levels',
-        'Market volatility exposure'
+      top_risks: [
+        { title: 'High debt levels', description: 'Elevated debt-to-equity ratio', impact: 'high', evidence: [] },
+        { title: 'Market volatility exposure', description: 'Sensitive to market fluctuations', impact: 'medium', evidence: [] }
       ],
       recommendation: {
-        action: 'Proceed with caution',
+        decision: 'Caution',
         confidence: 0.7,
-        reasoning: 'Company shows promise but has some risk factors'
+        rationale: 'Company shows promise but has some risk factors',
+        key_factors: ['High debt levels', 'Market volatility exposure']
       },
-      evidence_map: {},
-      confidence_scores: {},
-      data_quality_assessment: {
-        overall_score: 0.8,
-        completeness: 0.9,
-        accuracy: 0.7
+      analysis_metadata: {
+        period_range: {
+          start: '2023-01-01',
+          end: '2023-12-31',
+          total_periods: 12
+        },
+        data_quality: {
+          completeness: 0.9,
+          consistency: 0.8,
+          recency: 0.9,
+          missing_periods: [],
+          data_gaps: [],
+          reliability_notes: ['Mock data quality assessment']
+        },
+        assumptions: ['Mock assumption 1', 'Mock assumption 2'],
+        limitations: ['Mock limitation 1'],
+        followup_questions: ['Mock question 1', 'Mock question 2']
+      },
+      confidence: {
+        overall: 0.8,
+        sections: { 'financial_metrics': 0.9, 'risk_assessment': 0.7 },
+        reliability_factors: ['Mock reliability factor']
+      },
+      export_ready: {
+        pdf_title: 'Mock Financial Analysis Report',
+        executive_summary: 'Mock executive summary',
+        key_metrics_table: [
+          { metric: 'Revenue Growth', value: '15%', trend: 'improving' },
+          { metric: 'Profit Margin', value: '12%', trend: 'stable' }
+        ]
       }
     };
   }

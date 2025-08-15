@@ -191,9 +191,16 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 <Button 
                   onClick={handleGenerateReport}
                   disabled={isGenerating}
-                  className="w-full"
+                  className="w-full gap-2"
                 >
-                  {isGenerating ? 'Generating...' : 'Start Generation'}
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                      Generating...
+                    </>
+                  ) : (
+                    'Start Generation'
+                  )}
                 </Button>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/index';
+import { fetchJson, FetchError } from '@/lib/fetchJson';
 
 export interface QAMessage {
   id: string;
@@ -30,11 +31,27 @@ export interface QAResponse {
   deal_id: string;
   question: string;
   answer: string;
-  context?: string;
-  created_at: string;
   ai_response: string;
   confidence: number;
-  sources: string[];
+  sources: Source[];
+  created_at: string;
+  context?: {
+    hasSufficientData: boolean;
+    dataQuality: 'high' | 'medium' | 'low';
+    missingContext: string[];
+  };
+  guardrail_results?: {
+    passed: boolean;
+    warnings: string[];
+    suggestions: string[];
+    requiresManualReview: boolean;
+  };
+  rag_context?: {
+    enabled: boolean;
+    chunks_retrieved: number;
+    total_available_chunks: number;
+    search_confidence?: number;
+  };
 }
 
 export interface QAHistoryItem {
@@ -59,20 +76,10 @@ class QAService {
    */
   async askQuestion(request: QARequest): Promise<QAResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ask`, {
+      return await fetchJson(`${this.baseUrl}/ask`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(request),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get answer');
-      }
-
-      return await response.json();
     } catch (error) {
       console.error('Error asking question:', error);
       throw error;

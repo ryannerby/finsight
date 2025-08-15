@@ -12,21 +12,18 @@ router.post('/pdf/enhanced', async (req, res) => {
   let browser;
   try {
     const { dealId, summaryReport, computedMetrics, options = {} } = req.body;
+    const requestId = req.headers['x-request-id'] as string;
 
     if (!dealId || !summaryReport || !computedMetrics) {
       return res.status(400).json({ 
-        error: 'Missing required parameters: dealId, summaryReport, computedMetrics' 
+        error: 'Missing required parameters: dealId, summaryReport, computedMetrics',
+        requestId,
+        type: 'ValidationError',
+        details: 'All required parameters must be provided for PDF generation'
       });
     }
 
-    console.log(`Starting enhanced PDF generation for deal: ${dealId}`);
-
-    // Validate summary report structure
-    if (!summaryReport.health_score || !summaryReport.traffic_lights) {
-      return res.status(400).json({ 
-        error: 'Invalid summary report structure' 
-      });
-    }
+    console.log(`Starting enhanced PDF generation for deal: ${dealId}, requestId: ${requestId}`);
 
     // Generate enhanced PDF
     const pdfGenerator = new EnhancedPDFGenerator();
@@ -45,15 +42,35 @@ router.post('/pdf/enhanced', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', pdfBuffer.length);
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('x-request-id', requestId);
 
     res.send(pdfBuffer);
 
   } catch (error) {
     console.error('Enhanced PDF generation error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate enhanced PDF',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    
+    const requestId = req.headers['x-request-id'] as string;
+    const errorMessage = error instanceof Error ? error.message : 'PDF generation failed';
+    
+    if (error instanceof Error && error.name === 'ReportTemplateError') {
+      // Handle template validation errors
+      const templateError = error as any;
+      res.status(400).json({ 
+        error: 'Report template validation failed',
+        details: errorMessage,
+        missingKeys: templateError.missingKeys || [],
+        requestId,
+        type: 'TemplateError'
+      });
+    } else {
+      // Handle other errors
+      res.status(500).json({ 
+        error: 'Failed to generate enhanced PDF',
+        details: errorMessage,
+        requestId,
+        type: 'PDFGenerationError'
+      });
+    }
   }
 });
 
@@ -61,10 +78,14 @@ router.post('/pdf/enhanced', async (req, res) => {
 router.post('/excel/enhanced', async (req, res) => {
   try {
     const { dealId, summaryReport, computedMetrics, options = {} } = req.body;
+    const requestId = req.headers['x-request-id'] as string;
 
     if (!dealId || !summaryReport || !computedMetrics) {
       return res.status(400).json({ 
-        error: 'Missing required parameters: dealId, summaryReport, computedMetrics' 
+        error: 'Missing required parameters: dealId, summaryReport, computedMetrics',
+        requestId,
+        type: 'ValidationError',
+        details: 'All required parameters must be provided for Excel generation'
       });
     }
 
@@ -73,7 +94,10 @@ router.post('/excel/enhanced', async (req, res) => {
     // Validate summary report structure
     if (!summaryReport.health_score || !summaryReport.traffic_lights) {
       return res.status(400).json({ 
-        error: 'Invalid summary report structure' 
+        error: 'Invalid summary report structure',
+        requestId,
+        type: 'ValidationError',
+        details: 'Summary report must include health_score and traffic_lights'
       });
     }
 
@@ -86,29 +110,37 @@ router.post('/excel/enhanced', async (req, res) => {
       options
     );
 
-    console.log(`Enhanced Excel generated successfully, size: ${excelBuffer.length} bytes`);
-
     // Set headers for Excel download
     const filename = `financial-analysis-${dealId}-${new Date().toISOString().split('T')[0]}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', excelBuffer.length);
     res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('x-request-id', requestId);
 
     res.send(excelBuffer);
 
   } catch (error) {
     console.error('Enhanced Excel generation error:', error);
+    
+    const requestId = req.headers['x-request-id'] as string;
+    const errorMessage = error instanceof Error ? error.message : 'Excel generation failed';
+    
     res.status(500).json({ 
       error: 'Failed to generate enhanced Excel',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage,
+      requestId,
+      type: 'ExcelGenerationError'
     });
   }
 });
 
 // Legacy HTML to PDF conversion (kept for backward compatibility)
-router.post('/', async (req, res) => {
-  let browser;
+router.post('/pdf/legacy', async (req, res) => {
+  let page: any = null;
+  let browser: any = null;
+  const consoleMessages: string[] = [];
+  
   try {
     const { html } = req.body;
 
@@ -118,22 +150,50 @@ router.post('/', async (req, res) => {
 
     console.log('Starting legacy PDF generation...');
 
-    // Launch browser
-    browser = await puppeteer.launch({
+    // Get executable path from environment or use default
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+      (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 
+       process.platform === 'linux' ? '/usr/bin/google-chrome' : 
+       process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+    
+    console.log(`Launching browser with executable: ${executablePath}`);
+    
+    const launchOptions: any = {
       headless: true,
-      executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    };
+    
+    if (executablePath) {
+      launchOptions.executablePath = executablePath;
+    }
+    
+    // Add Linux-specific options
+    if (process.platform === 'linux') {
+      launchOptions.args.push('--no-sandbox', '--disable-setuid-sandbox');
+    }
 
+    // Launch browser
+    browser = await puppeteer.launch(launchOptions);
     console.log('Browser launched successfully');
 
-    const page = await browser.newPage();
+    page = await browser.newPage();
+    console.log('New page created');
+    
+    // Capture console messages for debugging
+    page.on('console', (msg: any) => {
+      consoleMessages.push(`${msg.type()}: ${msg.text()}`);
+    });
+    
+    page.on('pageerror', (error: any) => {
+      consoleMessages.push(`Page Error: ${error.message}`);
+    });
 
     // Set content and wait for it to load
+    console.log('Setting HTML content...');
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    console.log('HTML content set successfully');
 
-    console.log('HTML content set, generating PDF...');
-
+    console.log('Generating PDF...');
     // Generate PDF with A4 format
     const pdf = await page.pdf({
       format: 'A4',
@@ -157,11 +217,25 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('Legacy PDF generation error:', error);
+    
+    // Include console messages in error for debugging
+    const consoleOutput = page ? 'Console output: ' + consoleMessages?.join('; ') : 'No console output available';
+    const errorMessage = `PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. ${consoleOutput}`;
+    
     res.status(500).json({ 
       error: 'Failed to generate PDF',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMessage
     });
   } finally {
+    if (page) {
+      try {
+        await page.close();
+        console.log('Page closed successfully');
+      } catch (closeError) {
+        console.error('Error closing page:', closeError);
+      }
+    }
+    
     if (browser) {
       try {
         await browser.close();

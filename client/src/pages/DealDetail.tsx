@@ -8,6 +8,8 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/toast-context';
+import { fetchJson, FetchError } from '@/lib/fetchJson';
 
 import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
@@ -1119,6 +1121,7 @@ const QATab = () => {
 export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   // Single-page layout: Summary is the main, embed Upload and Q&A sections
   const [deal, setDeal] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1172,16 +1175,10 @@ export default function DealDetail() {
         });
       }, 500);
       
-      const res = await fetch(`${API_BASE_URL}/analyze`, {
+      await fetchJson(`${API_BASE_URL}/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
       });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
-      }
       
       // Complete the analysis
       setAnalysisState('complete');
@@ -1195,7 +1192,22 @@ export default function DealDetail() {
       }, 2000);
       
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      const errorMessage = e instanceof FetchError 
+        ? e.message 
+        : e instanceof Error 
+          ? e.message 
+          : 'Unknown error';
+      
+      const requestId = e instanceof FetchError ? e.requestId : undefined;
+      
+      // Show error toast
+      addToast({
+        type: 'error',
+        message: `Analysis failed: ${errorMessage}`,
+        requestId,
+        details: `Deal: ${deal?.title || dealId}`
+      });
+      
       setAnalysisError(errorMessage);
       setAnalysisState('error');
       
@@ -1215,15 +1227,36 @@ export default function DealDetail() {
     if (!dealId) return;
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE_URL}/deals/${dealId}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Deal not found');
-        const data = await res.json();
+    
+    const loadDeal = async () => {
+      try {
+        const data = await fetchJson(`${API_BASE_URL}/deals/${dealId}`);
         setDeal(data);
-      })
-      .catch((e) => setError(e.message || 'Failed to load deal'))
-      .finally(() => setLoading(false));
-  }, [dealId]);
+      } catch (e) {
+        const errorMessage = e instanceof FetchError 
+          ? e.message 
+          : e instanceof Error 
+            ? e.message 
+            : 'Failed to load deal';
+        
+        const requestId = e instanceof FetchError ? e.requestId : undefined;
+        
+        // Show error toast
+        addToast({
+          type: 'error',
+          message: `Failed to load deal: ${errorMessage}`,
+          requestId,
+          details: `Deal ID: ${dealId}`
+        });
+        
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDeal();
+  }, [dealId, addToast]);
 
   // If there are no files uploaded yet, default to upload-only onboarding view
   const userId = 'user_123';
@@ -1324,9 +1357,18 @@ export default function DealDetail() {
               data-analyze-button
               onClick={handleAnalyze}
               disabled={analyzing || rateLimitCooldown > 0}
+              className="gap-2"
             >
-              {analyzing ? 'Analyzing…' : 
-               rateLimitCooldown > 0 ? `Wait ${rateLimitCooldown}s` : 'Analyze'}
+              {analyzing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                  Analyzing…
+                </>
+              ) : rateLimitCooldown > 0 ? (
+                `Wait ${rateLimitCooldown}s`
+              ) : (
+                'Analyze'
+              )}
             </Button>
           </div>
         </div>
@@ -1422,14 +1464,31 @@ export default function DealDetail() {
                   variant="destructive"
                   onClick={async () => {
                     try {
-                      const res = await fetch(`${API_BASE_URL}/deals/${deal.id}?user_id=user_123`, { method: 'DELETE' });
-                      if (!res.ok && res.status !== 204) {
-                        const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
-                        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
-                      }
+                      await fetchJson(`${API_BASE_URL}/deals/${deal.id}?user_id=user_123`, { 
+                        method: 'DELETE' 
+                      });
+                      
+                      addToast({
+                        type: 'success',
+                        message: 'Deal deleted successfully'
+                      });
+                      
                       navigate('/deals');
                     } catch (e) {
-                      alert(`Failed to delete: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                      const errorMessage = e instanceof FetchError 
+                        ? e.message 
+                        : e instanceof Error 
+                          ? e.message 
+                          : 'Unknown error';
+                      
+                      const requestId = e instanceof FetchError ? e.requestId : undefined;
+                      
+                      addToast({
+                        type: 'error',
+                        message: `Failed to delete deal: ${errorMessage}`,
+                        requestId,
+                        details: `Deal: ${deal.title}`
+                      });
                     }
                   }}
                 >

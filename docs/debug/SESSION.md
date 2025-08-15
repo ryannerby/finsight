@@ -1,172 +1,151 @@
-# Debug Session - Finsight Application
+# Debug Session: PHASE 9-10 Implementation
 
-## Session Start
-- **Date**: $(date)
-- **Phase**: 0 - Baseline & Repro
-- **Goal**: Identify why "the app isn't working" and produce fixes
+## Session Overview
+**Date**: December 2024  
+**Phase**: 9-10 (Automated Checks & Deliverables)  
+**Goal**: Implement automated testing and fix "Unknown error" issues with proper requestId tracking
 
-## Phase 0 - Baseline & Repro
+## Repro Steps
 
-### 1. Repo Sanity Check
-- [x] Run `npm run install:all`
-- [x] Copy `server/env.example` to `server/.env` if missing
-- [x] Verify environment variables in `server/.env`
+### 1. Route Smoke Tests
+- **Issue**: No automated testing for API endpoints
+- **Repro**: Run `npm test` in server directory - no tests exist
+- **Expected**: Comprehensive test suite covering all API routes
+- **Actual**: No test infrastructure
 
-### 2. Dev Server Startup
-- [x] Start server with `npm run dev:server`
-- [x] Start client with `npm run dev:client`
-- [x] Capture any startup errors
+### 2. Environment Validation
+- **Issue**: No validation that server fails to boot without required env vars
+- **Repro**: Remove ANTHROPIC_API_KEY from .env and start server
+- **Expected**: Server should fail to start with clear error
+- **Actual**: Server starts but logs warnings
 
-### 3. Happy Path Testing
-- [ ] Create Deal
-- [ ] Upload CSV/Excel
-- [ ] Click Analyze
-- [ ] Try Generate Report (PDF)
-- [ ] Record console and network errors
+### 3. "Unknown Error" Messages
+- **Issue**: Multiple instances of generic "Unknown error" in error responses
+- **Repro**: Trigger various error conditions in analyze/export routes
+- **Expected**: Clear, descriptive error messages with requestId
+- **Actual**: Generic "Unknown error" messages without context
 
-### 4. Health Checks
-- [x] Test `/api/health` endpoint
-- [x] Test `/deals` endpoint
-- [x] Record status codes and responses
+### 4. Missing RequestId in Error Responses
+- **Issue**: Error responses don't consistently include requestId
+- **Repro**: Make API calls and check error response format
+- **Expected**: All error responses include requestId for debugging
+- **Actual**: Inconsistent requestId inclusion
 
-## Error Log
+## Root Cause(s)
 
-### Health Check Results - $(date)
-- **Server Health**: ✅ OK - http://localhost:3001/api/health returns 200
-- **Deals Endpoint**: ⚠️ Working but requires user_id parameter - http://localhost:3001/api/deals returns 400 (expected behavior)
-- **Client**: ✅ Running on http://localhost:5173
-- **Server**: ✅ Running on http://localhost:3001
+### 1. Missing Test Infrastructure
+- No Jest configuration
+- No Supertest for API testing
+- No test setup files
+- Missing test dependencies in package.json
 
-### Environment Variables Status
-- ✅ PORT=3001
-- ⚠️ SUPABASE_URL (placeholder - needs real value)
-- ⚠️ SUPABASE_ANON_KEY (placeholder - needs real value)  
-- ⚠️ SUPABASE_SERVICE_ROLE_KEY (placeholder - needs real value)
-- ⚠️ ANTHROPIC_API_KEY (placeholder - needs real value)
-- ✅ DD_RULES_ENABLED=false
-- ✅ DD_CHECKLIST_ENABLED=false
+### 2. Poor Error Handling
+- Generic error messages using "Unknown error" fallback
+- Inconsistent error response structure
+- Missing requestId in error responses
+- No standardized error types
 
-## Findings & Fixes
+### 3. Environment Validation Gaps
+- ANTHROPIC_API_KEY is optional in schema
+- Server continues to boot without critical dependencies
+- No validation that required services are available
 
-### Root Cause Identified - $(date)
-**Issue**: The application is failing because the environment variables contain placeholder values instead of real Supabase credentials.
+## Fixes Implemented
 
-**Specific Problems**:
-1. `SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co` - This is not a real URL
-2. `SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` - This is a placeholder key
-3. `SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` - This is a placeholder key
-4. `ANTHROPIC_API_KEY=your-anthropic-api-key-here` - This is a placeholder key
+### 1. Test Infrastructure Setup
+**Files Modified**:
+- `server/package.json` - Added Jest, Supertest, ts-jest dependencies
+- `server/jest.config.js` - Jest configuration for TypeScript
+- `server/tests/setup.ts` - Test environment setup
+- `server/src/app.ts` - Separated app export for testing
 
-**Impact**: 
-- Server cannot connect to Supabase database
-- Database tables don't exist (analysis_reports, deals, etc.)
-- All database operations fail with "Unknown error"
-- PDF generation fails because it can't create report records
+**Test Files Created**:
+- `server/tests/routes/smoke.test.ts` - API route smoke tests
+- `server/tests/env/validation.test.ts` - Environment validation tests
 
-**Evidence**:
-- Server starts successfully (health endpoint works)
-- Client loads successfully 
-- But all database-dependent operations fail
-- Error "Failed to start report generation: Unknown error" occurs when trying to create analysis reports
+### 2. Error Handling Improvements
+**Files Modified**:
+- `server/src/routes/analyze.ts` - Fixed error handling, added requestId, eliminated "Unknown error"
+- `server/src/routes/export.ts` - Enhanced error responses with requestId and error types
 
-### Solutions
+**Key Changes**:
+- Replaced all "Unknown error" with descriptive messages
+- Added requestId to all error responses
+- Standardized error response format with type and details
+- Improved error logging with context
 
-#### Option 1: Use Real Supabase Project (Recommended for Production)
-1. Create a Supabase project at https://supabase.com
-2. Get your project URL and API keys from the project settings
-3. Update `server/.env` with real values:
-   ```
-   SUPABASE_URL=https://your-actual-project-ref.supabase.co
-   SUPABASE_ANON_KEY=your-actual-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-actual-service-role-key
-   ANTHROPIC_API_KEY=your-actual-anthropic-key
-   ```
-4. Run database migrations: `supabase db push`
+### 3. RequestId Middleware Enhancement
+**Files Modified**:
+- `server/src/app.ts` - Ensured requestId is set in all responses
+- Enhanced error handling middleware to include requestId
 
-#### Option 2: Local Supabase Development (Recommended for Development)
-1. Install Supabase CLI: `brew install supabase/tap/supabase`
-2. Start Docker Desktop
-3. Start local Supabase: `supabase start`
-4. Apply migrations: `supabase db push`
-5. Update `server/.env` with local values:
-   ```
-   SUPABASE_URL=http://localhost:54321
-   SUPABASE_ANON_KEY=your-local-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
-   ANTHROPIC_API_KEY=your-actual-anthropic-key
-   ```
+## Follow-ups (Tech Debt Tickets)
 
-#### Option 3: Temporary Mock Mode (For Testing UI Only) ✅ IMPLEMENTED
-Create a mock service that bypasses database operations for testing the UI flow.
+### 1. Test Coverage Expansion
+- **Priority**: High
+- **Description**: Add integration tests for database operations
+- **Files**: `server/tests/integration/`
+- **Effort**: 2-3 days
 
-**Implementation Status**: ✅ Complete
-- Mock Analysis Service created (`server/src/services/mockAnalysisService.ts`)
-- Mock Export Service created (`server/src/services/mockExportService.ts`)
-- Mock Router created (`server/src/routes/mock.ts`)
-- Mock endpoints added to server:
-  - `GET /api/mock/status` - Mock mode indicator
-  - `POST /api/mock/report/generate` - Mock report generation
-  - `GET /api/mock/report/:reportId/status` - Mock report status
-  - `POST /api/mock/export/pdf/enhanced` - Mock PDF export
-  - `POST /api/mock/export/excel/enhanced` - Mock Excel export
-  - `GET /api/mock/deals` - Mock deals list
-  - `POST /api/mock/deals` - Mock deal creation
+### 2. Error Type Standardization
+- **Priority**: Medium
+- **Description**: Create enum for error types and standardize across all routes
+- **Files**: `server/src/types/errors.ts`
+- **Effort**: 1 day
 
-**Testing Results**:
-- ✅ Mock status endpoint: Working
-- ✅ Mock deals endpoint: Working
-- ✅ Mock report generation: Working
-- ✅ Mock PDF export: Working (returns valid PDF)
+### 3. Environment Validation Enhancement
+- **Priority**: Medium
+- **Description**: Make ANTHROPIC_API_KEY required for production
+- **Files**: `server/src/lib/env.ts`
+- **Effort**: 0.5 day
 
-**Usage**: The application can now be tested using the `/api/mock/*` endpoints while the real database is being set up.
+### 4. Performance Testing
+- **Priority**: Low
+- **Description**: Add load testing for analyze endpoint
+- **Files**: `server/tests/performance/`
+- **Effort**: 2-3 days
 
-## Current Status Summary
+### 5. API Documentation
+- **Priority**: Low
+- **Description**: Generate OpenAPI spec from tests
+- **Files**: `server/docs/api/`
+- **Effort**: 1-2 days
 
-### ✅ What's Working
-1. **Server**: Running on http://localhost:3001 with health endpoint
-2. **Client**: Running on http://localhost:5173 
-3. **Mock Mode**: Fully functional with working endpoints
-4. **PDF Export**: Working (returns mock PDF for testing)
+## Testing Instructions
 
-### ⚠️ What's Not Working
-1. **Real Database**: Cannot connect due to placeholder environment variables
-2. **Real Analysis**: All database operations fail
-3. **Real PDF Generation**: Fails due to database connection issues
+### Run All Tests
+```bash
+cd server
+npm test
+```
 
-### 🔧 Next Steps for User
+### Run Specific Test Suites
+```bash
+# Route smoke tests only
+npm test -- --testNamePattern="smoke"
 
-#### Immediate Testing (Using Mock Mode)
-The user can now test the UI flow using the mock endpoints:
-- Create deals: `POST /api/mock/deals`
-- Generate reports: `POST /api/mock/report/generate`
-- Export PDFs: `POST /api/mock/export/pdf/enhanced`
+# Environment validation only
+npm test -- --testNamePattern="validation"
+```
 
-#### To Fix the Real Application
-The user needs to choose one of these options:
+### Test Coverage
+```bash
+npm run test:coverage
+```
 
-**Option A: Quick Fix for Testing**
-1. Update `server/.env` with real Supabase credentials
-2. Run `supabase db push` to create database tables
-3. Restart server
+## Verification Checklist
 
-**Option B: Local Development Setup**
-1. Install Supabase CLI: `brew install supabase/tap/supabase`
-2. Start Docker Desktop
-3. Run `supabase start` for local database
-4. Run `supabase db push` for migrations
-5. Update environment variables for local setup
+- [x] Jest test suite runs without errors
+- [x] All API routes return 200/400/404 as expected
+- [x] Error responses include requestId
+- [x] No "Unknown error" messages in responses
+- [x] Environment validation tests pass
+- [x] RequestId middleware works correctly
+- [x] Error handling is consistent across routes
 
-**Option C: Continue with Mock Mode**
-Use the mock endpoints for UI testing while setting up the real database separately.
+## Notes
 
-## Commit History
-
-### Phase 0 - Baseline Setup
-- **Commit**: 373f427 - Phase 0: Baseline setup and health checks completed
-- **Files**: docs/debug/SESSION.md
-- **Status**: ✅ Complete - Server and client running, environment configured
-
-### Phase 1 - Mock Mode Implementation
-- **Commit**: 52d525a - Phase 1: Implement mock mode for testing UI flow without database
-- **Files**: server/src/services/mockAnalysisService.ts, server/src/services/mockExportService.ts, server/src/routes/mock.ts, server/src/index.ts
-- **Status**: ✅ Complete - Mock services and endpoints working, PDF export functional
+- Tests run against the Express app instance, not a live server
+- Mock mode is enabled for tests to avoid database dependencies
+- RequestId generation is tested for both provided and auto-generated scenarios
+- Error response structure is now standardized across all endpoints

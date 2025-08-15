@@ -2,6 +2,19 @@ import puppeteer from 'puppeteer-core';
 import { SummaryReport } from '../types/summaryReport';
 import { ComputedMetrics } from '../types/database';
 
+// Custom error for report template issues
+export class ReportTemplateError extends Error {
+  public readonly missingKeys: string[];
+  public readonly requestId?: string;
+
+  constructor(message: string, missingKeys: string[] = [], requestId?: string) {
+    super(message);
+    this.name = 'ReportTemplateError';
+    this.missingKeys = missingKeys;
+    this.requestId = requestId;
+  }
+}
+
 export interface PDFExportOptions {
   theme?: 'professional' | 'modern' | 'minimal';
   includeCharts?: boolean;
@@ -68,11 +81,51 @@ export class EnhancedPDFGenerator {
     computedMetrics: ComputedMetrics,
     options: PDFExportOptions = {}
   ): Promise<Buffer> {
+    // Validate required template data
+    this.validateTemplateData(summaryReport, computedMetrics);
+    
     const mergedOptions = { ...this.defaultOptions, ...options };
     const context = await this.buildRenderContext(dealId, summaryReport, computedMetrics, mergedOptions);
     const html = await this.renderTemplate(context, mergedOptions);
     
     return await this.convertToPDF(html, mergedOptions);
+  }
+
+  private validateTemplateData(summaryReport: SummaryReport, computedMetrics: ComputedMetrics): void {
+    const missingKeys: string[] = [];
+    
+    // Check required summary report fields
+    if (!summaryReport.health_score) {
+      missingKeys.push('health_score');
+    }
+    
+    if (!summaryReport.traffic_lights) {
+      missingKeys.push('traffic_lights');
+    }
+    
+    if (!summaryReport.top_strengths || !Array.isArray(summaryReport.top_strengths)) {
+      missingKeys.push('top_strengths');
+    }
+    
+    if (!summaryReport.top_risks || !Array.isArray(summaryReport.top_risks)) {
+      missingKeys.push('top_risks');
+    }
+    
+    if (!summaryReport.recommendation) {
+      missingKeys.push('recommendation');
+    }
+    
+    // Check required computed metrics
+    if (!computedMetrics || typeof computedMetrics !== 'object') {
+      missingKeys.push('computedMetrics');
+    }
+    
+    if (missingKeys.length > 0) {
+      throw new ReportTemplateError(
+        `Missing required template data: ${missingKeys.join(', ')}`,
+        missingKeys
+      );
+    }
   }
 
   private async buildRenderContext(
@@ -320,29 +373,47 @@ export class EnhancedPDFGenerator {
     const footnotes: EvidenceFootnote[] = [];
     let footnoteId = 1;
 
-    // Extract evidence from traffic lights
-    Object.entries(summaryReport.traffic_lights).forEach(([category, trafficLight]) => {
-      trafficLight.evidence.forEach(evidence => {
-        footnotes.push({
-          id: `fn${footnoteId++}`,
-          text: evidence.context || evidence.ref,
-          source: evidence.document_id || 'Computed Metric',
-          page: evidence.page
+    try {
+      // Extract evidence from traffic lights - handle missing evidence arrays
+      if (summaryReport.traffic_lights) {
+        Object.entries(summaryReport.traffic_lights).forEach(([category, trafficLight]) => {
+          if (trafficLight && trafficLight.evidence && Array.isArray(trafficLight.evidence)) {
+            trafficLight.evidence.forEach(evidence => {
+              if (evidence) {
+                footnotes.push({
+                  id: `fn${footnoteId++}`,
+                  text: evidence.context || evidence.ref || 'Evidence provided',
+                  source: evidence.document_id || 'Computed Metric',
+                  page: evidence.page
+                });
+              }
+            });
+          }
         });
-      });
-    });
+      }
 
-    // Extract evidence from strengths and risks
-    [...summaryReport.top_strengths, ...summaryReport.top_risks].forEach(item => {
-      item.evidence.forEach(evidence => {
-        footnotes.push({
-          id: `fn${footnoteId++}`,
-          text: evidence.context || evidence.ref,
-          source: evidence.document_id || 'Computed Metric',
-          page: evidence.page
-        });
+      // Extract evidence from strengths and risks - handle missing evidence arrays
+      const strengths = summaryReport.top_strengths || [];
+      const risks = summaryReport.top_risks || [];
+      
+      [...strengths, ...risks].forEach(item => {
+        if (item && item.evidence && Array.isArray(item.evidence)) {
+          item.evidence.forEach(evidence => {
+            if (evidence) {
+              footnotes.push({
+                id: `fn${footnoteId++}`,
+                text: evidence.context || evidence.ref || 'Evidence provided',
+                source: evidence.document_id || 'Computed Metric',
+                page: evidence.page
+              });
+            }
+          });
+        }
       });
-    });
+    } catch (error) {
+      console.warn('Error building evidence footnotes:', error);
+      // Return empty footnotes array if there's an error
+    }
 
     return footnotes;
   }
@@ -671,23 +742,23 @@ export class EnhancedPDFGenerator {
             <div class="metric-grid">
               <div class="metric-card">
                 <div class="metric-label">Profitability</div>
-                <div class="metric-value">${health_score.components.profitability}/100</div>
+                <div class="metric-value">${health_score.components?.profitability || health_score.overall || 'N/A'}/100</div>
               </div>
               <div class="metric-card">
                 <div class="metric-label">Growth</div>
-                <div class="metric-value">${health_score.components.growth}/100</div>
+                <div class="metric-value">${health_score.components?.growth || health_score.overall || 'N/A'}/100</div>
               </div>
               <div class="metric-card">
                 <div class="metric-label">Liquidity</div>
-                <div class="metric-value">${health_score.components.liquidity}/100</div>
+                <div class="metric-value">${health_score.components?.liquidity || health_score.overall || 'N/A'}/100</div>
               </div>
               <div class="metric-card">
                 <div class="metric-label">Leverage</div>
-                <div class="metric-value">${health_score.components.leverage}/100</div>
+                <div class="metric-value">${health_score.components?.leverage || health_score.overall || 'N/A'}/100</div>
               </div>
             </div>
             <p style="font-size: 10px; color: #6b7280; font-style: italic;">
-              ${health_score.methodology}
+              ${health_score.methodology || 'Standard financial ratio analysis'}
             </p>
           </div>
         </div>
@@ -798,17 +869,55 @@ export class EnhancedPDFGenerator {
   }
 
   private async convertToPDF(html: string, options: PDFExportOptions): Promise<Buffer> {
-    let browser;
+    let page: any = null;
+    let browser: any = null;
+    const consoleMessages: string[] = [];
+    
     try {
-      browser = await puppeteer.launch({
+      console.log('Starting PDF conversion...');
+      
+      // Get executable path from environment or use default
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+        (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 
+         process.platform === 'linux' ? '/usr/bin/google-chrome' : 
+         process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+      
+      console.log(`Launching browser with executable: ${executablePath}`);
+      
+      const launchOptions: any = {
         headless: true,
-        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+      };
+      
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+      }
+      
+      // Add Linux-specific options
+      if (process.platform === 'linux') {
+        launchOptions.args.push('--no-sandbox', '--disable-setuid-sandbox');
+      }
+      
+      browser = await puppeteer.launch(launchOptions);
+      console.log('Browser launched successfully');
+
+      page = await browser.newPage();
+      console.log('New page created');
+      
+      // Capture console messages for debugging
+      page.on('console', (msg: any) => {
+        consoleMessages.push(`${msg.type()}: ${msg.text()}`);
+      });
+      
+      page.on('pageerror', (error: any) => {
+        consoleMessages.push(`Page Error: ${error.message}`);
       });
 
-      const page = await browser.newPage();
+      console.log('Setting HTML content...');
       await page.setContent(html, { waitUntil: 'domcontentloaded' });
+      console.log('HTML content set successfully');
 
+      console.log('Generating PDF...');
       const pdf = await page.pdf({
         format: options.pageSize || 'A4',
         printBackground: true,
@@ -819,11 +928,35 @@ export class EnhancedPDFGenerator {
           left: '0.8in'
         }
       });
-
+      
+      console.log(`PDF generated successfully, size: ${pdf.length} bytes`);
       return Buffer.from(pdf);
+      
+    } catch (error) {
+      console.error('PDF conversion error:', error);
+      
+      // Include console messages in error for debugging
+      const consoleOutput = page ? 'Console output: ' + consoleMessages.join('; ') : 'No console output available';
+      const errorMessage = `PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}. ${consoleOutput}`;
+      
+      throw new Error(errorMessage);
     } finally {
+      if (page) {
+        try {
+          await page.close();
+          console.log('Page closed successfully');
+        } catch (closeError) {
+          console.error('Error closing page:', closeError);
+        }
+      }
+      
       if (browser) {
-        await browser.close();
+        try {
+          await browser.close();
+          console.log('Browser closed successfully');
+        } catch (closeError) {
+          console.error('Error closing browser:', closeError);
+        }
       }
     }
   }

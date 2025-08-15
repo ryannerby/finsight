@@ -20,6 +20,7 @@ import {
   TReportGenerationResponse,
   TAnalysisReport 
 } from '../types/analysis';
+import { createRequestLogger, generateRequestId } from '../lib/logger';
 
 export const analyzeRouter = Router();
 
@@ -133,8 +134,27 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
   const startTime = Date.now();
   const { dealId, userId } = req.body;
   
+  // Create request-specific logger
+  const requestLogger = createRequestLogger(generateRequestId());
+  const requestId = req.headers['x-request-id'] as string;
+  
   try {
-    if (!dealId || !userId) return res.status(400).json({ error: 'dealId and userId are required' });
+    if (!dealId || !userId) {
+      return res.status(400).json({ 
+        error: 'dealId and userId are required',
+        requestId,
+        type: 'ValidationError'
+      });
+    }
+
+    // PHASE 5.1: Ownership & auth logging
+    requestLogger.info('Analysis request initiated', { 
+      dealId, 
+      userId, 
+      timestamp: new Date().toISOString(),
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
 
     // Rate limiting: one analysis per minute per deal
     // if (!rateLimiter.isAllowed(dealId)) {
@@ -144,7 +164,8 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
     //     .json({ 
     //       error: error.message, 
     //       type: error.type, 
-    //       retryAfter: error.retryAfter 
+    //       retryAfter: error.retryAfter,
+    //       requestId
     //     });
     // }
 
@@ -156,11 +177,26 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
       .eq('id', dealId)
       .eq('user_id', userId)
       .single();
-    console.log(`[analyze] verify_deal ${Date.now() - t0}ms ${dealError ? 'fail' : 'ok'}`);
+    
+    const dealVerificationTime = Date.now() - t0;
+    requestLogger.info('Deal ownership verification completed', {
+      dealId,
+      userId,
+      verificationTimeMs: dealVerificationTime,
+      success: !dealError && !!deal,
+      error: dealError?.message || null
+    });
 
-    if (dealError || !deal) return res.status(404).json({ error: 'Deal not found or access denied' });
+    if (dealError || !deal) {
+      return res.status(404).json({ 
+        error: 'Deal not found or access denied',
+        requestId,
+        type: 'NotFoundError',
+        details: dealError?.message || 'Deal verification failed'
+      });
+    }
 
-    // Get documents for this deal
+    // PHASE 5.2: Document fetch logging
     t0 = Date.now();
     const { data: documents, error: docsError } = await supabase
       .from('documents')
@@ -169,10 +205,55 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
         analyses (*)
       `)
       .eq('deal_id', dealId);
-    console.log(`[analyze] fetch_documents ${Date.now() - t0}ms ${docsError ? 'fail' : 'ok'}`);
+    
+    const documentFetchTime = Date.now() - t0;
+    
+    // Log document details
+    if (documents && documents.length > 0) {
+      const documentTypes = documents.map(doc => ({
+        id: doc.id,
+        filename: doc.filename,
+        mimeType: doc.mime_type,
+        fileType: doc.file_type,
+        fileSize: doc.file_size,
+        storagePath: doc.file_path,
+        hasAnalyses: doc.analyses ? doc.analyses.length : 0
+      }));
+      
+      requestLogger.info('Documents fetched successfully', {
+        dealId,
+        documentCount: documents.length,
+        fetchTimeMs: documentFetchTime,
+        documentTypes: documentTypes.map(dt => dt.mimeType),
+        storagePaths: documentTypes.map(dt => dt.storagePath),
+        totalFileSize: documentTypes.reduce((sum, dt) => sum + (dt.fileSize || 0), 0),
+        documents: documentTypes
+      });
+    } else {
+      requestLogger.warn('No documents found for analysis', {
+        dealId,
+        fetchTimeMs: documentFetchTime,
+        error: docsError?.message || null
+      });
+    }
 
-    if (docsError) return res.status(500).json({ error: 'Failed to fetch documents' });
-    if (!documents || documents.length === 0) return res.status(400).json({ error: 'No documents found for analysis' });
+    if (docsError) {
+      return res.status(500).json({ 
+        error: 'Failed to fetch documents',
+        requestId,
+        type: 'DatabaseError',
+        details: docsError.message
+      });
+    }
+    
+    if (!documents || documents.length === 0) {
+      return res.status(400).json({ 
+        error: 'No documents found for analysis',
+        requestId,
+        type: 'ValidationError',
+        details: 'No documents have been uploaded for this deal'
+      });
+    }
 
     // Check file sizes and validate documents
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -183,29 +264,92 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
           .json({ 
             error: error.message, 
             type: error.type, 
-            details: error.details 
+            details: error.details,
+            requestId
           });
       }
     }
 
-    // Process documents and compute metrics
+    // PHASE 5.3: Metrics computation logging
     t0 = Date.now();
     let computedMetrics, representativeDoc;
     try {
-      const result = await processDocumentsAndComputeMetrics(documents);
+      const result = await processDocumentsAndComputeMetrics(documents, requestLogger);
       computedMetrics = result.computedMetrics;
       representativeDoc = result.representativeDoc;
-      console.log(`[analyze] process_documents ${Date.now() - t0}ms`);
+      
+      const metricsComputationTime = Date.now() - t0;
+      requestLogger.info('Metrics computation completed', {
+        dealId,
+        computationTimeMs: metricsComputationTime,
+        metricsCount: Object.keys(computedMetrics).length,
+        representativeDoc: {
+          id: representativeDoc.id,
+          filename: representativeDoc.filename,
+          mimeType: representativeDoc.mime_type
+        }
+      });
+      
+      // Log per-metric inputs and outputs (rounded)
+      const metricsLog = Object.entries(computedMetrics).map(([metricId, value]) => ({
+        metric: metricId,
+        value: value !== null ? Math.round(value * 1000) / 1000 : null, // Round to 3 decimal places
+        status: value !== null ? 'computed' : 'missing_data'
+      }));
+      
+      requestLogger.info('Individual metrics computed', {
+        dealId,
+        metrics: metricsLog,
+        summary: {
+          total: metricsLog.length,
+          computed: metricsLog.filter(m => m.status === 'computed').length,
+          missing: metricsLog.filter(m => m.status === 'missing_data').length
+        }
+      });
+      
     } catch (error) {
-      console.error('Error processing documents:', error);
-      return res.status(500).json({ error: `Failed to process documents: ${error instanceof Error ? error.message : 'Unknown error'}` });
+      requestLogger.error('Error processing documents and computing metrics', {
+        dealId,
+        error: error instanceof Error ? error.message : 'Metrics computation failed',
+        stack: error instanceof Error ? error.stack : null
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Metrics computation failed';
+      return res.status(500).json({ 
+        error: `Failed to process documents: ${errorMessage}`,
+        requestId,
+        type: 'ProcessingError',
+        details: errorMessage
+      });
     }
 
-    // Generate enhanced analysis report
+    // PHASE 5.4: LLM summary with error handling
     t0 = Date.now();
     let enhancedAnalysisResult = null;
     try {
-      console.log('Starting enhanced analysis...');
+      // Check if Anthropic API key is available
+      if (!process.env.ANTHROPIC_API_KEY) {
+        const error = AnalysisErrorHandler.createLLMUnavailableError('ANTHROPIC_API_KEY environment variable not set');
+        requestLogger.warn('LLM service unavailable - API key missing', {
+          dealId,
+          error: error.message,
+          details: error.details
+        });
+        throw error;
+      }
+      
+      // Validate API key format (basic check)
+      if (process.env.ANTHROPIC_API_KEY.length < 20) {
+        const error = AnalysisErrorHandler.createLLMUnavailableError('ANTHROPIC_API_KEY appears to be invalid or too short');
+        requestLogger.warn('LLM service unavailable - API key appears invalid', {
+          dealId,
+          error: error.message,
+          details: error.details
+        });
+        throw error;
+      }
+      
+      requestLogger.info('Starting enhanced analysis with LLM', { dealId });
       const { analysisId, summaryReport, generationStats } = await enhancedAnalysisService
         .generateComprehensiveReport(dealId, documents, computedMetrics);
       
@@ -214,37 +358,85 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
         summaryReport,
         generationStats
       };
-      console.log(`[analyze] enhanced_analysis ${Date.now() - t0}ms`);
+      
+      const enhancedAnalysisTime = Date.now() - t0;
+      requestLogger.info('Enhanced analysis completed successfully', {
+        dealId,
+        analysisId,
+        enhancedAnalysisTimeMs: enhancedAnalysisTime,
+        generationStats
+      });
+      
     } catch (enhancedError) {
-      console.error('Enhanced analysis failed, continuing with traditional analysis:', enhancedError);
-      // Continue with traditional analysis even if enhanced fails
+      const enhancedAnalysisTime = Date.now() - t0;
+      
+      if (enhancedError instanceof Error && enhancedError.message.includes('LLM service unavailable')) {
+        // This is our custom error for missing/invalid API key
+        requestLogger.warn('LLM service unavailable, continuing with traditional analysis', {
+          dealId,
+          error: enhancedError.message,
+          enhancedAnalysisTimeMs: enhancedAnalysisTime
+        });
+        
+        // Return the error to the client
+        return res.status(AnalysisErrorHandler.getHttpStatus({
+          type: 'llm_unavailable',
+          message: enhancedError.message,
+          details: { reason: 'API key missing or invalid' }
+        })).json({
+          error: enhancedError.message,
+          type: 'llm_unavailable',
+          details: { reason: 'API key missing or invalid' },
+          requestId
+        });
+      }
+      
+      // Other enhanced analysis errors - log and continue with traditional analysis
+      const errorMessage = enhancedError instanceof Error ? enhancedError.message : 'Enhanced analysis failed';
+      requestLogger.warn('Enhanced analysis failed, continuing with traditional analysis', {
+        dealId,
+        error: errorMessage,
+        enhancedAnalysisTimeMs: enhancedAnalysisTime
+      });
     }
 
     // Create a basic summary report from computed metrics if enhanced analysis failed
     let basicSummaryReport = null;
     if (!enhancedAnalysisResult?.summaryReport) {
       try {
-        console.log('Computed metrics structure:', JSON.stringify(computedMetrics, null, 2));
-        console.log('Creating basic summary report...');
+        requestLogger.info('Creating basic summary report from computed metrics', { dealId });
         basicSummaryReport = createBasicSummaryReport(dealId, computedMetrics, documents);
-        console.log('Created basic summary report successfully:', basicSummaryReport ? 'yes' : 'no');
-        if (basicSummaryReport) {
-          console.log('Summary report keys:', Object.keys(basicSummaryReport));
-        }
+        requestLogger.info('Basic summary report created successfully', { 
+          dealId,
+          hasReport: !!basicSummaryReport,
+          reportKeys: basicSummaryReport ? Object.keys(basicSummaryReport) : []
+        });
       } catch (summaryError) {
-        console.error('Failed to create basic summary report:', summaryError);
-        console.error('Error stack:', summaryError instanceof Error ? summaryError.stack : 'No stack trace');
+        const errorMessage = summaryError instanceof Error ? summaryError.message : 'Summary report creation failed';
+        requestLogger.error('Failed to create basic summary report', {
+          dealId,
+          error: errorMessage,
+          stack: summaryError instanceof Error ? summaryError.stack : null
+        });
       }
     }
 
-    // Store traditional financial analysis for backward compatibility
+    // PHASE 5.5: Persistence verification and logging
     t0 = Date.now();
     const financialAnalysisId = await persistFinancialAnalysis(
       dealId,
       representativeDoc.id,
-      computedMetrics
+      computedMetrics,
+      requestLogger
     );
-    console.log(`[analyze] persist_financial ${Date.now() - t0}ms`);
+    
+    const persistenceTime = Date.now() - t0;
+    requestLogger.info('Financial analysis persisted successfully', {
+      dealId,
+      financialAnalysisId,
+      persistenceTimeMs: persistenceTime,
+      documentId: representativeDoc.id
+    });
 
     const totalTime = Date.now() - startTime;
     
@@ -253,7 +445,17 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
       total_time_ms: totalTime,
       document_count: documents.length,
       enhanced_analysis_id: enhancedAnalysisResult?.analysisId,
-      financial_analysis_id: financialAnalysisId
+      financial_analysis_id: financialAnalysisId,
+      user_id: userId
+    });
+
+    requestLogger.info('Analysis pipeline completed successfully', {
+      dealId,
+      userId,
+      totalTimeMs: totalTime,
+      enhancedAnalysisAvailable: !!enhancedAnalysisResult,
+      financialAnalysisId,
+      documentCount: documents.length
     });
 
     res.json({
@@ -263,6 +465,7 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
       summaryReport: enhancedAnalysisResult?.summaryReport || basicSummaryReport,
       generationStats: enhancedAnalysisResult?.generationStats,
       exportVersion: 'v1',
+      requestId,
       metadata: {
         documentCount: documents.length,
         totalProcessingTime: totalTime,
@@ -273,15 +476,29 @@ analyzeRouter.post('/', async (req: Request, res: Response, next: NextFunction) 
 
   } catch (error) {
     const totalTime = Date.now() - startTime;
-    console.error('Analysis failed with error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    const errorMessage = error instanceof Error ? error.message : 'Analysis pipeline failed';
+    
+    requestLogger.error('Analysis pipeline failed', {
+      dealId,
+      userId,
+      totalTimeMs: totalTime,
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : null
+    });
     
     await logAnalysisEvent(dealId, 'analysis_failed', {
       total_time_ms: totalTime,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage,
+      user_id: userId
     });
     
-    next(error);
+    // Return structured error response instead of passing to next()
+    return res.status(500).json({
+      error: errorMessage,
+      requestId,
+      type: 'AnalysisError',
+      details: 'The analysis pipeline encountered an unexpected error'
+    });
   }
 });
 
@@ -581,17 +798,22 @@ analyzeRouter.put('/report/:reportId', async (req: Request, res: Response) => {
 });
 
 // Helper functions
-async function processDocumentsAndComputeMetrics(documents: any[]) {
-  console.log('Processing documents:', documents.length);
-  console.log('First document structure:', JSON.stringify(documents[0], null, 2));
+async function processDocumentsAndComputeMetrics(documents: any[], logger: any) {
+  logger.info('Starting document processing and metrics computation', { 
+    documentCount: documents.length 
+  });
   
   const periodMap = new Map<string, any>();
   let representativeDoc = documents[0];
 
   // Process each document
   for (const doc of documents) {
-    console.log(`Processing document: ${doc.filename}, mime_type: ${doc.mime_type}`);
-    console.log(`Document has analyses: ${doc.analyses ? doc.analyses.length : 0}`);
+    logger.info('Processing document', {
+      documentId: doc.id,
+      filename: doc.filename,
+      mimeType: doc.mime_type,
+      hasAnalyses: doc.analyses ? doc.analyses.length : 0
+    });
     
     if (doc.mime_type === 'text/csv' || doc.mime_type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
       try {
@@ -599,7 +821,10 @@ async function processDocumentsAndComputeMetrics(documents: any[]) {
         let parsedData = null;
         
         if (doc.analyses && doc.analyses.length > 0) {
-          console.log(`Document ${doc.filename} has ${doc.analyses.length} analyses`);
+          logger.info('Document has existing analyses', {
+            documentId: doc.id,
+            analysisCount: doc.analyses.length
+          });
           
           // Find the most recent extraction analysis
           const extractionAnalysis = doc.analyses
@@ -607,29 +832,48 @@ async function processDocumentsAndComputeMetrics(documents: any[]) {
             .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
           
           if (extractionAnalysis && extractionAnalysis.parsed_text) {
-            console.log(`Found extraction analysis for ${doc.filename}:`, extractionAnalysis.parsed_text.substring(0, 200) + '...');
+            logger.info('Found existing extraction analysis', {
+              documentId: doc.id,
+              analysisId: extractionAnalysis.id,
+              parsedTextLength: extractionAnalysis.parsed_text.length
+            });
             // Parse the existing extracted text to get periods data
             parsedData = await parseExtractedText(extractionAnalysis.parsed_text);
           } else {
-            console.log(`No extraction analysis found for ${doc.filename}`);
+            logger.info('No extraction analysis found for document', { documentId: doc.id });
           }
         }
         
         // If no existing parsed data, try to download and parse the file
         if (!parsedData) {
-          console.log(`No parsed data found, trying to download ${doc.filename}`);
+          logger.info('No parsed data found, downloading document from storage', { 
+            documentId: doc.id,
+            storagePath: doc.file_path 
+          });
           try {
             const fileBuffer = await downloadDocumentFromStorage(doc.file_path);
             parsedData = await documentParser.parse(doc.filename, fileBuffer);
+            logger.info('Document downloaded and parsed successfully', {
+              documentId: doc.id,
+              fileSizeBytes: fileBuffer.length
+            });
           } catch (storageError) {
-            console.warn(`Failed to download document ${doc.filename} from storage:`, storageError);
+            logger.warn('Failed to download document from storage', {
+              documentId: doc.id,
+              storagePath: doc.file_path,
+              error: storageError instanceof Error ? storageError.message : 'Unknown error'
+            });
             // Continue with next document
             continue;
           }
         }
         
         if (parsedData && parsedData.periods) {
-          console.log(`Successfully parsed data for ${doc.filename}:`, Object.keys(parsedData.periods));
+          logger.info('Successfully parsed document data', {
+            documentId: doc.id,
+            periodCount: Object.keys(parsedData.periods).length,
+            periods: Object.keys(parsedData.periods)
+          });
           // Merge into period map
           Object.entries(parsedData.periods).forEach(([period, data]) => {
             if (!periodMap.has(period)) {
@@ -640,16 +884,22 @@ async function processDocumentsAndComputeMetrics(documents: any[]) {
           
           representativeDoc = doc; // Use last successfully parsed doc
         } else {
-          console.log(`No periods data found for ${doc.filename}`);
+          logger.warn('No periods data found in parsed document', { documentId: doc.id });
         }
       } catch (error) {
-        logger.warn(`Failed to process document ${doc.filename}:`, error);
+        logger.warn('Failed to process document', {
+          documentId: doc.id,
+          filename: doc.filename,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     }
   }
 
-  console.log('Final period map size:', periodMap.size);
-  console.log('Period map keys:', Array.from(periodMap.keys()));
+  logger.info('Document processing completed', {
+    finalPeriodMapSize: periodMap.size,
+    periodKeys: Array.from(periodMap.keys())
+  });
 
   if (periodMap.size === 0) {
     throw new Error('No financial data could be extracted from uploaded documents');
@@ -658,10 +908,26 @@ async function processDocumentsAndComputeMetrics(documents: any[]) {
   // Detect periodicity and compute metrics
   const periods = Array.from(periodMap.keys());
   const periodicity = detectPeriodicity(periods);
+  
+  logger.info('Starting metrics computation', {
+    periodCount: periods.length,
+    periodicity,
+    periods: periods.slice(0, 5) // Log first 5 periods to avoid excessive logging
+  });
+  
   const computedMetrics = computeAllMetrics({
     periods,
     periodicity,
     canon: Object.fromEntries(periodMap)
+  }, logger);
+
+  logger.info('Metrics computation completed', {
+    metricsCount: Object.keys(computedMetrics).length,
+    metrics: Object.entries(computedMetrics).map(([metricId, value]) => ({
+      metric: metricId,
+      value: value !== null ? Math.round(value * 1000) / 1000 : null, // Round to 3 decimal places
+      status: value !== null ? 'computed' : 'missing_data'
+    }))
   });
 
   return { computedMetrics, representativeDoc };
@@ -700,15 +966,21 @@ async function parseExtractedText(extractedText: string): Promise<{ periods: Rec
     }
   }
   
-  console.log('Parsed periods from extracted text:', periods);
   return { periods };
 }
 
 async function persistFinancialAnalysis(
   dealId: string,
   representativeDocId: string,
-  computedMetrics: any
+  computedMetrics: any,
+  logger: any
 ): Promise<string> {
+  logger.info('Persisting financial analysis to database', {
+    dealId,
+    documentId: representativeDocId,
+    metricsCount: Object.keys(computedMetrics).length
+  });
+  
   const { data, error } = await supabase
     .from('analyses')
     .insert({
@@ -720,18 +992,39 @@ async function persistFinancialAnalysis(
     .select('id')
     .single();
 
-  if (error) throw new Error(`Failed to persist financial analysis: ${error.message}`);
+  if (error) {
+    logger.error('Failed to persist financial analysis', {
+      dealId,
+      documentId: representativeDocId,
+      error: error.message,
+      stack: error.stack
+    });
+    throw new Error(`Failed to persist financial analysis: ${error.message}`);
+  }
+  
+  logger.info('Financial analysis persisted successfully', {
+    dealId,
+    analysisId: data.id,
+    documentId: representativeDocId
+  });
+  
   return data.id;
 }
 
 async function logAnalysisEvent(dealId: string, event: string, metadata: any) {
   try {
-    await supabase.from('logs').insert({
+    const { data, error } = await supabase.from('logs').insert({
       deal_id: dealId,
       event,
       metadata,
       timestamp: new Date().toISOString()
     });
+    
+    if (error) {
+      console.error('Failed to log analysis event to database:', error);
+    } else {
+      console.log('Analysis event logged successfully:', { dealId, event, logId: 'logged' });
+    }
   } catch (error) {
     console.error('Failed to log analysis event:', error);
   }

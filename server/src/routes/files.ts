@@ -9,7 +9,7 @@ export const filesRouter = Router();
 // Configure multer for file uploads
 const upload = multer({ 
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
 // Get pre-signed URL for file upload
@@ -206,7 +206,17 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
     const fileBuffer = Buffer.from(arrayBuffer);
 
     // Parse the document
-    const parsedText = await parseDocument(fileBuffer, document.mime_type);
+    const parsedDocument = await parseDocument(fileBuffer, document.mime_type);
+
+    // Log parsing results
+    console.log(`Document parsed successfully:`, {
+      document_id,
+      filename: document.original_name,
+      mime_type: document.mime_type,
+      word_count: parsedDocument.text.split(/\s+/).filter(Boolean).length,
+      rows_parsed: parsedDocument.rows?.length || 0,
+      periodicity: parsedDocument.periodicity
+    });
 
     // Idempotent upsert: one 'extraction' row per document
     const { data: existing, error: findErr } = await supabase
@@ -221,16 +231,20 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'Failed to check existing analysis' });
     }
 
+    const analysisData = {
+      parsed_text: parsedDocument.text,
+      analysis_result: {
+        word_count: parsedDocument.text.split(/\s+/).filter(Boolean).length,
+        extraction_timestamp: new Date().toISOString(),
+        rows_parsed: parsedDocument.rows?.length || 0,
+        periodicity: parsedDocument.periodicity
+      }
+    };
+
     if (existing?.id) {
       const { data: updated, error: updErr } = await supabase
         .from('analyses')
-        .update({
-          parsed_text: parsedText,
-          analysis_result: {
-            word_count: parsedText.split(/\s+/).filter(Boolean).length,
-            extraction_timestamp: new Date().toISOString()
-          }
-        })
+        .update(analysisData)
         .eq('id', existing.id)
         .select()
         .single();
@@ -245,11 +259,7 @@ filesRouter.post('/parse/:document_id', async (req: Request, res: Response) => {
         .insert({
           document_id,
           analysis_type: 'extraction',
-          parsed_text: parsedText,
-          analysis_result: {
-            word_count: parsedText.split(/\s+/).filter(Boolean).length,
-            extraction_timestamp: new Date().toISOString()
-          }
+          ...analysisData
         })
         .select()
         .single();

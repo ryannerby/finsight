@@ -63,7 +63,26 @@ export class ExportService {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Server error response:', errorData);
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        
+        // Extract error details and request ID
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        const errorDetails = errorData.details || '';
+        const requestId = errorData.requestId || '';
+        const missingKeys = errorData.missingKeys || [];
+        
+        // Build comprehensive error message
+        let fullErrorMessage = errorMessage;
+        if (errorDetails) {
+          fullErrorMessage += `: ${errorDetails}`;
+        }
+        if (missingKeys.length > 0) {
+          fullErrorMessage += ` (Missing: ${missingKeys.join(', ')})`;
+        }
+        if (requestId) {
+          fullErrorMessage += ` [Request ID: ${requestId}]`;
+        }
+        
+        throw new Error(fullErrorMessage);
       }
 
       onProgress?.({
@@ -146,7 +165,26 @@ export class ExportService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        
+        // Extract error details and request ID
+        const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        const errorDetails = errorData.details || '';
+        const requestId = errorData.requestId || '';
+        const missingKeys = errorData.missingKeys || [];
+        
+        // Build comprehensive error message
+        let fullErrorMessage = errorMessage;
+        if (errorDetails) {
+          fullErrorMessage += `: ${errorDetails}`;
+        }
+        if (missingKeys.length > 0) {
+          fullErrorMessage += ` (Missing: ${missingKeys.join(', ')})`;
+        }
+        if (requestId) {
+          fullErrorMessage += ` [Request ID: ${requestId}]`;
+        }
+        
+        throw new Error(fullErrorMessage);
       }
 
       onProgress?.({

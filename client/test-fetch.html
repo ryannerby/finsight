@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Utility Test</title>
+</head>
+<body>
+    <h1>Fetch Utility Test</h1>
+    <button onclick="testSuccessfulRequest()">Test Successful Request</button>
+    <button onclick="testErrorRequest()">Test Error Request</button>
+    <button onclick="testTimeout()">Test Timeout</button>
+    
+    <div id="output"></div>
+
+    <script type="module">
+        import { fetchJson, getJson, postJson } from './src/lib/fetchJson.js';
+
+        window.testSuccessfulRequest = async function() {
+            try {
+                const result = await getJson('http://localhost:3001/api/health');
+                document.getElementById('output').innerHTML = `
+                    <h3>Successful Request:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                `;
+            }
+        };
+
+        window.testErrorRequest = async function() {
+            try {
+                const result = await getJson('http://localhost:3001/api/nonexistent');
+                document.getElementById('output').innerHTML = `
+                    <h3>Unexpected Success:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `
+                    <h3>Expected Error:</h3>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                `;
+            }
+        };
+
+        window.testTimeout = async function() {
+            try {
+                const result = await fetchJson('http://localhost:3001/api/health', { timeout: 1 });
+                document.getElementById('output').innerHTML = `
+                    <h3>Unexpected Success:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('output').innerHTML = `
+                    <h3>Expected Timeout Error:</h3>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Download, FileText, FileSpreadsheet, Share2, Calendar, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { exportService, ExportOptions, ExportProgress } from '../../services/exportService';
+import { useToast } from '@/components/ui/toast-context';
 
 interface ExportMenuProps {
   dealId: string;
@@ -19,11 +20,7 @@ interface ExportMenuProps {
   className?: string;
 }
 
-interface ToastMessage {
-  id: string;
-  type: 'success' | 'error';
-  message: string;
-}
+
 
 export function ExportMenu({ dealId, summaryReport, computedMetrics, className }: ExportMenuProps) {
   const [isExporting, setIsExporting] = useState(false);
@@ -35,21 +32,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
     includeRawData: true,
     includeEvidence: true
   });
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  const addToast = (type: 'success' | 'error', message: string) => {
-    const id = Date.now().toString();
-    setToasts(prev => [...prev, { id, type, message }]);
-    
-    // Auto-remove toast after 5 seconds
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 5000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
+  const { addToast } = useToast();
 
   const handleExport = async (format: 'pdf' | 'xlsx') => {
     console.log('Export requested:', { format, dealId, summaryReport, computedMetrics });
@@ -231,37 +214,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Toast notifications */}
-      {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={`fixed bottom-4 right-4 z-50 max-w-sm w-full bg-card text-card-foreground border rounded-lg shadow-lg p-4 transition-all duration-300 ${
-            toast.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              {toast.type === 'success' ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm ${toast.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-                {toast.message}
-              </p>
-            </div>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-              aria-label="Dismiss notification"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      ))}
+
     </>
   );
 }

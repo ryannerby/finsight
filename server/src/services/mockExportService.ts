@@ -124,10 +124,10 @@ startxref
     
     // Return mock CSV content
     return `Metric,Value,Status
-Health Score,${summaryReport.health_score},${summaryReport.health_score >= 70 ? 'Good' : 'Needs Attention'}
-Financial Health,${summaryReport.traffic_lights?.financial_health || 'Unknown'},-
-Operational Efficiency,${summaryReport.traffic_lights?.operational_efficiency || 'Unknown'},-
-Market Position,${summaryReport.traffic_lights?.market_position || 'Unknown'},-
-Risk Factors,${summaryReport.traffic_lights?.risk_factors || 'Unknown'},-`;
+Health Score,${summaryReport.health_score.overall},${summaryReport.health_score.overall >= 70 ? 'Good' : 'Needs Attention'}
+Revenue Quality,${summaryReport.traffic_lights?.revenue_quality || 'Unknown'},-
+Margin Trends,${summaryReport.traffic_lights?.margin_trends || 'Unknown'},-
+Liquidity,${summaryReport.traffic_lights?.liquidity || 'Unknown'},-
+Leverage,${summaryReport.traffic_lights?.leverage || 'Unknown'},-`;
   }
 }

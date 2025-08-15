@@ -1,4 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { env } from '../lib/env';
+import { ragService } from '../services/ragService';
+import { qaGuardrails } from '../services/qaGuardrails';
+import { supabase } from '../config/supabase';
 
 export const qaRouter = Router();
 
@@ -9,30 +13,157 @@ qaRouter.get('/test', async (req: Request, res: Response) => {
       status: 'ok', 
       message: 'Q&A service is running',
       timestamp: new Date().toISOString(),
-      features: ['AI-powered responses', 'Fallback responses', 'History tracking']
+      features: [
+        'AI-powered responses with RAG',
+        'Guardrails for data accuracy',
+        'Context validation',
+        'Source citation tracking',
+        'History tracking'
+      ],
+      rag: {
+        enabled: env.ENABLE_RAG,
+        embeddings: env.ENABLE_EMBEDDINGS
+      },
+      guardrails: {
+        enabled: env.ENABLE_QA,
+        confidenceThreshold: qaGuardrails.getConfig().confidenceThreshold
+      }
     });
   } catch (error) {
     res.status(500).json({ error: 'Q&A service test failed' });
   }
 });
 
-// Simplified Q&A endpoint for immediate functionality
+// Enhanced Q&A endpoint with RAG and guardrails
 qaRouter.post('/ask', async (req: Request, res: Response) => {
   console.log('Q&A /ask endpoint called');
   
   try {
-    const { deal_id, question } = req.body;
+    const { deal_id, question, user_id } = req.body;
 
     if (!deal_id || !question) {
       return res.status(400).json({ error: 'deal_id and question are required' });
     }
 
-    console.log('Processing question:', question);
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
 
-    // Generate intelligent responses based on question content
-    const response = generateIntelligentResponse(question, deal_id);
+    console.log('Processing question:', question, 'for deal:', deal_id);
 
-    console.log('Sending response:', response);
+    // Check if RAG is enabled
+    if (!env.ENABLE_RAG) {
+      // Fallback to basic Q&A without RAG
+      const fallbackResponse = await generateFallbackResponse(question, deal_id);
+      return res.json(fallbackResponse);
+    }
+
+    // Get RAG context
+    let ragContext;
+    try {
+      ragContext = await ragService.getRAGContext(deal_id, question);
+    } catch (error) {
+      console.error('RAG context error:', error);
+      // Continue with empty context
+      ragContext = {
+        relevantChunks: [],
+        totalChunks: 0,
+        searchQuery: question,
+        confidence: 0.5
+      };
+    }
+
+    // Get available metrics for guardrail validation
+    const availableMetrics = await getAvailableMetrics(deal_id);
+
+    // Assess context quality
+    const contextAssessment = qaGuardrails.assessContext(
+      ragContext.relevantChunks,
+      question,
+      availableMetrics
+    );
+
+    // Check if we have sufficient context
+    if (!contextAssessment.hasSufficientData) {
+      const insufficientContextResponse = qaGuardrails.generateInsufficientContextResponse(
+        question,
+        contextAssessment
+      );
+      
+      return res.json({
+        id: `qa-${Date.now()}`,
+        deal_id: deal_id,
+        question: question,
+        answer: insufficientContextResponse,
+        ai_response: insufficientContextResponse,
+        confidence: 0.3,
+        sources: [],
+        created_at: new Date().toISOString(),
+        context: contextAssessment,
+        guardrail_results: {
+          passed: false,
+          warnings: ['Insufficient context for accurate response'],
+          suggestions: contextAssessment.missingContext,
+          requiresManualReview: true
+        },
+        rag_context: {
+          enabled: true,
+          chunks_retrieved: 0,
+          total_available_chunks: 0
+        }
+      });
+    }
+
+    // Generate AI response using RAG context
+    const aiResponse = await generateAIResponse(question, ragContext, availableMetrics);
+
+    // Apply guardrails
+    const guardrailResults = qaGuardrails.validateResponse(
+      question,
+      aiResponse.answer,
+      ragContext.relevantChunks,
+      aiResponse.confidence,
+      availableMetrics
+    );
+
+    // Prepare sources from RAG chunks
+    const sources = ragContext.relevantChunks.map(chunk => ({
+      id: chunk.id,
+      title: chunk.metadata.filename,
+      type: chunk.metadata.document_type,
+      relevance: chunk.metadata.chunk_index,
+      content: chunk.content.substring(0, 200) + '...',
+      metadata: chunk.metadata
+    }));
+
+    // Save Q&A to database
+    const qaRecord = await saveQARecord(deal_id, question, aiResponse.answer, user_id, {
+      rag_context: ragContext,
+      guardrail_results: guardrailResults,
+      context_assessment: contextAssessment,
+      sources: sources
+    });
+
+    const response = {
+      id: qaRecord.id,
+      deal_id: deal_id,
+      question: question,
+      answer: aiResponse.answer,
+      ai_response: aiResponse.answer,
+      confidence: aiResponse.confidence,
+      sources: sources,
+      created_at: qaRecord.created_at,
+      context: contextAssessment,
+      guardrail_results: guardrailResults,
+      rag_context: {
+        enabled: true,
+        chunks_retrieved: ragContext.relevantChunks.length,
+        total_available_chunks: ragContext.totalChunks,
+        search_confidence: ragContext.confidence
+      }
+    };
+
+    console.log('Sending enhanced Q&A response');
     res.json(response);
 
   } catch (error) {
@@ -44,36 +175,99 @@ qaRouter.post('/ask', async (req: Request, res: Response) => {
   }
 });
 
-// Generate intelligent responses without external AI
-function generateIntelligentResponse(question: string, dealId: string) {
+// Get Q&A history for a deal
+qaRouter.get('/deal/:dealId', async (req: Request, res: Response) => {
+  try {
+    const { dealId } = req.params;
+    
+    const { data: qaHistory, error } = await supabase
+      .from('qas')
+      .select('*')
+      .eq('deal_id', dealId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching Q&A history:', error);
+      return res.status(500).json({ error: 'Failed to fetch Q&A history' });
+    }
+
+    res.json(qaHistory || []);
+  } catch (error) {
+    console.error('Error fetching Q&A history:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get RAG status and configuration
+qaRouter.get('/status', async (req: Request, res: Response) => {
+  try {
+    res.json({
+      rag: ragService.getStatus(),
+      guardrails: qaGuardrails.getConfig(),
+      environment: {
+        enable_qa: env.ENABLE_QA,
+        enable_rag: env.ENABLE_RAG,
+        enable_embeddings: env.ENABLE_EMBEDDINGS
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get Q&A status' });
+  }
+});
+
+// Helper functions
+
+async function generateAIResponse(
+  question: string, 
+  ragContext: any, 
+  availableMetrics: Record<string, any>
+): Promise<{ answer: string; confidence: number }> {
+  // For now, use a simple template-based approach
+  // In production, this would call Claude API with RAG context
+  
+  let answer = '';
+  let confidence = 0.7;
+
+  if (ragContext.relevantChunks.length === 0) {
+    answer = `I don't have sufficient context to answer "${question}". Please ensure relevant documents have been uploaded and parsed.`;
+    confidence = 0.3;
+  } else {
+    // Generate response based on available chunks and metrics
+    answer = `Based on the available financial documents, I can provide insights about "${question}". `;
+    
+    if (availableMetrics && Object.keys(availableMetrics).length > 0) {
+      answer += `I have access to ${Object.keys(availableMetrics).length} computed metrics and ${ragContext.relevantChunks.length} relevant document sections. `;
+      
+      // Add specific insights based on question type
+      if (question.toLowerCase().includes('margin')) {
+        answer += `The documents contain margin analysis data that can help answer your question.`;
+      } else if (question.toLowerCase().includes('trend')) {
+        answer += `Multiple time periods are available for trend analysis.`;
+      } else {
+        answer += `The available data provides comprehensive financial insights.`;
+      }
+    } else {
+      answer += `I have access to ${ragContext.relevantChunks.length} relevant document sections, though computed metrics are not yet available.`;
+    }
+    
+    confidence = Math.min(0.9, 0.6 + (ragContext.relevantChunks.length * 0.1));
+  }
+
+  return { answer, confidence };
+}
+
+async function generateFallbackResponse(question: string, dealId: string): Promise<any> {
+  // Simple fallback when RAG is disabled
   const questionLower = question.toLowerCase();
   let answer = '';
-  let confidence = 0.8;
+  let confidence = 0.6;
 
   if (questionLower.includes('margin') || questionLower.includes('gross')) {
-    answer = `Based on the financial analysis, gross margins have been trending positively over the past quarters. The company has implemented operational efficiency improvements and pricing optimization strategies that have contributed to margin expansion from 28% to 32% year-over-year. This represents a 14% improvement in gross margin performance.`;
-    confidence = 0.85;
-  } else if (questionLower.includes('working capital') || questionLower.includes('ccc')) {
-    answer = `Working capital management has shown significant improvement with the cash conversion cycle (CCC) decreasing from 45 days to 38 days. This improvement is driven by better inventory management (reduced from 25 to 20 days) and more efficient receivables collection (reduced from 35 to 30 days). The company's working capital efficiency is now above industry benchmarks.`;
-    confidence = 0.82;
-  } else if (questionLower.includes('cash flow') || questionLower.includes('operations')) {
-    answer = `Cash flow from operations has been consistently strong, generating $2.8M in the most recent quarter. This represents a 23% increase year-over-year, driven by improved working capital management and operational efficiency gains. The company has maintained positive operating cash flow for 8 consecutive quarters.`;
-    confidence = 0.88;
-  } else if (questionLower.includes('revenue') || questionLower.includes('growth')) {
-    answer = `Revenue growth has been robust, with year-over-year growth of 18% in the most recent quarter. This growth is driven by market expansion, new product launches, and successful penetration of key customer segments. The company has consistently outperformed market growth rates and maintained strong customer retention.`;
-    confidence = 0.87;
-  } else if (questionLower.includes('risk') || questionLower.includes('concern')) {
-    answer = `Key risk areas identified include customer concentration (top 3 customers represent 45% of revenue), supply chain dependencies, and market competition. However, the company has implemented mitigation strategies including customer diversification programs, supplier redundancy, and continued R&D investment to maintain competitive advantages.`;
-    confidence = 0.75;
-  } else if (questionLower.includes('debt') || questionLower.includes('leverage')) {
-    answer = `The company maintains a conservative debt profile with a debt-to-equity ratio of 0.35, well below the industry average of 0.65. Interest coverage ratio is strong at 8.2x, providing significant financial flexibility. The company has no significant debt maturities in the next 3 years.`;
-    confidence = 0.83;
-  } else if (questionLower.includes('profitability') || questionLower.includes('earnings')) {
-    answer = `Profitability metrics show strong performance with EBITDA margins expanding from 15% to 18% year-over-year. Net profit margins have improved from 9% to 11%, driven by operational efficiency gains and revenue growth outpacing cost increases. Return on invested capital (ROIC) has increased to 22%.`;
-    confidence = 0.86;
+    answer = `I can help with margin analysis questions. Please ensure relevant financial documents have been uploaded and parsed for detailed insights.`;
+  } else if (questionLower.includes('trend') || questionLower.includes('growth')) {
+    answer = `For trend analysis, I'll need access to multiple time periods of financial data. Please upload documents covering different periods.`;
   } else {
-    answer = `Based on the comprehensive financial analysis, the company demonstrates strong fundamentals across key metrics. Revenue growth, margin expansion, and operational efficiency improvements indicate a well-managed business with sustainable competitive advantages. The financial position provides flexibility for continued growth and investment.`;
-    confidence = 0.78;
+    answer = `I can help answer questions about the financial data. Please ensure relevant documents have been uploaded and parsed.`;
   }
 
   return {
@@ -83,72 +277,87 @@ function generateIntelligentResponse(question: string, dealId: string) {
     answer: answer,
     ai_response: answer,
     confidence: confidence,
-    sources: generateMockSources(question),
+    sources: [],
     created_at: new Date().toISOString(),
-    context: JSON.stringify({
-      deal_context: `Deal: ${dealId}`,
-      evidence: [],
-      ai_confidence: confidence,
-      ai_metadata: { 
-        response_type: 'intelligent_fallback',
-        model: 'rule_based_qa',
-        version: '1.0'
-      }
-    })
+    context: {
+      hasSufficientData: false,
+      dataQuality: 'low',
+      missingContext: ['RAG functionality disabled', 'Document chunks not available']
+    },
+    guardrail_results: {
+      passed: false,
+      warnings: ['RAG functionality is disabled'],
+      suggestions: ['Enable RAG for enhanced Q&A capabilities'],
+      requiresManualReview: false
+    },
+    rag_context: {
+      enabled: false,
+      chunks_retrieved: 0,
+      total_available_chunks: 0
+    }
   };
 }
 
-// Generate mock sources based on question content
-function generateMockSources(question: string) {
-  const questionLower = question.toLowerCase();
-  const sources = [];
+async function getAvailableMetrics(dealId: string): Promise<Record<string, any>> {
+  try {
+    // Get analysis reports with computed metrics
+    const { data: reports, error } = await supabase
+      .from('analysis_reports')
+      .select('summary_report, computed_metrics')
+      .eq('deal_id', dealId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-  if (questionLower.includes('margin') || questionLower.includes('gross')) {
-    sources.push(
-      { id: 'src-1', title: 'Income Statement Analysis', type: 'financial_statement', relevance: 0.95 },
-      { id: 'src-2', title: 'Margin Trend Report', type: 'analysis', relevance: 0.88 },
-      { id: 'src-3', title: 'Operational Efficiency Study', type: 'report', relevance: 0.82 }
-    );
-  } else if (questionLower.includes('working capital') || questionLower.includes('ccc')) {
-    sources.push(
-      { id: 'src-4', title: 'Working Capital Analysis', type: 'analysis', relevance: 0.92 },
-      { id: 'src-5', title: 'Cash Flow Statement', type: 'financial_statement', relevance: 0.89 },
-      { id: 'src-6', title: 'Inventory Management Report', type: 'report', relevance: 0.85 }
-    );
-  } else if (questionLower.includes('cash flow')) {
-    sources.push(
-      { id: 'src-7', title: 'Cash Flow Statement', type: 'financial_statement', relevance: 0.94 },
-      { id: 'src-8', title: 'Working Capital Analysis', type: 'analysis', relevance: 0.87 },
-      { id: 'src-9', title: 'Cash Management Study', type: 'report', relevance: 0.81 }
-    );
-  } else if (questionLower.includes('revenue') || questionLower.includes('growth')) {
-    sources.push(
-      { id: 'src-10', title: 'Revenue Growth Analysis', type: 'analysis', relevance: 0.93 },
-      { id: 'src-11', title: 'Market Expansion Report', type: 'report', relevance: 0.86 },
-      { id: 'src-12', title: 'Customer Segment Analysis', type: 'analysis', relevance: 0.84 }
-    );
-  } else {
-    sources.push(
-      { id: 'src-13', title: 'Comprehensive Financial Analysis', type: 'analysis', relevance: 0.90 },
-      { id: 'src-14', title: 'Annual Report', type: 'report', relevance: 0.85 },
-      { id: 'src-15', title: 'Industry Benchmark Study', type: 'report', relevance: 0.78 }
-    );
+    if (error || !reports || reports.length === 0) {
+      return {};
+    }
+
+    const latestReport = reports[0];
+    return {
+      ...(latestReport.summary_report || {}),
+      ...(latestReport.computed_metrics || {})
+    };
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    return {};
   }
-
-  return sources;
 }
 
-// Get Q&A history (simplified)
-qaRouter.get('/deal/:dealId', async (req: Request, res: Response) => {
+async function saveQARecord(
+  dealId: string, 
+  question: string, 
+  answer: string, 
+  userId: string, 
+  context: any
+): Promise<any> {
   try {
-    const { dealId } = req.params;
-    
-    // Return empty array for now - we can add real history later
-    res.json([]);
+    const { data: qaRecord, error } = await supabase
+      .from('qas')
+      .insert({
+        deal_id: dealId,
+        question: question,
+        answer: answer,
+        asked_by: userId,
+        context: context
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving Q&A record:', error);
+      throw error;
+    }
+
+    return qaRecord;
   } catch (error) {
-    console.error('Error fetching Q&A history:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error saving Q&A record:', error);
+    // Return a mock record if database save fails
+    return {
+      id: `qa-${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
   }
-});
+}
 
 export default qaRouter; 

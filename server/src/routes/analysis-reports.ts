@@ -1,12 +1,7 @@
 import express from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../config/supabase';
 
 const router = express.Router();
-
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Create analysis report
 router.post('/', async (req, res) => {
@@ -22,7 +17,11 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     if (!deal_id || !report_type || !title || !generated_by) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        requestId: req.headers['x-request-id'],
+        type: 'ValidationError'
+      });
     }
 
     const { data, error } = await supabase
@@ -41,10 +40,17 @@ router.post('/', async (req, res) => {
 
     if (error) throw error;
 
-    res.status(201).json(data);
+    res.status(201).json({
+      ...data,
+      requestId: req.headers['x-request-id']
+    });
   } catch (error) {
     console.error('Error creating analysis report:', error);
-    res.status(500).json({ error: 'Failed to create analysis report' });
+    res.status(500).json({ 
+      error: 'Failed to create analysis report',
+      requestId: req.headers['x-request-id'],
+      type: 'DatabaseError'
+    });
   }
 });
 
@@ -55,7 +61,11 @@ router.get('/deal/:dealId', async (req, res) => {
     const { user_id } = req.query;
 
     if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' });
+      return res.status(400).json({ 
+        error: 'user_id is required',
+        requestId: req.headers['x-request-id'],
+        type: 'ValidationError'
+      });
     }
 
     const { data, error } = await supabase
@@ -65,10 +75,17 @@ router.get('/deal/:dealId', async (req, res) => {
 
     if (error) throw error;
 
-    res.json(data || []);
+    res.json({
+      data: data || [],
+      requestId: req.headers['x-request-id']
+    });
   } catch (error) {
     console.error('Error fetching analysis reports:', error);
-    res.status(500).json({ error: 'Failed to fetch analysis reports' });
+    res.status(500).json({ 
+      error: 'Failed to fetch analysis reports',
+      requestId: req.headers['x-request-id'],
+      type: 'DatabaseError'
+    });
   }
 });
 
@@ -76,6 +93,7 @@ router.get('/deal/:dealId', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const requestId = req.headers['x-request-id'] as string;
 
     const { data, error } = await supabase
       .from('analysis_reports')
@@ -83,12 +101,29 @@ router.get('/:id', async (req, res) => {
       .eq('id', id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Check if it's a "not found" error
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          error: 'Analysis report not found',
+          requestId,
+          type: 'NotFoundError'
+        });
+      }
+      throw error;
+    }
 
-    res.json(data);
+    res.json({
+      ...data,
+      requestId
+    });
   } catch (error) {
     console.error('Error fetching analysis report:', error);
-    res.status(500).json({ error: 'Failed to fetch analysis report' });
+    res.status(500).json({ 
+      error: 'Failed to fetch analysis report',
+      requestId: req.headers['x-request-id'],
+      type: 'DatabaseError'
+    });
   }
 });
 
