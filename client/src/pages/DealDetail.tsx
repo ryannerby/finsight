@@ -1178,6 +1178,68 @@ export default function DealDetail() {
     }
   };
 
+  const handleAnalyze = async () => {
+    try {
+      setAnalyzing(true);
+      setAnalysisError(null);
+      setAnalysisState('queued');
+      setAnalysisProgress(0);
+      
+      // Simulate analysis progress states
+      setTimeout(() => setAnalysisState('parsing'), 1000);
+      setTimeout(() => setAnalysisState('computing'), 3000);
+      setTimeout(() => setAnalysisState('summarizing'), 6000);
+      
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setAnalysisProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 500);
+      
+      const res = await fetch(`${API_BASE_URL}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      // Complete the analysis
+      setAnalysisState('complete');
+      setAnalysisProgress(100);
+      clearInterval(progressInterval);
+      
+      setTimeout(() => {
+        setAnalysisRefresh((x) => x + 1);
+        setShowUploadOnly(false); // navigate to overview state
+        setAnalyzing(false);
+      }, 2000);
+      
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      setAnalysisError(errorMessage);
+      setAnalysisState('error');
+      
+      // Check if it's a rate limit error
+      if (errorMessage.includes('Rate limit exceeded') || errorMessage.includes('once per minute')) {
+        // Extract retryAfter from the error message if available
+        const retryMatch = errorMessage.match(/(\d+) seconds/);
+        if (retryMatch) {
+          const retryAfter = parseInt(retryMatch[1]);
+          setRateLimitCooldown(retryAfter);
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (!dealId) return;
     setLoading(true);
@@ -1270,7 +1332,7 @@ export default function DealDetail() {
       dealId={deal.id}
       summaryReport={summary?.analysis_result}
       computedMetrics={computedMetrics}
-      onUploadClick={() => setShowUploadOnly(true)}
+      onReanalyze={handleAnalyze}
     >
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6">
@@ -1289,67 +1351,7 @@ export default function DealDetail() {
             </span>
             <Button
               data-analyze-button
-              onClick={async () => {
-                try {
-                  setAnalyzing(true);
-                  setAnalysisError(null);
-                  setAnalysisState('queued');
-                  setAnalysisProgress(0);
-                  
-                  // Simulate analysis progress states
-                  setTimeout(() => setAnalysisState('parsing'), 1000);
-                  setTimeout(() => setAnalysisState('computing'), 3000);
-                  setTimeout(() => setAnalysisState('summarizing'), 6000);
-                  
-                  // Simulate progress updates
-                  const progressInterval = setInterval(() => {
-                    setAnalysisProgress(prev => {
-                      if (prev >= 100) {
-                        clearInterval(progressInterval);
-                        return 100;
-                      }
-                      return prev + Math.random() * 15;
-                    });
-                  }, 500);
-                  
-                  const res = await fetch(`${API_BASE_URL}/analyze`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
-                  });
-                  
-                  if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ error: 'Unknown error occurred' }));
-                    throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
-                  }
-                  
-                  // Complete the analysis
-                  setAnalysisState('complete');
-                  setAnalysisProgress(100);
-                  clearInterval(progressInterval);
-                  
-                  setTimeout(() => {
-                    setAnalysisRefresh((x) => x + 1);
-                    setShowUploadOnly(false); // navigate to overview state
-                    setAnalyzing(false);
-                  }, 2000);
-                  
-                } catch (e) {
-                  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-                  setAnalysisError(errorMessage);
-                  setAnalysisState('error');
-                  
-                  // Check if it's a rate limit error
-                  if (errorMessage.includes('Rate limit exceeded') || errorMessage.includes('once per minute')) {
-                    // Extract retryAfter from the error message if available
-                    const retryMatch = errorMessage.match(/(\d+) seconds/);
-                    if (retryMatch) {
-                      const retryAfter = parseInt(retryMatch[1]);
-                      setRateLimitCooldown(retryAfter);
-                    }
-                  }
-                }
-              }}
+              onClick={handleAnalyze}
               disabled={analyzing || rateLimitCooldown > 0}
             >
               {analyzing ? 'Analyzing…' : 

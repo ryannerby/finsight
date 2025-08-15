@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { ExportMenu } from '@/components/actions/ExportMenu';
+import { UploadDialog } from '@/components/files/UploadDialog';
+import { Toast } from '@/components/ui/toast';
 import { Upload, FileText } from 'lucide-react';
 
 interface AppShellProps {
@@ -13,7 +15,7 @@ interface AppShellProps {
   dealId: string;
   summaryReport?: any;
   computedMetrics?: any;
-  onUploadClick?: () => void;
+  onReanalyze?: () => void;
   className?: string;
 }
 
@@ -25,9 +27,12 @@ export function AppShell({
   dealId,
   summaryReport,
   computedMetrics,
-  onUploadClick,
+  onReanalyze,
   className = ''
 }: AppShellProps) {
+  const [showToast, setShowToast] = useState(false);
+  const userId = 'user_123'; // In real app, this would come from auth context
+
   const getRecommendationVariant = (rec: string) => {
     switch (rec?.toLowerCase()) {
       case 'proceed':
@@ -39,6 +44,17 @@ export function AppShell({
       default:
         return 'secondary';
     }
+  };
+
+  const handleUploadComplete = () => {
+    setShowToast(true);
+  };
+
+  const handleReanalyze = () => {
+    if (onReanalyze) {
+      onReanalyze();
+    }
+    setShowToast(false);
   };
 
   return (
@@ -88,9 +104,12 @@ export function AppShell({
               />
               
               {/* Upload Button */}
-              {onUploadClick && (
+              <UploadDialog
+                dealId={dealId}
+                userId={userId}
+                onUploadComplete={handleUploadComplete}
+              >
                 <Button
-                  onClick={onUploadClick}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -98,7 +117,7 @@ export function AppShell({
                   <Upload className="h-4 w-4" />
                   Upload
                 </Button>
-              )}
+              </UploadDialog>
             </div>
           </div>
         </div>
@@ -110,6 +129,19 @@ export function AppShell({
           {children}
         </div>
       </div>
+
+      {/* Toast for post-upload re-analyze */}
+      {showToast && (
+        <Toast
+          message="Files uploaded — re-run analysis?"
+          action={{
+            label: "Re-analyze",
+            onClick: handleReanalyze
+          }}
+          onClose={() => setShowToast(false)}
+          duration={8000}
+        />
+      )}
     </div>
   );
 }

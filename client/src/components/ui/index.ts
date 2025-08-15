@@ -22,4 +22,5 @@ export { Separator } from './separator';
 export { StatusChip } from './status-chip';
 export { Textarea } from './textarea';
 export { Tooltip } from './tooltip';
+export { Toast } from './toast';
 export { TrafficLightBadge } from './traffic-light-badge';
