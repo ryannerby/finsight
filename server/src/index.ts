@@ -18,6 +18,7 @@ import { reportSectionsRouter } from './routes/report-sections';
 import { evidenceItemsRouter } from './routes/evidence-items';
 import { analysesRouter } from './routes/analyses';
 import { logsRouter } from './routes/logs';
+import { mockRouter } from './routes/mock';
 // Temporarily comment out database initialization to get Q&A working
 // import { initializeDatabase } from './database/init';
 
@@ -42,6 +43,9 @@ app.use('/api/evidence-items', evidenceItemsRouter);
 app.use('/api/analyses', analysesRouter);
 app.use('/api/logs', logsRouter);
 
+// Mock mode routes for testing without database
+app.use('/api/mock', mockRouter);
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
@@ -56,6 +60,8 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Q&A service available at http://localhost:${PORT}/api/qa`);
+      console.log(`Mock mode available at http://localhost:${PORT}/api/mock/status`);
+      console.log(`⚠️  NOTE: Running in mock mode - no real database operations`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -21,6 +21,9 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 };
 
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = jest.fn();
+
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
