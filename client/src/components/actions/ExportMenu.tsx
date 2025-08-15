@@ -52,7 +52,10 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
   };
 
   const handleExport = async (format: 'pdf' | 'xlsx') => {
+    console.log('Export requested:', { format, dealId, summaryReport, computedMetrics });
+    
     if (!summaryReport || !computedMetrics) {
+      console.warn('Export data not available:', { summaryReport, computedMetrics });
       addToast('error', 'Export data not available');
       return;
     }
@@ -63,11 +66,14 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
 
       // Validate export data
       const validation = exportService.validateExportData(dealId, summaryReport, computedMetrics);
+      console.log('Export validation result:', validation);
+      
       if (!validation.isValid) {
         throw new Error(`Export validation failed: ${validation.errors.join(', ')}`);
       }
 
       if (format === 'pdf') {
+        console.log('Starting PDF export with data:', { dealId, summaryReport, computedMetrics, exportOptions });
         await exportService.exportToPDF(
           dealId,
           summaryReport,
@@ -77,6 +83,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
         );
         addToast('success', 'PDF exported successfully!');
       } else {
+        console.log('Starting Excel export with data:', { dealId, summaryReport, computedMetrics, exportOptions });
         await exportService.exportToExcel(
           dealId,
           summaryReport,

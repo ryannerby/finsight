@@ -30,23 +30,25 @@ export function AppHeader({ className }: { className?: string }) {
   };
 
   return (
-    <header className={cn('w-full border-b bg-background', className)}>
-      <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <div
-          className="flex items-center cursor-pointer select-none"
-          onClick={handleBrandClick}
-        >
-          <img
-            src="/logo.png"
-            alt="Finsight logo"
-            className="h-20 w-auto object-contain"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
-          <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
-          <Button variant="outline" onClick={handleLogout}>Logout</Button>
+    <header className={cn('w-full border-b bg-background sticky top-0 z-40', className)}>
+      <div className="mx-auto max-w-6xl px-4 py-2">
+        <div className="flex flex-col gap-2 sm:flex-col md:flex-row md:items-center md:justify-between">
+          <div
+            className="flex items-center cursor-pointer select-none"
+            onClick={handleBrandClick}
+          >
+            <img
+              src="/logo.png"
+              alt="Finsight logo"
+              className="h-12 w-auto object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
+            <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
+            <Button variant="outline" onClick={handleLogout}>Logout</Button>
+          </div>
         </div>
       </div>
     </header>

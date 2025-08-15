@@ -59,15 +59,17 @@ export function AppShell({
 
   return (
     <div className={`min-h-screen bg-background ${className}`}>
-      {/* Top Action Bar */}
+      {/* Top Action Bar - sticky and mobile-friendly */}
       <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             {/* Left side - Deal name and status */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground" />
-                <h1 className="text-xl font-semibold text-foreground">{dealName}</h1>
+                <h1 className="text-base sm:text-lg md:text-xl font-semibold text-foreground truncate max-w-[75vw]">
+                  {dealName}
+                </h1>
               </div>
               
               {/* Recommendation pill */}
@@ -95,7 +97,7 @@ export function AppShell({
             </div>
 
             {/* Right side - Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {/* Export Menu */}
               <ExportMenu
                 dealId={dealId}
@@ -124,7 +126,7 @@ export function AppShell({
       </div>
 
       {/* Content Area */}
-      <div className="container mx-auto px-6 py-6">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="space-y-6">
           {children}
         </div>

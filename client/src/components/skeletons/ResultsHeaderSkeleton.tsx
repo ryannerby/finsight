@@ -29,7 +29,7 @@ export function ResultsHeaderSkeleton({ className }: ResultsHeaderSkeletonProps)
       
       <CardContent className="space-y-6">
         {/* Top Highlights Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="space-y-3">
               <div className="h-4 bg-muted/20 rounded animate-pulse w-24" />

@@ -103,7 +103,7 @@ export default function QADemo() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-sm">
                 <div className="space-y-2">
                   <h4 className="font-medium text-foreground">Onboarding</h4>
                   <ul className="space-y-1 text-muted-foreground">

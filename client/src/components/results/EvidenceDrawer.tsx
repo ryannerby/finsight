@@ -200,7 +200,7 @@ export function EvidenceDrawer({
           variant="ghost"
           size="sm"
           onClick={() => onOpenChange(false)}
-          className="h-8 w-8 p-0"
+          className="h-11 w-11 p-0"
           aria-label="Close evidence drawer"
         >
           <X className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function EvidenceDrawer({
       </div>
 
       {/* Evidence Items */}
-      <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+      <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto px-1">
         {items.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

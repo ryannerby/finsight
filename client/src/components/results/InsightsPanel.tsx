@@ -111,7 +111,7 @@ export function InsightsPanel({
             {topStrengths.map((strength, index) => (
               <div 
                 key={index}
-                className="flex items-start justify-between p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
@@ -135,7 +135,7 @@ export function InsightsPanel({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-3 text-green-700 hover:text-green-800 hover:bg-green-200"
+                  className="sm:ml-3 text-green-700 hover:text-green-800 hover:bg-green-200"
                   onClick={() => handleViewEvidence(strength)}
                 >
                   <Eye className="w-4 h-4 mr-1" />
@@ -168,7 +168,7 @@ export function InsightsPanel({
             {topRisks.map((risk, index) => (
               <div 
                 key={index}
-                className="flex items-start justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
@@ -192,7 +192,7 @@ export function InsightsPanel({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-3 text-red-700 hover:text-red-800 hover:bg-red-200"
+                  className="sm:ml-3 text-red-700 hover:text-red-800 hover:bg-red-200"
                   onClick={() => handleViewEvidence(risk)}
                 >
                   <Eye className="w-4 h-4 mr-1" />

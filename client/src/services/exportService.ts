@@ -26,6 +26,8 @@ export class ExportService {
     onProgress?: (progress: ExportProgress) => void
   ): Promise<void> {
     try {
+      console.log('exportToPDF called with:', { dealId, summaryReport, computedMetrics, options });
+      
       onProgress?.({
         status: 'preparing',
         progress: 0,
@@ -38,21 +40,29 @@ export class ExportService {
         message: 'Generating PDF report...'
       });
 
+      const requestBody = {
+        dealId,
+        summaryReport,
+        computedMetrics,
+        options
+      };
+      
+      console.log('Sending request to server:', requestBody);
+      console.log('Request URL:', `${this.baseUrl}/api/export/pdf/enhanced`);
+
       const response = await fetch(`${this.baseUrl}/api/export/pdf/enhanced`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          dealId,
-          summaryReport,
-          computedMetrics,
-          options
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('Server response:', { status: response.status, statusText: response.statusText });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Server error response:', errorData);
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -63,6 +73,8 @@ export class ExportService {
       });
 
       const blob = await response.blob();
+      console.log('Received blob:', { size: blob.size, type: blob.type });
+      
       const url = window.URL.createObjectURL(blob);
       
       // Create download link
@@ -85,6 +97,7 @@ export class ExportService {
       });
 
     } catch (error) {
+      console.error('PDF export error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       onProgress?.({

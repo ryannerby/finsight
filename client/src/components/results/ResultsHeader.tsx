@@ -171,7 +171,7 @@ export function ResultsHeader({
   }
 
   return (
-    <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-card rounded-lg border", className)}>
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6 bg-card rounded-lg border", className)}>
       {/* Left - Recommendation */}
       <div className="flex flex-col items-center justify-center">
         <RecommendationPill recommendation={summaryReport.recommendation} />

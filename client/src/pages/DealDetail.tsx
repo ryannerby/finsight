@@ -201,7 +201,7 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
             <div className="h-4 bg-muted/20 rounded animate-pulse w-48" />
           </div>
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-3">
                   <div className="h-6 bg-muted/20 rounded animate-pulse w-24" />
@@ -394,7 +394,7 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
             </div>
           </div>
           <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(ddSignals.created_at).toLocaleString()}</span>
-          <div className={signalsOpen ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4'}>
+          <div className={signalsOpen ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4' : 'hidden sm:grid sm:grid-cols-2 xl:grid-cols-3 sm:gap-4'}>
             {Object.entries(ddSignals.analysis_result).filter(([k])=>k!=="deal_id").map(([k, v]: any)=>{
               const status = v?.status as string;
               const color = status === 'pass' ? 'bg-green-100 text-green-700' : status === 'caution' ? 'bg-yellow-100 text-yellow-700' : status === 'fail' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/70';
@@ -550,7 +550,7 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
             </div>
             {showInventoryDetails && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   <div className="border rounded-lg p-3">
                     <div className="text-sm text-muted-foreground mb-2">Expected</div>
                     <div className="flex flex-wrap gap-2">
@@ -577,7 +577,7 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
                   </div>
                 </div>
                 {Object.keys(cov).length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {Object.entries(cov).map(([k, v]: any) => (
                       <div key={`cov-${k}`} className="border rounded-lg p-3">
                         <div className="text-sm font-medium mb-1">{String(k).replace(/_/g,' ')}</div>
@@ -760,7 +760,7 @@ const EnhancedReportTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refre
           </div>
           <div className="h-10 bg-muted/20 rounded animate-pulse w-32" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <div className="space-y-4">
             <div className="h-64 bg-muted/20 rounded animate-pulse w-full" />
             <div className="h-32 bg-muted/20 rounded animate-pulse w-full" />
@@ -886,7 +886,7 @@ const EnhancedReportTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refre
       )}
 
       {/* Report Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Health Panel - Consolidated Health Score and Traffic Lights */}
         <div className="lg:col-span-2">
           <HealthPanel 
@@ -1329,7 +1329,7 @@ export default function DealDetail() {
 
         {/* Embedded Upload and Q&A sections (compact) */}
         {!showUploadOnly && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
             <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base font-semibold">Upload</h3>

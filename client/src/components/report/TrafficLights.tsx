@@ -108,7 +108,7 @@ export function TrafficLights({ trafficLights, className }: TrafficLightsProps) 
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {metricsArray.map((metric) => (
               <div
                 key={metric.key}
@@ -181,7 +181,7 @@ export function TrafficLights({ trafficLights, className }: TrafficLightsProps) 
                         documentType: evidence.type
                       }))}
                       trigger={
-                        <div className="w-6 h-6 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center cursor-pointer transition-colors">
+                        <div className="w-11 h-11 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center cursor-pointer transition-colors">
                           <span className="text-xs text-blue-600 font-medium">i</span>
                         </div>
                       }

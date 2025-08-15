@@ -61,7 +61,7 @@ export default function EvidenceDrawerDemo() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {/* Sample Metric Cards */}
           <div className="p-6 rounded-lg border bg-card hover:shadow-md transition-shadow">
             <h3 className="font-semibold text-lg mb-2">Revenue Growth</h3>

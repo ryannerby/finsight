@@ -158,7 +158,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         </Card>
 
         {/* Data Quality & Confidence */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Data Quality Assessment</CardTitle>
@@ -187,7 +187,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="md:col-span-1 xl:col-span-2">
             <CardHeader>
               <CardTitle>Confidence Assessment</CardTitle>
             </CardHeader>
