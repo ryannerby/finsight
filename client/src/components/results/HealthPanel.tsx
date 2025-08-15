@@ -238,7 +238,7 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
       
       {/* Tab Navigation */}
       <div className="px-6 pb-4">
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+        <div className="flex flex-wrap gap-1 bg-muted p-1 rounded-lg">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -248,21 +248,21 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                  "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap min-w-0",
                   isActive
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                 )}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{tab.label}</span>
               </button>
             );
           })}
         </div>
         
         {/* Tab Description */}
-        <div className="mt-3 text-sm text-muted-foreground">
+        <div className="mt-3 text-sm text-muted-foreground text-center">
           {tabs.find(tab => tab.id === activeTab)?.description}
         </div>
       </div>

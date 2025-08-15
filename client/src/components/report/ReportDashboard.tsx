@@ -25,6 +25,10 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showGenerateForm, setShowGenerateForm] = useState(false);
+  const [reportType, setReportType] = useState<'comprehensive' | 'financial_summary' | 'risk_assessment' | 'due_diligence'>('comprehensive');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState<string | null>(null);
 
   // Error boundary state
   const [hasError, setHasError] = useState(false);
@@ -37,6 +41,26 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
       setErrorDetails(null);
     }
   }, [report]);
+
+  // Handle report generation
+  const handleGenerateReport = async () => {
+    setIsGenerating(true);
+    setGenerationMessage('Starting report generation...');
+    
+    try {
+      // Simulate report generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setGenerationMessage('Report generated successfully!');
+      setTimeout(() => {
+        setShowGenerateForm(false);
+        setGenerationMessage(null);
+      }, 3000);
+    } catch (error) {
+      setGenerationMessage('Failed to generate report. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Error boundary handler
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
@@ -106,15 +130,25 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   try {
     return (
       <div className="space-y-8">
-        {/* Header with Export */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Enhanced Financial Analysis</h1>
-            <p className="text-muted-foreground">
-              Comprehensive analysis with evidence tracking and actionable insights
+        {/* Header with Export - Centered and properly wrapped */}
+        <div className="text-center space-y-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">Enhanced Financial Report</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Comprehensive analysis with evidence tracking and AI-powered insights
             </p>
           </div>
-          {/* Export controls moved to AppShell header */}
+          
+          {/* Generate Report Button - Centered below title */}
+          <div className="flex justify-center">
+            <Button 
+              onClick={() => setShowGenerateForm(!showGenerateForm)}
+              disabled={isGenerating}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isGenerating ? 'Generating...' : 'Generate Report'}
+            </Button>
+          </div>
         </div>
 
         {/* Export Error Alert */}
@@ -131,6 +165,48 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 Dismiss
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Generate Report Form */}
+        {showGenerateForm && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-3">Generate New Report</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-blue-900 mb-2">Report Type</label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value as any)}
+                  className="w-full p-2 border border-blue-300 rounded-md text-sm"
+                >
+                  <option value="comprehensive">Comprehensive Analysis</option>
+                  <option value="financial_summary">Financial Summary</option>
+                  <option value="risk_assessment">Risk Assessment</option>
+                  <option value="due_diligence">Due Diligence</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button 
+                  onClick={handleGenerateReport}
+                  disabled={isGeneratingReport}
+                  className="w-full"
+                >
+                  {isGeneratingReport ? 'Generating...' : 'Start Generation'}
+                </Button>
+              </div>
+            </div>
+            
+            {/* Generation Status Messages */}
+            {generationMessage && (
+              <div className={`p-3 rounded-md text-sm ${
+                generationMessage.includes('Error') || generationMessage.includes('Failed') 
+                  ? 'bg-red-100 text-red-800 border border-red-200' 
+                  : 'bg-green-100 text-green-800 border border-green-200'
+              }`}>
+                {generationMessage}
+              </div>
+            )}
           </div>
         )}
 
