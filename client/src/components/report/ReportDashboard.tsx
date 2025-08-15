@@ -8,7 +8,7 @@ import { SummaryReport } from '../../../../shared/src/types/SummaryReport';
 import { HealthPanel } from '../results/HealthPanel';
 import { InsightsPanel } from '../results/InsightsPanel';
 import { Recommendation } from './Recommendation';
-import { ExportButtons } from './ExportButtons';
+// ExportButtons removed - using ExportMenu from AppShell instead
 
 interface ReportDashboardProps {
   report: SummaryReport;
@@ -114,11 +114,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               Comprehensive analysis with evidence tracking and actionable insights
             </p>
           </div>
-          <ExportButtons 
-            dealId="mock-deal-id"
-            summaryReport={report}
-            computedMetrics={{}}
-          />
+          {/* Export controls moved to AppShell header */}
         </div>
 
         {/* Export Error Alert */}
