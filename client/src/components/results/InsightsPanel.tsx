@@ -90,10 +90,10 @@ export function InsightsPanel({
   };
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-8", className)}>
       {/* Top Strengths Section */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 rounded-lg">
               <TrendingUp className="w-5 h-5 text-green-600" />
@@ -107,14 +107,14 @@ export function InsightsPanel({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topStrengths.map((strength, index) => (
               <div 
                 key={index}
-                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center space-x-2 mb-2">
                     <h4 className="font-medium text-green-900 text-sm leading-tight truncate">
                       {strength.title}
                     </h4>
@@ -150,7 +150,7 @@ export function InsightsPanel({
 
       {/* Top Risks Section */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-red-100 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -164,14 +164,14 @@ export function InsightsPanel({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topRisks.map((risk, index) => (
               <div 
                 key={index}
-                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center space-x-2 mb-2">
                     <h4 className="font-medium text-red-900 text-sm leading-tight truncate">
                       {risk.title}
                     </h4>

@@ -271,14 +271,14 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
 
       {/* Tab Content */}
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {currentMetrics.map((metric) => {
             // Skip metrics with null values
             if (metric.value === null) {
               return (
                 <div
                   key={metric.key}
-                  className="p-4 rounded-lg border-2 border-dashed border-muted bg-muted/20"
+                  className="p-6 rounded-lg border-2 border-dashed border-muted bg-muted/20 h-full flex items-center justify-center"
                 >
                   <div className="text-center space-y-2">
                     <div className="text-sm font-medium text-muted-foreground">
@@ -295,10 +295,10 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
             return (
               <div
                 key={metric.key}
-                className="p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md bg-card"
+                className="p-6 rounded-lg border-2 transition-all duration-200 hover:shadow-md bg-card h-full flex flex-col"
               >
                 {/* Metric Header */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                   <h4 className="font-medium text-sm text-foreground">
                     {metric.label}
                   </h4>
@@ -313,25 +313,25 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
                 </div>
 
                 {/* Metric Value */}
-                <div className="text-2xl font-bold text-foreground mb-2">
+                <div className="text-3xl font-bold text-foreground mb-3">
                   {metric.value}
                   <span className="text-sm text-muted-foreground ml-1">/ 100</span>
                 </div>
 
                 {/* Description */}
                 {metric.description && (
-                  <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed flex-1">
                     {metric.description}
                   </p>
                 )}
 
                 {/* Evidence Button */}
                 {metric.evidence && metric.evidence.length > 0 && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mt-auto pt-4">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-8 px-3"
                       onClick={() => handleOpenEvidence(metric.evidence!, metric.label)}
                     >
                       <Info className="w-3 h-3 mr-1" />
@@ -350,7 +350,7 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-4 border-t border-border">
+        <div className="mt-8 pt-6 border-t border-border">
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center space-x-2">
               <StatusChip variant="good" size="sm">Good</StatusChip>

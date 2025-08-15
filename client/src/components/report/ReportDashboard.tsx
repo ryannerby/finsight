@@ -105,7 +105,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
 
   try {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header with Export */}
         <div className="flex items-center justify-between">
           <div>
@@ -164,7 +164,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <CardTitle>Data Quality Assessment</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex justify-between">
                   <span>Completeness:</span>
                   <Badge variant={report.analysis_metadata.data_quality.completeness > 0.8 ? 'default' : 'secondary'}>
@@ -192,7 +192,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <CardTitle>Confidence Assessment</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex justify-between">
                   <span>Overall Confidence:</span>
                   <Badge variant={report.confidence.overall > 0.8 ? 'default' : report.confidence.overall > 0.6 ? 'secondary' : 'destructive'}>
@@ -224,9 +224,9 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {report.analysis_metadata.followup_questions.map((question, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div key={index} className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
                       <Badge variant="outline" className="mt-1">Q{index + 1}</Badge>
                       <p className="text-sm">{question}</p>
                     </div>
