@@ -29,6 +29,7 @@ export interface StatusChipProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof statusChipVariants> {
   children: React.ReactNode
+  status?: string // Additional status text for screen readers
 }
 
 function StatusChip({ 
@@ -36,13 +37,47 @@ function StatusChip({
   variant, 
   size, 
   children, 
+  status,
   ...props 
 }: StatusChipProps) {
+  const getStatusIcon = () => {
+    switch (variant) {
+      case 'good':
+        return '✓';
+      case 'caution':
+        return '⚠';
+      case 'risk':
+        return '✗';
+      case 'info':
+        return 'ℹ';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusDescription = () => {
+    switch (variant) {
+      case 'good':
+        return 'Good status';
+      case 'caution':
+        return 'Caution status';
+      case 'risk':
+        return 'Risk status';
+      case 'info':
+        return 'Information status';
+      default:
+        return 'Status';
+    }
+  };
+
   return (
     <div 
       className={cn(statusChipVariants({ variant, size }), className)} 
+      role="status"
+      aria-label={`${status || children}: ${getStatusDescription()}`}
       {...props}
     >
+      <span className="mr-1" aria-hidden="true">{getStatusIcon()}</span>
       {children}
     </div>
   )

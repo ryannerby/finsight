@@ -20,6 +20,14 @@ function SetupPage() {
   
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
+      {/* Skip to content link */}
+      <a
+        href="#main-content"
+        className="skip-link"
+      >
+        Skip to content
+      </a>
+      
       <div className="max-w-md w-full bg-card text-card-foreground rounded-lg shadow-md p-6 border">
         <h1 className="text-2xl font-bold mb-4">Finsight</h1>
         <p className="text-muted-foreground mb-4">
@@ -110,6 +118,11 @@ function SetupPage() {
           </ol>
         </div>
       </div>
+      
+      <main id="main-content" className="sr-only">
+        <h2>Main Content</h2>
+        <p>This is the main content area for screen readers.</p>
+      </main>
     </div>
   );
 }

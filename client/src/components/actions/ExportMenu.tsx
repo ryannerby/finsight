@@ -150,11 +150,12 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             size="sm"
             disabled={isExportDisabled}
             className={`gap-2 ${className}`}
+            aria-label="Export and share options"
           >
             {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4" aria-hidden="true" />
             )}
             Export
           </Button>
@@ -169,7 +170,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             disabled={isExportDisabled}
             className="gap-2"
           >
-            <FileText className="h-4 w-4" />
+            <FileText className="h-4 w-4" aria-hidden="true" />
             Export PDF
             {exportProgress?.status === 'preparing' && (
               <Badge variant="secondary" className="ml-auto">
@@ -183,7 +184,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             disabled={isExportDisabled}
             className="gap-2"
           >
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
             Export Excel
             {exportProgress?.status === 'preparing' && (
               <Badge variant="secondary" className="ml-auto">
@@ -198,7 +199,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             onClick={handleShareLink}
             className="gap-2"
           >
-            <Share2 className="h-4 w-4" />
+            <Share2 className="h-4 w-4" aria-hidden="true" />
             Share link
           </DropdownMenuItem>
           
@@ -206,7 +207,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             onClick={handleScheduleReview}
             className="gap-2"
           >
-            <Calendar className="h-4 w-4" />
+            <Calendar className="h-4 w-4" aria-hidden="true" />
             Schedule review
           </DropdownMenuItem>
           
@@ -254,6 +255,7 @@ export function ExportMenu({ dealId, summaryReport, computedMetrics, className }
             <button
               onClick={() => removeToast(toast.id)}
               className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+              aria-label="Dismiss notification"
             >
               ×
             </button>

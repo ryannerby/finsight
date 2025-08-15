@@ -149,7 +149,7 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
   })();
 
   const formatMetric = (key: string, val: number): string => {
-    if (val == null || Number.isNaN(val)) return 'n/a';
+    if (val == null || Number.isNaN(val)) return ''; // Return empty string for null values
     const asPct = (n: number) => `${(n * 100).toFixed(1)}%`;
     const asX = (n: number) => `${n.toFixed(2)}x`;
     const asDays = (n: number) => `${Math.round(n)} days`;
@@ -269,62 +269,112 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
                 <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
                 {/* Mobile: swipeable */}
                 <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                    <MetricCard
-                      key={`m-${k}`}
-                      label={k.replace(/_/g,' ')}
-                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px] snap-start min-w-[200px]"
-                    />
-                  ))}
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => {
+                    const value = metrics[k];
+                    if (value == null) return null; // Skip rendering if no data
+                    
+                    return (
+                      <MetricCard
+                        key={`m-${k}`}
+                        label={k.replace(/_/g,' ')}
+                        value={typeof value === 'number' ? formatMetric(k, value) : String(value)}
+                        status={k.includes('margin') ? (value > 0.2 ? 'good' : value > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                        tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                        ariaLabel={`${k} metric`}
+                        className="min-h-[96px] snap-start min-w-[200px]"
+                      />
+                    );
+                  })}
                 </div>
                 {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
                 <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                    <MetricCard
-                      key={k}
-                      label={k.replace(/_/g,' ')}
-                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px]"
-                    />
-                  ))}
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => {
+                    const value = metrics[k];
+                    if (value == null) return null; // Skip rendering if no data
+                    
+                    return (
+                      <MetricCard
+                        key={k}
+                        label={k.replace(/_/g,' ')}
+                        value={typeof value === 'number' ? formatMetric(k, value) : String(value)}
+                        status={k.includes('margin') ? (value > 0.2 ? 'good' : value > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                        tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                        ariaLabel={`${k} metric`}
+                        className="min-h-[96px]"
+                      />
+                    );
+                  })}
                 </div>
               </div>
               <div className="max-w-3xl mx-auto">
                 <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
                 {/* Mobile: swipeable */}
                 <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
-                    <MetricCard
-                      key={`l-${k}`}
-                      label={k.replace(/_/g,' ')}
-                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px] snap-start min-w-[200px]"
-                    />
-                  ))}
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => {
+                    if (k === 'periodicity') {
+                      if (!coverage.periodicity) return null; // Skip if no periodicity data
+                      return (
+                        <MetricCard
+                          key={`l-${k}`}
+                          label={k.replace(/_/g,' ')}
+                          value={coverage.periodicity}
+                          status="neutral"
+                          tooltip={`Data coverage ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px] snap-start min-w-[200px]"
+                        />
+                      );
+                    }
+                    
+                    const value = metrics[k];
+                    if (value == null) return null; // Skip rendering if no data
+                    
+                    return (
+                      <MetricCard
+                        key={`l-${k}`}
+                        label={k.replace(/_/g,' ')}
+                        value={typeof value === 'number' ? formatMetric(k, value) : String(value)}
+                        status={k === 'current_ratio' ? (value >= 1.5 ? 'good' : value >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                        tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                        ariaLabel={`${k} metric`}
+                        className="min-h-[96px] snap-start min-w-[200px]"
+                      />
+                    );
+                  })}
                 </div>
                 {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
                 <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
-                    <MetricCard
-                      key={k}
-                      label={k.replace(/_/g,' ')}
-                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px]"
-                    />
-                  ))}
+                  {['current_ratio','debt_to_equity','periodicity'].map((k) => {
+                    if (k === 'periodicity') {
+                      if (!coverage.periodicity) return null; // Skip if no periodicity data
+                      return (
+                        <MetricCard
+                          key={k}
+                          label={k.replace(/_/g,' ')}
+                          value={coverage.periodicity}
+                          status="neutral"
+                          tooltip={`Data coverage ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px]"
+                        />
+                      );
+                    }
+                    
+                    const value = metrics[k];
+                    if (value == null) return null; // Skip rendering if no data
+                    
+                    return (
+                      <MetricCard
+                        key={k}
+                        label={k.replace(/_/g,' ')}
+                        value={typeof value === 'number' ? formatMetric(k, value) : String(value)}
+                        status={k === 'current_ratio' ? (value >= 1.5 ? 'good' : value >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                        tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                        ariaLabel={`${k} metric`}
+                        className="min-h-[96px]"
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -448,10 +498,9 @@ const SummaryTab = ({ deal, refreshKey, isAnalyzing }: { deal: any; refreshKey: 
             return (
               <>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
-                  {chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
-                  {chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
-                  {chip('N/A', groups.na.length, 'bg-muted text-foreground/70')}
+                  {groups.todo.length > 0 && chip('To do', groups.todo.length, 'bg-red-100 text-red-700')}
+                  {groups.in_progress.length > 0 && chip('In progress', groups.in_progress.length, 'bg-yellow-100 text-yellow-700')}
+                  {groups.done.length > 0 && chip('Done', groups.done.length, 'bg-green-100 text-green-700')}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>

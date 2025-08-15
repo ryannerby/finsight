@@ -33,6 +33,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
                 ? 'translateX(-50%) translateY(6px)'
                 : 'translateY(-50%) translateX(6px)',
           }}
+          aria-live="polite"
         >
           {content}
         </div>

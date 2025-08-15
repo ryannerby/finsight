@@ -7,8 +7,9 @@ const Progress = React.forwardRef<
     value?: number
     max?: number
     variant?: "default" | "success" | "warning" | "destructive"
+    label?: string
   }
->(({ className, value = 0, max = 100, variant = "default", ...props }, ref) => {
+>(({ className, value = 0, max = 100, variant = "default", label, ...props }, ref) => {
   const percentage = Math.min(Math.max((value / max) * 100, 0), 100)
   
   const variantClasses = {
@@ -18,10 +19,28 @@ const Progress = React.forwardRef<
     destructive: "bg-red-500"
   }
 
+  const getVariantDescription = () => {
+    switch (variant) {
+      case 'success':
+        return 'Success progress';
+      case 'warning':
+        return 'Warning progress';
+      case 'destructive':
+        return 'Error progress';
+      default:
+        return 'Progress';
+    }
+  };
+
   return (
     <div
       ref={ref}
       className={cn("w-full bg-secondary rounded-full h-2 overflow-hidden", className)}
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-label={label || `${getVariantDescription()}: ${percentage}% complete`}
       {...props}
     >
       <div

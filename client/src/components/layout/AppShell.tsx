@@ -59,6 +59,14 @@ export function AppShell({
 
   return (
     <div className={`min-h-screen bg-background ${className}`}>
+      {/* Skip to content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        Skip to content
+      </a>
+
       {/* Top Action Bar - sticky and mobile-friendly */}
       <div className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3">
@@ -66,7 +74,7 @@ export function AppShell({
             {/* Left side - Deal name and status */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
+                <FileText className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                 <h1 className="text-base sm:text-lg md:text-xl font-semibold text-foreground truncate max-w-[75vw]">
                   {dealName}
                 </h1>
@@ -116,7 +124,7 @@ export function AppShell({
                   size="sm"
                   className="gap-2"
                 >
-                  <Upload className="h-4 w-4" />
+                  <Upload className="h-4 w-4" aria-hidden="true" />
                   Upload
                 </Button>
               </UploadDialog>
@@ -126,11 +134,11 @@ export function AppShell({
       </div>
 
       {/* Content Area */}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <main id="main-content" className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="space-y-6">
           {children}
         </div>
-      </div>
+      </main>
 
       {/* Toast for post-upload re-analyze */}
       {showToast && (

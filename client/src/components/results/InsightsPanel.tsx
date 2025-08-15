@@ -4,12 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, AlertTriangle, Eye, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StrengthRisk, Evidence } from '../../../../shared/src/types';
+import { StrengthRisk } from '../../../../shared/src/types';
+import { 
+  UIStrengthRisk,
+  mapStrengthRiskToUI,
+  hasValidData
+} from '@/lib/dataMappers';
 import { EvidenceDrawer } from './EvidenceDrawer';
 
 interface InsightsPanelProps {
-  strengths: StrengthRisk[];
-  risks: StrengthRisk[];
+  strengths: StrengthRisk[] | null | undefined;
+  risks: StrengthRisk[] | null | undefined;
   className?: string;
   onViewEvidence?: (item: StrengthRisk) => void;
 }
@@ -28,9 +33,41 @@ export function InsightsPanel({
   const [currentEvidenceItems, setCurrentEvidenceItems] = useState<any[]>([]);
   const [currentEvidenceTitle, setCurrentEvidenceTitle] = useState('');
 
+  // Transform server data to UI models
+  const uiStrengths = strengths?.map(mapStrengthRiskToUI) || [];
+  const uiRisks = risks?.map(mapStrengthRiskToUI) || [];
+  
+  // Gate rendering by data presence
+  if (!hasValidData({ top_strengths: uiStrengths, top_risks: uiRisks } as any)) {
+    return (
+      <div className={cn("space-y-8", className)}>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg text-blue-800">Insights Panel</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  No insights data available. Complete financial analysis to see strengths and risks.
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 text-center">
+            <p className="text-muted-foreground">
+              Upload documents and run analysis to generate insights.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Limit to top 5 items each
-  const topStrengths = strengths.slice(0, 5);
-  const topRisks = risks.slice(0, 5);
+  const topStrengths = uiStrengths.slice(0, 5);
+  const topRisks = uiRisks.slice(0, 5);
 
   const getImpactColor = (impact: 'high' | 'medium' | 'low') => {
     switch (impact) {
@@ -59,7 +96,7 @@ export function InsightsPanel({
   };
 
   // Helper function to transform evidence for EvidenceDrawer
-  const transformEvidenceForDrawer = (evidence: Evidence[], itemTitle: string) => {
+  const transformEvidenceForDrawer = (evidence: any[], itemTitle: string) => {
     return evidence.map((item, idx) => ({
       id: item.ref || `evidence-${idx}`,
       excerpt: item.context || item.quote || `Evidence from ${item.type}`,

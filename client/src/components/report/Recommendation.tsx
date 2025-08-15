@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, XCircle, Info, DollarSign, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { EvidencePopover } from './EvidencePopover';
 import { SummaryReport } from '../../../../shared/src/types';
 
 interface RecommendationProps {

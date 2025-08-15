@@ -5,7 +5,22 @@ import { cn } from "@/lib/utils"
 
 const Popover = PopoverPrimitive.Root
 
-const PopoverTrigger = PopoverPrimitive.Trigger
+const PopoverTrigger = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger> & {
+    'aria-label'?: string
+  }
+>(({ className, ...props }, ref) => (
+  <PopoverPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      className
+    )}
+    {...props}
+  />
+))
+PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,

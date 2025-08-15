@@ -6,7 +6,14 @@ import { Separator } from '@/components/ui/separator';
 import { EvidenceDrawer } from './EvidenceDrawer';
 import { StatusChip } from '@/components/ui/status-chip';
 import { cn } from '@/lib/utils';
-import { SummaryReport, Evidence } from '../../../../shared/src/types';
+import { SummaryReport } from '../../../../shared/src/types';
+import { 
+  UISummaryReport,
+  mapSummaryReportToUI,
+  getSafeHealthScore,
+  getSafeTrafficLights,
+  hasValidData
+} from '@/lib/dataMappers';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -17,16 +24,16 @@ import {
 } from 'lucide-react';
 
 interface HealthPanelProps {
-  summaryReport: SummaryReport;
+  summaryReport: SummaryReport | null | undefined;
   className?: string;
 }
 
 interface MetricItem {
   key: string;
   label: string;
-  value: number | null;
+  value: number;
   status: 'good' | 'warning' | 'risk' | 'neutral';
-  evidence?: Evidence[];
+  evidence?: any[];
   description?: string;
   trend?: 'improving' | 'stable' | 'declining' | 'volatile';
 }
@@ -40,6 +47,28 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
   const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
   const [currentEvidenceItems, setCurrentEvidenceItems] = useState<any[]>([]);
   const [currentEvidenceTitle, setCurrentEvidenceTitle] = useState('');
+
+  // Transform server data to UI models
+  const uiSummaryReport = mapSummaryReportToUI(summaryReport);
+  
+  // Gate rendering by data presence
+  if (!hasValidData(uiSummaryReport)) {
+    return (
+      <Card className={cn("w-full", className)}>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Financial Health Panel</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            No financial health data available. Upload documents and run analysis to see health metrics.
+          </p>
+        </CardHeader>
+        <CardContent className="p-6 text-center">
+          <div className="text-muted-foreground">
+            <p>Complete financial analysis required to display health metrics.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Tab configuration
   const tabs = [
@@ -87,7 +116,7 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
   };
 
   // Helper function to transform evidence for EvidenceDrawer
-  const transformEvidenceForDrawer = (evidence: Evidence[], metricLabel: string) => {
+  const transformEvidenceForDrawer = (evidence: any[], metricLabel: string) => {
     return evidence.map((item, idx) => ({
       id: item.ref || `evidence-${idx}`,
       excerpt: item.context || item.quote || `Evidence from ${item.type}`,
@@ -105,7 +134,7 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
   };
 
   // Handler for opening evidence drawer
-  const handleOpenEvidence = (evidence: Evidence[], metricLabel: string) => {
+  const handleOpenEvidence = (evidence: any[], metricLabel: string) => {
     setCurrentEvidenceItems(transformEvidenceForDrawer(evidence, metricLabel));
     setCurrentEvidenceTitle(`Evidence for ${metricLabel}`);
     setEvidenceDrawerOpen(true);
@@ -116,29 +145,29 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
     {
       key: 'overall_health',
       label: 'Overall Health Score',
-      value: summaryReport.health_score.overall,
-      status: getStatusFromScore(summaryReport.health_score.overall),
+      value: uiSummaryReport?.health_score?.overall || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.overall || 0),
       description: 'Weighted average of all health indicators'
     },
     {
       key: 'profitability',
       label: 'Profitability',
-      value: summaryReport.health_score.components.profitability,
-      status: getStatusFromScore(summaryReport.health_score.components.profitability),
+      value: uiSummaryReport?.health_score?.components?.profitability || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.components?.profitability || 0),
       description: 'Margin performance and profitability trends'
     },
     {
       key: 'growth',
       label: 'Growth',
-      value: summaryReport.health_score.components.growth,
-      status: getStatusFromScore(summaryReport.health_score.components.growth),
+      value: uiSummaryReport?.health_score?.components?.growth || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.components?.growth || 0),
       description: 'Revenue and earnings growth patterns'
     },
     {
       key: 'liquidity',
       label: 'Liquidity',
-      value: summaryReport.health_score.components.liquidity,
-      status: getStatusFromScore(summaryReport.health_score.components.liquidity),
+      value: uiSummaryReport?.health_score?.components?.liquidity || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.components?.liquidity || 0),
       description: 'Short-term financial flexibility'
     }
   ];
@@ -148,24 +177,24 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
     {
       key: 'revenue_quality',
       label: 'Revenue Quality',
-      value: summaryReport.traffic_lights.revenue_quality.score,
-      status: getStatusFromScore(summaryReport.traffic_lights.revenue_quality.score),
-      evidence: summaryReport.traffic_lights.revenue_quality.evidence,
-      description: summaryReport.traffic_lights.revenue_quality.reasoning
+      value: uiSummaryReport?.traffic_lights?.revenue_quality?.score || 0,
+      status: getStatusFromScore(uiSummaryReport?.traffic_lights?.revenue_quality?.score || 0),
+      evidence: uiSummaryReport?.traffic_lights?.revenue_quality?.evidence,
+      description: uiSummaryReport?.traffic_lights?.revenue_quality?.reasoning
     },
     {
       key: 'margin_trends',
       label: 'Margin Trends',
-      value: summaryReport.traffic_lights.margin_trends.score,
-      status: getStatusFromScore(summaryReport.traffic_lights.margin_trends.score),
-      evidence: summaryReport.traffic_lights.margin_trends.evidence,
-      description: summaryReport.traffic_lights.margin_trends.reasoning
+      value: uiSummaryReport?.traffic_lights?.margin_trends?.score || 0,
+      status: getStatusFromScore(uiSummaryReport?.traffic_lights?.margin_trends?.score || 0),
+      evidence: uiSummaryReport?.traffic_lights?.margin_trends?.evidence,
+      description: uiSummaryReport?.traffic_lights?.margin_trends?.reasoning
     },
     {
       key: 'leverage',
       label: 'Leverage',
-      value: summaryReport.health_score.components.leverage,
-      status: getStatusFromScore(summaryReport.health_score.components.leverage),
+      value: uiSummaryReport?.health_score?.components?.leverage || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.components?.leverage || 0),
       description: 'Debt levels and financial leverage'
     }
   ];
@@ -175,18 +204,18 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
     {
       key: 'liquidity_ratio',
       label: 'Liquidity Ratio',
-      value: summaryReport.traffic_lights.liquidity.score,
-      status: getStatusFromScore(summaryReport.traffic_lights.liquidity.score),
-      evidence: summaryReport.traffic_lights.liquidity.evidence,
-      description: summaryReport.traffic_lights.liquidity.reasoning
+      value: uiSummaryReport?.traffic_lights?.liquidity?.score || 0,
+      status: getStatusFromScore(uiSummaryReport?.traffic_lights?.liquidity?.score || 0),
+      evidence: uiSummaryReport?.traffic_lights?.liquidity?.evidence,
+      description: uiSummaryReport?.traffic_lights?.liquidity?.reasoning
     },
     {
       key: 'working_capital',
       label: 'Working Capital',
-      value: summaryReport.traffic_lights.working_capital.score,
-      status: getStatusFromScore(summaryReport.traffic_lights.working_capital.score),
-      evidence: summaryReport.traffic_lights.working_capital.evidence,
-      description: summaryReport.traffic_lights.working_capital.reasoning
+      value: uiSummaryReport?.traffic_lights?.working_capital?.score || 0,
+      status: getStatusFromScore(uiSummaryReport?.traffic_lights?.working_capital?.score || 0),
+      evidence: uiSummaryReport?.traffic_lights?.working_capital?.evidence,
+      description: uiSummaryReport?.traffic_lights?.working_capital?.reasoning
     }
   ];
 
@@ -195,17 +224,17 @@ export function HealthPanel({ summaryReport, className }: HealthPanelProps) {
     {
       key: 'efficiency',
       label: 'Operational Efficiency',
-      value: summaryReport.health_score.components.efficiency,
-      status: getStatusFromScore(summaryReport.health_score.components.efficiency),
+      value: uiSummaryReport?.health_score?.components?.efficiency || 0,
+      status: getStatusFromScore(uiSummaryReport?.health_score?.components?.efficiency || 0),
       description: 'Asset utilization and operational performance'
     },
     {
       key: 'data_quality',
       label: 'Data Quality',
-      value: summaryReport.traffic_lights.data_quality.score,
-      status: getStatusFromScore(summaryReport.traffic_lights.data_quality.score),
-      evidence: summaryReport.traffic_lights.data_quality.evidence,
-      description: summaryReport.traffic_lights.data_quality.reasoning
+      value: uiSummaryReport?.traffic_lights?.data_quality?.score || 0,
+      status: getStatusFromScore(uiSummaryReport?.traffic_lights?.data_quality?.score || 0),
+      evidence: uiSummaryReport?.traffic_lights?.data_quality?.evidence,
+      description: uiSummaryReport?.traffic_lights?.data_quality?.reasoning
     }
   ];
 

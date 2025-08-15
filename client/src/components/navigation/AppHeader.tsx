@@ -36,6 +36,15 @@ export function AppHeader({ className }: { className?: string }) {
           <div
             className="flex items-center cursor-pointer select-none"
             onClick={handleBrandClick}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleBrandClick();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Navigate to home page"
           >
             <img
               src="/logo.png"
@@ -45,9 +54,9 @@ export function AppHeader({ className }: { className?: string }) {
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
-            <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
-            <Button variant="outline" onClick={handleLogout}>Logout</Button>
+            <Button variant="ghost" onClick={handleBrandClick} aria-label="Navigate to home page">Home</Button>
+            <Button onClick={() => navigate('/deals?create=1')} aria-label="Create a new deal">Create Deal</Button>
+            <Button variant="outline" onClick={handleLogout} aria-label="Sign out of the application">Logout</Button>
           </div>
         </div>
       </div>

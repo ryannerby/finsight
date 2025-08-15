@@ -1,10 +1,6 @@
 // Report Components Index
 export { ReportDashboard } from './ReportDashboard';
-export { HealthScore } from './HealthScore';
-export { TrafficLights } from './TrafficLights';
-
-export { Recommendation } from './Recommendation';
-export { ExportButtons } from './ExportButtons';
-export { EvidencePopover } from './EvidencePopover';
 export { default as ReportDemo } from './ReportDemo';
+export { HealthScore } from './HealthScore';
+export { Recommendation } from './Recommendation';
 export { mockEnhancedReport } from './mockEnhancedReport';

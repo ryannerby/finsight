@@ -28,6 +28,12 @@ export function MetricCard({ label, value, status = 'neutral', tooltip, classNam
       aria-label={ariaLabel || label}
       role="group"
       tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          // Handle keyboard interaction if needed
+        }
+      }}
     >
       <div className="text-xs text-muted-foreground tracking-wide uppercase">{label}</div>
       <div className="mt-1 text-2xl font-semibold leading-tight">{value}</div>

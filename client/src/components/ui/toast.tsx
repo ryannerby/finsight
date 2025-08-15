@@ -65,8 +65,9 @@ export function Toast({
           size="sm"
           onClick={handleClose}
           className="h-6 w-6 p-0 flex-shrink-0"
+          aria-label="Dismiss notification"
         >
-          <X className="h-3 w-3" />
+          <X className="h-3 w-3" aria-hidden="true" />
         </Button>
       </div>
     </div>

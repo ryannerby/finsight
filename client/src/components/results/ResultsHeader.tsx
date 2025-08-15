@@ -6,6 +6,13 @@ import { cn } from '@/lib/utils';
 import { SummaryReport } from '../../../../shared/src/types/SummaryReport';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { ResultsHeaderSkeleton } from '@/components/skeletons';
+import { 
+  UISummaryReport,
+  mapSummaryReportToUI,
+  hasValidData,
+  getSafeHealthScore,
+  getSafeRecommendation
+} from '@/lib/dataMappers';
 
 interface ResultsHeaderProps {
   summaryReport: SummaryReport | null;
@@ -67,29 +74,32 @@ const RecommendationPill = ({ recommendation }: { recommendation: SummaryReport[
 };
 
 // Top highlights cards
-const TopHighlights = ({ summaryReport }: { summaryReport: SummaryReport }) => {
+const TopHighlights = ({ summaryReport }: { summaryReport: UISummaryReport }) => {
+  const topStrength = summaryReport.top_strengths[0];
+  const topRisk = summaryReport.top_risks[0];
+  
   const highlights = [
     {
       type: 'strength',
-      title: summaryReport.top_strengths[0]?.title || 'Top Strength',
-      description: summaryReport.top_strengths[0]?.description || 'No strengths identified',
-      impact: summaryReport.top_strengths[0]?.impact || 'medium',
+      title: topStrength?.title || 'Top Strength',
+      description: topStrength?.description || 'No strengths identified',
+      impact: topStrength?.impact || 'medium',
       icon: TrendingUp,
       className: 'border-green-200 bg-green-50'
     },
     {
       type: 'risk',
-      title: summaryReport.top_risks[0]?.title || 'Top Risk',
-      description: summaryReport.top_risks[0]?.description || 'No risks identified',
-      impact: summaryReport.top_risks[0]?.impact || 'medium',
+      title: topRisk?.title || 'Top Risk',
+      description: topRisk?.description || 'No risks identified',
+      impact: topRisk?.impact || 'medium',
       icon: AlertCircle,
       className: 'border-red-200 bg-red-50'
     },
     {
       type: 'metric',
-      title: 'Key Metric',
-      description: 'Financial health indicator',
-      impact: 'high',
+      title: 'Health Score',
+      description: `${summaryReport.health_score.overall}/100 overall health`,
+      impact: 'high' as const,
       icon: BarChart3,
       className: 'border-blue-200 bg-blue-50'
     }
@@ -155,15 +165,36 @@ export function ResultsHeader({
     );
   }
 
-  // Show placeholder when no data
-  if (!summaryReport) {
+  // Transform server data to UI models
+  const uiSummaryReport = mapSummaryReportToUI(summaryReport);
+  
+  // Show placeholder when no data or invalid data
+  if (!hasValidData(uiSummaryReport)) {
     return (
       <Card className={cn("border-dashed", className)}>
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground">
             <BarChart3 className="w-8 h-8 mx-auto mb-2" />
             <p className="font-medium">No analysis results available</p>
-            <p className="text-sm">Upload financial documents to generate a report</p>
+            <p className="text-sm">Upload financial documents and run analysis to generate a report</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Get safe data access
+  const healthScore = getSafeHealthScore(uiSummaryReport);
+  const recommendation = getSafeRecommendation(uiSummaryReport);
+
+  if (!healthScore || !recommendation) {
+    return (
+      <Card className={cn("border-dashed", className)}>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">
+            <BarChart3 className="w-8 h-8 mx-auto mb-2" />
+            <p className="font-medium">Incomplete analysis results</p>
+            <p className="text-sm">Analysis is still in progress or incomplete</p>
           </div>
         </CardContent>
       </Card>
@@ -174,20 +205,20 @@ export function ResultsHeader({
     <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6 bg-card rounded-lg border", className)}>
       {/* Left - Recommendation */}
       <div className="flex flex-col items-center justify-center">
-        <RecommendationPill recommendation={summaryReport.recommendation} />
+        <RecommendationPill recommendation={recommendation} />
       </div>
 
       {/* Center - Health Score */}
       <div className="flex flex-col items-center justify-center space-y-2">
         <HealthScoreRing 
-          score={summaryReport.health_score.overall}
+          score={healthScore.overall}
           size={80}
           stroke={8}
           tooltip="Overall financial health score"
         />
         <div className="text-center">
           <div className="text-lg font-semibold text-foreground">
-            {summaryReport.health_score.overall}/100
+            {healthScore.overall}/100
           </div>
           <div className="text-xs text-muted-foreground">
             Financial Health Score
@@ -197,7 +228,7 @@ export function ResultsHeader({
 
       {/* Right - Top Highlights */}
       <div className="flex flex-col justify-center">
-        <TopHighlights summaryReport={summaryReport} />
+        <TopHighlights summaryReport={uiSummaryReport} />
       </div>
     </div>
   );

@@ -49,7 +49,7 @@ export function UploadDialog({ dealId, userId, onUploadComplete, children }: Upl
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <Upload className="h-5 w-5" aria-hidden="true" />
             Upload Files
           </DialogTitle>
         </DialogHeader>
@@ -82,6 +82,7 @@ export function UploadDialog({ dealId, userId, onUploadComplete, children }: Upl
                   onClick={clearUploads}
                   disabled={isUploading}
                   className="h-6 px-2 text-xs"
+                  aria-label="Clear all uploads"
                 >
                   Clear
                 </Button>
@@ -109,7 +110,7 @@ export function UploadDialog({ dealId, userId, onUploadComplete, children }: Upl
               onClick={handleClose}
               className="gap-2"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4" aria-hidden="true" />
               Files Uploaded
             </Button>
           )}

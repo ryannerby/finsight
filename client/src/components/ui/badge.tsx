@@ -28,11 +28,53 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  status?: string // Additional status text for screen readers
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, status, children, ...props }: BadgeProps) {
+  const getStatusIcon = () => {
+    switch (variant) {
+      case 'success':
+        return '✓';
+      case 'warning':
+        return '⚠';
+      case 'destructive':
+        return '✗';
+      case 'info':
+        return 'ℹ';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusDescription = () => {
+    switch (variant) {
+      case 'success':
+        return 'Success status';
+      case 'warning':
+        return 'Warning status';
+      case 'destructive':
+        return 'Error status';
+      case 'info':
+        return 'Information status';
+      default:
+        return 'Status';
+    }
+  };
+
+  const hasIcon = variant && ['success', 'warning', 'destructive', 'info'].includes(variant);
+
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div 
+      className={cn(badgeVariants({ variant }), className)} 
+      role="status"
+      aria-label={status ? `${status}: ${getStatusDescription()}` : `${children}: ${getStatusDescription()}`}
+      {...props}
+    >
+      {hasIcon && <span className="mr-1" aria-hidden="true">{getStatusIcon()}</span>}
+      {children}
+    </div>
   )
 }
 

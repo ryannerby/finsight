@@ -36,7 +36,7 @@ export function ErrorBanner({
       variantClasses[variant],
       className
     )}>
-      <AlertTriangle className={cn('w-5 h-5 mt-0.5 flex-shrink-0', iconClasses[variant])} />
+      <AlertTriangle className={cn('w-5 h-5 mt-0.5 flex-shrink-0', iconClasses[variant])} aria-hidden="true" />
       
       <div className="flex-1 min-w-0">
         <p className="font-medium mb-1">Something went wrong</p>
@@ -55,8 +55,9 @@ export function ErrorBanner({
               variant === 'destructive' && 'border-red-300 text-red-700 hover:bg-red-100',
               variant === 'warning' && 'border-yellow-300 text-yellow-700 hover:bg-yellow-100'
             )}
+            aria-label="Retry the operation"
           >
-            <RefreshCw className="w-3 h-3 mr-1" />
+            <RefreshCw className="w-3 h-3 mr-1" aria-hidden="true" />
             Retry
           </Button>
         )}
@@ -72,8 +73,9 @@ export function ErrorBanner({
               variant === 'destructive' && 'text-red-600 hover:bg-red-100',
               variant === 'warning' && 'text-yellow-600 hover:bg-yellow-100'
             )}
+            aria-label="Dismiss error message"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3 h-3" aria-hidden="true" />
           </Button>
         )}
       </div>

@@ -15,9 +15,25 @@ export function HealthScoreRing({ score, size = 88, stroke = 10, tooltip }: Heal
   const offset = circumference - (clamped / 100) * circumference
   const colorClass = clamped >= 80 ? 'text-green-600' : clamped >= 60 ? 'text-yellow-600' : 'text-red-600'
 
+  const getHealthStatus = () => {
+    if (clamped >= 80) return 'Good health';
+    if (clamped >= 60) return 'Moderate health';
+    return 'Poor health';
+  };
+
+  const getHealthIcon = () => {
+    if (clamped >= 80) return '✓';
+    if (clamped >= 60) return '⚠';
+    return '✗';
+  };
+
   const ring = (
-    <div className="inline-flex items-center justify-center" aria-label={`Health score ${clamped}`}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <div 
+      className="inline-flex items-center justify-center" 
+      aria-label={`Health score: ${clamped} out of 100. ${getHealthStatus()}`}
+      role="img"
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
         <circle
           className="stroke-[hsl(var(--secondary))]/30"
           fill="transparent"
@@ -49,6 +65,9 @@ export function HealthScoreRing({ score, size = 88, stroke = 10, tooltip }: Heal
           {clamped}
         </text>
       </svg>
+      <span className="ml-2 text-sm font-medium text-muted-foreground" aria-hidden="true">
+        {getHealthIcon()}
+      </span>
     </div>
   )
 

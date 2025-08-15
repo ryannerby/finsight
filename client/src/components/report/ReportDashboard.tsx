@@ -130,17 +130,18 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   try {
     return (
       <div className="space-y-8">
-        {/* Header with Export - Centered and properly wrapped */}
-        <div className="text-center space-y-4">
-          <div className="space-y-2">
+        {/* Header with Export - Centered title with right-aligned button */}
+        <div className="relative">
+          {/* Centered title and subtitle */}
+          <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold">Enhanced Financial Report</h1>
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Comprehensive analysis with evidence tracking and AI-powered insights
             </p>
           </div>
           
-          {/* Generate Report Button - Centered below title */}
-          <div className="flex justify-center">
+          {/* Generate Report Button - Positioned absolutely in top-right */}
+          <div className="absolute top-0 right-0">
             <Button 
               onClick={() => setShowGenerateForm(!showGenerateForm)}
               disabled={isGenerating}
@@ -189,10 +190,10 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <div className="flex items-end">
                 <Button 
                   onClick={handleGenerateReport}
-                  disabled={isGeneratingReport}
+                  disabled={isGenerating}
                   className="w-full"
                 >
-                  {isGeneratingReport ? 'Generating...' : 'Start Generation'}
+                  {isGenerating ? 'Generating...' : 'Start Generation'}
                 </Button>
               </div>
             </div>
