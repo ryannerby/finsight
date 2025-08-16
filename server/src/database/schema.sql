@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS deals (
   user_id TEXT NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
+  is_saved BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

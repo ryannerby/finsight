@@ -14,6 +14,7 @@ import { FileList } from '@/components/FileList';
 import { UploadProgress } from '@/components/UploadProgress';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useFiles } from '@/hooks/useFiles';
+import { SaveDealButton } from '@/components/SaveDealButton';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -985,6 +986,13 @@ export default function DealDetail() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <SaveDealButton
+              dealId={deal.id}
+              isSaved={deal.is_saved || false}
+              onSaveChange={(isSaved) => {
+                setDeal(prev => prev ? { ...prev, is_saved: isSaved } : null);
+              }}
+            />
             <span className="px-3 py-1 bg-muted text-foreground/80 rounded-full text-sm font-medium">
               Active
             </span>

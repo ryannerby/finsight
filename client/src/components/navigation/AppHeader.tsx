@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Bookmark } from 'lucide-react';
 // Avoid React hooks from Clerk here to support demo mode without provider
 
 export function AppHeader({ className }: { className?: string }) {
@@ -45,6 +46,10 @@ export function AppHeader({ className }: { className?: string }) {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={handleBrandClick}>Home</Button>
+          <Button variant="ghost" onClick={() => navigate('/saved-deals')} className="gap-2">
+            <Bookmark className="w-4 h-4" />
+            Saved Deals
+          </Button>
           <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
           <Button variant="outline" onClick={handleLogout}>Logout</Button>
         </div>
