@@ -219,6 +219,53 @@ dealsRouter.patch('/:id/save', async (req: Request, res: Response) => {
   }
 });
 
+// Update deal
+dealsRouter.patch('/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { user_id, description } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Verify the deal belongs to the user
+    const { data: deal, error: findError } = await supabase
+      .from('deals')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (findError || !deal) {
+      return res.status(404).json({ error: 'Deal not found or access denied' });
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    if (description !== undefined) updateData.description = description;
+
+    // Update the deal
+    const { data, error } = await supabase
+      .from('deals')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating deal:', error);
+      return res.status(500).json({ error: 'Failed to update deal' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error in update deal:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get saved deals for a user
 dealsRouter.get('/saved/all', async (req: Request, res: Response) => {
   try {

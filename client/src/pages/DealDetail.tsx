@@ -982,7 +982,12 @@ export default function DealDetail() {
             <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
             <div>
               <h1 className="text-2xl font-bold">{deal.title}</h1>
-              {deal.description && <p className="text-muted-foreground">{deal.description}</p>}
+                              {deal.description && <p className="text-muted-foreground">
+                  {deal.description.includes('[METRICS:') 
+                    ? deal.description.split('[METRICS:')[0].trim()
+                    : deal.description
+                  }
+                </p>}
             </div>
           </div>
           <div className="flex items-center gap-3">

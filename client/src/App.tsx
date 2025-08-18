@@ -4,6 +4,7 @@ import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
 import SavedDeals from './pages/SavedDeals';
+import HeadToHead from './pages/HeadToHead';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="/deals/new" element={<CreateDeal />} />
           <Route path="/deals/:dealId" element={<DealDetail />} />
           <Route path="/saved-deals" element={<SavedDeals />} />
+          <Route path="/head-to-head" element={<HeadToHead />} />
           <Route path="*" element={<SetupPage />} />
         </Routes>
       </div>
@@ -115,6 +117,7 @@ export default function App() {
         <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
         <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
         <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
+        <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </ClerkProvider>

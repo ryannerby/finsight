@@ -264,7 +264,10 @@ export default function DealsList() {
                   <div className="min-w-0">
                     <div className="text-title truncate">{deal.title}</div>
                     {deal.description && (() => {
-                      const first = String(deal.description).split('|')[0]?.trim();
+                      const cleanDescription = deal.description.includes('[METRICS:') 
+                        ? deal.description.split('[METRICS:')[0].trim()
+                        : deal.description;
+                      const first = String(cleanDescription).split('|')[0]?.trim();
                       return first ? (
                         <div className="text-sm text-muted-foreground truncate">{first}</div>
                       ) : null;
