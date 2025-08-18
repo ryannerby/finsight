@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SaveDealButton } from '@/components/SaveDealButton';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -270,6 +271,15 @@ export default function DealsList() {
                     })()}
                   </div>
                   <div className="flex items-center gap-3 text-caption text-muted-foreground">
+                    <SaveDealButton
+                      dealId={deal.id}
+                      isSaved={deal.is_saved || false}
+                      onSaveChange={(isSaved) => {
+                        setDeals(prev => prev.map(d => 
+                          d.id === deal.id ? { ...d, is_saved: isSaved } : d
+                        ));
+                      }}
+                    />
                     {(() => {
                       const docs = (Array.isArray(deal.documents) ? deal.documents : []);
                       const count = typeof deal.documents_count === 'number'

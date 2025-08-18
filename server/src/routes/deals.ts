@@ -165,3 +165,87 @@ dealsRouter.get('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Save/unsave a deal
+dealsRouter.patch('/:id/save', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { user_id, is_saved } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Verify the deal belongs to the user
+    const { data: deal, error: findError } = await supabase
+      .from('deals')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (findError || !deal) {
+      return res.status(404).json({ error: 'Deal not found or access denied' });
+    }
+
+    // Update the saved status
+    const { data, error } = await supabase
+      .from('deals')
+      .update({ is_saved: is_saved })
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating deal save status:', error);
+      return res.status(500).json({ error: 'Failed to update deal save status' });
+    }
+
+    // Log the action
+    await supabase
+      .from('logs')
+      .insert({
+        deal_id: id,
+        user_id,
+        action: is_saved ? 'saved_deal' : 'unsaved_deal',
+        details: { is_saved }
+      });
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error in save deal:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get saved deals for a user
+dealsRouter.get('/saved/all', async (req: Request, res: Response) => {
+  try {
+    const { user_id } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id query parameter is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('deals')
+      .select(`
+        *,
+        documents:documents(count)
+      `)
+      .eq('user_id', user_id)
+      .eq('is_saved', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching saved deals:', error);
+      return res.status(500).json({ error: 'Failed to fetch saved deals' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error in get saved deals:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
