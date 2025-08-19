@@ -212,12 +212,16 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                   try {
                     console.log('Starting PDF export...');
                     // Generate simple HTML content for PDF export (simplified for testing)
+                    const dealTitle = deal?.title || 'Unknown Deal';
+                    const healthScore = summary?.analysis_result?.health_score || 'N/A';
+                    const recommendation = summary?.analysis_result?.recommendation || 'N/A';
+                    
                     const htmlContent = `
                       <!DOCTYPE html>
                       <html>
                         <head>
                           <meta charset="utf-8">
-                          <title>Deal Summary - ${deal.title}</title>
+                          <title>Deal Summary - ${dealTitle}</title>
                           <style>
                             body { 
                               font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
@@ -268,18 +272,18 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                         </head>
                         <body>
                           <div class="header">
-                            <h1>Deal Summary - ${deal.title}</h1>
+                            <h1>Deal Summary - ${dealTitle}</h1>
                             <div>Financial Analysis Report</div>
                           </div>
 
                           <div class="health-section">
-                            <div class="health-score">${summary?.analysis_result?.health_score || 'N/A'}/100</div>
-                            <div>Recommendation: ${summary?.analysis_result?.recommendation || 'N/A'}</div>
+                            <div class="health-score">${healthScore}/100</div>
+                            <div>Recommendation: ${recommendation}</div>
                           </div>
 
                           <div class="metrics-grid">
                             ${['gross_margin', 'net_margin', 'revenue_cagr_3y'].map(k => {
-                              const value = metrics[k];
+                              const value = metrics?.[k];
                               const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
                               return `
                                 <div class="metric-card">
@@ -300,10 +304,16 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     console.log('HTML content generated, length:', htmlContent.length);
                     console.log('Making request to export endpoint...');
                     
+                    const requestBody = { html: htmlContent };
+                    console.log('Request body size:', JSON.stringify(requestBody).length);
+                    
                     const response = await fetch('http://localhost:3001/api/export', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ html: htmlContent })
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/pdf'
+                      },
+                      body: JSON.stringify(requestBody)
                     }).catch(fetchError => {
                       console.error('Fetch error:', fetchError);
                       throw new Error(`Network error: ${fetchError.message}`);
