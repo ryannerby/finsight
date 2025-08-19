@@ -8,6 +8,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { BenchmarkLegend } from '@/components/ui/benchmark-legend';
 import { ComprehensiveMetrics } from '@/components/ui/comprehensive-metrics';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
+import { HealthScoreDashboard } from '@/components/ui/health-score-dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
@@ -206,6 +207,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               <Button
                 size="sm"
                 variant="outline"
+                data-export-pdf
                 onClick={async () => {
                   try {
                     // Generate enhanced HTML content for PDF export
@@ -418,33 +420,36 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         )}
         {financial && (
           <>
-            {/* Health score + recommendation */}
+            {/* Enhanced Health Score Dashboard */}
             {summary && summary.analysis_result && (
-              <div className="flex items-center gap-6 mb-8">
-                <HealthScoreRing
-                  score={summary.analysis_result.health_score}
-                  tooltip="Overall deal health based on liquidity, margins, growth, and volatility"
-                />
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Recommendation</div>
-                  <Badge
-                    variant={summary.analysis_result.recommendation === 'Proceed' ? 'success' : summary.analysis_result.recommendation === 'Caution' ? 'warning' : 'destructive'}
-                    aria-label={`Recommendation: ${summary.analysis_result.recommendation}`}
-                    className="text-sm px-3 py-1"
-                  >
-                    {summary.analysis_result.recommendation}
-                  </Badge>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
-                      <Tooltip key={k} content={`Factor: ${String(k).replace(/_/g,' ')}`}>
-                        <Badge variant={v === 'green' ? 'success' : v === 'yellow' ? 'warning' : 'destructive'}>
-                          {String(k).replace(/_/g, ' ')}
-                        </Badge>
-                      </Tooltip>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <HealthScoreDashboard
+                healthScore={summary.analysis_result.health_score}
+                trafficLights={summary.analysis_result.traffic_lights || {}}
+                recommendation={summary.analysis_result.recommendation}
+                topStrengths={summary.analysis_result.top_strengths || []}
+                topRisks={summary.analysis_result.top_risks || []}
+                dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
+                confidenceScore={Math.max(60, 100 - (Object.values(summary.analysis_result.traffic_lights || {}).filter(v => v === 'red').length * 10))}
+                onReviewConcerns={() => {
+                  // Scroll to risks section or open a modal
+                  const risksSection = document.getElementById('risks-section');
+                  if (risksSection) {
+                    risksSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                onDownloadReport={() => {
+                  // Trigger PDF export
+                  const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
+                  if (exportButton) {
+                    exportButton.click();
+                  }
+                }}
+                onViewDetails={() => {
+                  // Toggle to comprehensive metrics view
+                  setMetricsView('comprehensive');
+                }}
+                className="mb-8"
+              />
             )}
 
             {/* Metrics grouped */}
@@ -632,7 +637,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 ))}
               </ul>
             </div>
-            <div>
+            <div id="risks-section">
               <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
                 <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 Top Risks
