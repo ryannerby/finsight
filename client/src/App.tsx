@@ -9,6 +9,7 @@ import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
 import { MetricTest } from './components/ui/metric-test';
+import HealthScoreDemo from './pages/HealthScoreDemo';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -64,6 +65,17 @@ function SetupPage() {
           >
             Enhanced Metrics Demo
           </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/health-score-demo');
+            }}
+          >
+            Health Score Dashboard Demo
+          </Button>
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
@@ -108,6 +120,7 @@ export default function App() {
           <Route path="/saved-deals" element={<SavedDeals />} />
           <Route path="/head-to-head" element={<HeadToHead />} />
           <Route path="/metrics-demo" element={<MetricTest />} />
+          <Route path="/health-score-demo" element={<HealthScoreDemo />} />
           <Route path="*" element={<SetupPage />} />
         </Routes>
       </div>
@@ -132,6 +145,7 @@ export default function App() {
           <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
           <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
           <Route path="/metrics-demo" element={<Protected><MetricTest /></Protected>} />
+          <Route path="/health-score-demo" element={<Protected><HealthScoreDemo /></Protected>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     </ClerkProvider>
