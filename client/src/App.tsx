@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import DealsList from './pages/DealsList';
@@ -10,6 +11,8 @@ import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
 import { MetricTest } from './components/ui/metric-test';
 import HealthScoreDemo from './pages/HealthScoreDemo';
+import VisualEnhancementsDemo from './pages/VisualEnhancementsDemo';
+import { ToastProvider } from '@/hooks/useToast';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -76,6 +79,17 @@ function SetupPage() {
           >
             Health Score Dashboard Demo
           </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/visual-enhancements-demo');
+            }}
+          >
+            Visual Enhancements Demo
+          </Button>
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
@@ -109,21 +123,24 @@ export default function App() {
   // If Clerk is not configured, show demo mode without authentication
   if (!pk) {
     return (
-      <div>
-        <AppHeader />
-        <Routes>
-          <Route path="/" element={<SetupPage />} />
-          <Route path="/login" element={<SetupPage />} />
-          <Route path="/deals" element={<DealsList />} />
-          <Route path="/deals/new" element={<CreateDeal />} />
-          <Route path="/deals/:dealId" element={<DealDetail />} />
-          <Route path="/saved-deals" element={<SavedDeals />} />
-          <Route path="/head-to-head" element={<HeadToHead />} />
-          <Route path="/metrics-demo" element={<MetricTest />} />
-          <Route path="/health-score-demo" element={<HealthScoreDemo />} />
-          <Route path="*" element={<SetupPage />} />
-        </Routes>
-      </div>
+      <ToastProvider>
+        <div>
+          <AppHeader />
+          <Routes>
+            <Route path="/" element={<SetupPage />} />
+            <Route path="/login" element={<SetupPage />} />
+            <Route path="/deals" element={<DealsList />} />
+            <Route path="/deals/new" element={<CreateDeal />} />
+            <Route path="/deals/:dealId" element={<DealDetail />} />
+            <Route path="/saved-deals" element={<SavedDeals />} />
+            <Route path="/head-to-head" element={<HeadToHead />} />
+            <Route path="/metrics-demo" element={<MetricTest />} />
+            <Route path="/health-score-demo" element={<HealthScoreDemo />} />
+            <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
+            <Route path="*" element={<SetupPage />} />
+          </Routes>
+        </div>
+      </ToastProvider>
     );
   }
   
@@ -135,8 +152,9 @@ export default function App() {
       afterSignInUrl="/deals"
       afterSignUpUrl="/deals"
     >
-      <AppHeader />
-              <Routes>
+      <ToastProvider>
+        <AppHeader />
+        <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/deals" element={<Protected><DealsList /></Protected>} />
@@ -146,8 +164,10 @@ export default function App() {
           <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
           <Route path="/metrics-demo" element={<Protected><MetricTest /></Protected>} />
           <Route path="/health-score-demo" element={<Protected><HealthScoreDemo /></Protected>} />
+          <Route path="/visual-enhancements-demo" element={<Protected><VisualEnhancementsDemo /></Protected>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+      </ToastProvider>
     </ClerkProvider>
   );
 }

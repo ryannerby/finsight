@@ -8,6 +8,7 @@ interface FileDropzoneProps {
   multiple?: boolean;
   disabled?: boolean;
   className?: string;
+  loading?: boolean; // Whether to show loading state
 }
 
 export function FileDropzone({
@@ -16,7 +17,8 @@ export function FileDropzone({
   maxFileSize = 10,
   multiple = true,
   disabled = false,
-  className = ''
+  className = '',
+  loading = false
 }: FileDropzoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,24 +120,28 @@ export function FileDropzone({
         onDrop={handleDrop}
         onClick={() => { if (!disabled) inputRef.current?.click(); }}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors outline-none
-          ${isDragOver && !disabled 
-            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20 ring-2 ring-[hsl(var(--primary))]/40' 
-            : 'border-[hsl(var(--secondary))]/60 hover:border-[hsl(var(--secondary))]'
+          border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ease-in-out outline-none
+          ${isDragOver && !disabled
+            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20 ring-2 ring-[hsl(var(--primary))]/40 scale-[1.01]'
+            : 'border-[hsl(var(--secondary))]/60 hover:border-[hsl(var(--secondary))] hover:scale-[1.005] hover:shadow-sm'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
         <div className="space-y-4">
           <div className="text-foreground/60">
-            <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-              <path 
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" 
-                strokeWidth={2} 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-            </svg>
+            {loading ? (
+              <div className="mx-auto h-12 w-12 bg-muted rounded animate-pulse" />
+            ) : (
+              <svg className="mx-auto h-12 w-12 transition-transform duration-200 ease-in-out hover:scale-110" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path 
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" 
+                  strokeWidth={2} 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                />
+              </svg>
+            )}
           </div>
           <div>
             <p className="text-lg text-foreground/70">
@@ -157,15 +163,15 @@ export function FileDropzone({
               id={inputId}
             />
             <label htmlFor={inputId} className="cursor-pointer">
-              <Button 
-                type="button"
-                variant="outline" 
-                disabled={disabled}
-                className="cursor-pointer"
-                onClick={() => inputRef.current?.click()}
-              >
-                Choose Files
-              </Button>
+                          <Button 
+              type="button"
+              variant="outline" 
+              disabled={disabled || loading}
+              className="cursor-pointer"
+              onClick={() => inputRef.current?.click()}
+            >
+              {loading ? 'Processing...' : 'Choose Files'}
+            </Button>
             </label>
           </div>
         </div>
