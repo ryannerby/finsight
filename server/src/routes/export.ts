@@ -68,13 +68,17 @@ router.post('/', async (req, res) => {
     });
 
     console.log(`PDF generated successfully, size: ${pdf.length} bytes`);
+    console.log('PDF buffer type:', typeof pdf);
+    console.log('PDF buffer is Buffer:', Buffer.isBuffer(pdf));
+    console.log('PDF first 20 bytes:', pdf.slice(0, 20));
 
     // Set headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="deal-summary.pdf"');
     res.setHeader('Content-Length', pdf.length);
 
-    res.send(pdf);
+    // Use res.end() for binary data to avoid JSON conversion
+    res.end(pdf);
 
   } catch (error) {
     console.error('PDF generation error:', error);
