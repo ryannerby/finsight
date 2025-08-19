@@ -210,6 +210,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 data-export-pdf
                 onClick={async () => {
                   try {
+                    console.log('Starting PDF export...');
                     // Generate enhanced HTML content for PDF export
                     const htmlContent = `
                       <!DOCTYPE html>
@@ -384,18 +385,26 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                       </html>
                     `;
                     
+                    console.log('HTML content generated, length:', htmlContent.length);
+                    console.log('Making request to export endpoint...');
+                    
                     const response = await fetch('http://localhost:3001/api/export', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ html: htmlContent })
                     });
                     
+                    console.log('Response received:', response.status, response.statusText);
+                    
                     if (!response.ok) {
-                      throw new Error('Failed to generate PDF');
+                      const errorText = await response.text();
+                      console.error('Server error response:', errorText);
+                      throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText}`);
                     }
                     
-                    // Create blob and download
+                    console.log('Creating blob from response...');
                     const blob = await response.blob();
+                    console.log('Blob created, size:', blob.size);
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -404,9 +413,11 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
+                    
+                    console.log('PDF export completed successfully');
                   } catch (error) {
                     console.error('PDF export failed:', error);
-                    alert('Failed to export PDF. Please try again.');
+                    alert(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
                   }
                 }}
               >
