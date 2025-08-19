@@ -75,20 +75,20 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {Object.entries(metricCategories).map(([category, metricKeys]) => {
           const availableInCategory = metricKeys.filter(metric => availableMetrics.includes(metric));
           
           if (availableInCategory.length === 0) return null;
 
           return (
-            <div key={category} className="w-full max-w-6xl mx-auto">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wide">
+            <div key={category} className="w-full max-w-6xl mx-auto mb-4">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center uppercase tracking-wide">
                 {getCategoryTitle(category)}
               </h4>
               
               {/* Mobile: swipeable */}
-              <div className="flex gap-2 overflow-x-auto sm:hidden -mx-4 px-4 snap-x pb-2 scrollbar-hide">
+              <div className="flex gap-1.5 overflow-x-auto sm:hidden -mx-4 px-4 snap-x pb-2 scrollbar-hide">
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={`${category}-${metricKey}`}
@@ -103,7 +103,7 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
               </div>
               
               {/* Desktop: responsive grid */}
-              <div className={`hidden sm:grid gap-3 ${getGridColumns(availableInCategory.length)}`}>
+              <div className={`hidden sm:grid gap-2 ${getGridColumns(availableInCategory.length)}`}>
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={metricKey}
@@ -122,21 +122,21 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
       </div>
 
       {/* Metrics coverage summary */}
-      <div className="mt-6 w-full max-w-6xl mx-auto">
-        <div className="bg-muted/30 rounded-lg p-3 border">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+      <div className="mt-4 w-full max-w-6xl mx-auto">
+        <div className="bg-muted/30 rounded-lg p-2.5 border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1.5">
             <h5 className="text-sm font-medium">Metrics Coverage</h5>
             <span className="text-xs text-muted-foreground">
               {availableMetrics.length} of {Object.keys(FINANCIAL_BENCHMARKS).length} metrics available
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-1 overflow-hidden">
             <div 
-              className="bg-primary h-1.5 rounded-full transition-all duration-300"
+              className="bg-primary h-1 rounded-full transition-all duration-300"
               style={{ width: `${(availableMetrics.length / Object.keys(FINANCIAL_BENCHMARKS).length) * 100}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5 text-center sm:text-left">
+          <p className="text-xs text-muted-foreground mt-1 text-center sm:text-left">
             {availableMetrics.length === 0 
               ? 'No financial metrics available. Upload financial statements to see analysis.'
               : `Showing ${availableMetrics.length} computed financial metrics with industry benchmarks.`
