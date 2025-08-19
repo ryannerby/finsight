@@ -121,9 +121,9 @@ export function FileDropzone({
         onClick={() => { if (!disabled) inputRef.current?.click(); }}
         className={`
           border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ease-in-out outline-none
-          ${isDragOver && !disabled 
-            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20 ring-2 ring-[hsl(var(--primary))]/40 scale-[1.02]' 
-            : 'border-[hsl(var(--secondary))]/60 hover:border-[hsl(var(--secondary))] hover:scale-[1.01] hover:shadow-md'
+          ${isDragOver && !disabled
+            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary))]/20 ring-2 ring-[hsl(var(--primary))]/40 scale-[1.01]'
+            : 'border-[hsl(var(--secondary))]/60 hover:border-[hsl(var(--secondary))] hover:scale-[1.005] hover:shadow-sm'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         `}

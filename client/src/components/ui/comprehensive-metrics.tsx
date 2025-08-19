@@ -58,6 +58,15 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
     ) || false;
   };
 
+  // Get responsive grid columns based on metric count
+  const getGridColumns = (count: number): string => {
+    if (count === 1) return 'grid-cols-1';
+    if (count === 2) return 'grid-cols-1 sm:grid-cols-2';
+    if (count === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+    if (count === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+    return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5';
+  };
+
   return (
     <div className={className}>
       {showLegend && (
@@ -73,13 +82,13 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
           if (availableInCategory.length === 0) return null;
 
           return (
-            <div key={category} className="max-w-4xl mx-auto">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-3 text-center">
+            <div key={category} className="w-full max-w-6xl mx-auto px-4">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-4 text-center">
                 {getCategoryTitle(category)}
               </h4>
               
               {/* Mobile: swipeable */}
-              <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x pb-2">
+              <div className="flex gap-3 overflow-x-auto sm:hidden -mx-4 px-4 snap-x pb-2 scrollbar-hide">
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={`${category}-${metricKey}`}
@@ -88,16 +97,13 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
                     value={formatMetric(metricKey, metrics[metricKey])}
                     tooltip={`Computed ${metricKey.replace(/_/g,' ')}`}
                     ariaLabel={`${metricKey} metric`}
-                    className="min-h-[96px] snap-start min-w-[200px]"
+                    className="min-h-[96px] snap-start flex-shrink-0"
                   />
                 ))}
               </div>
               
               {/* Desktop: responsive grid */}
-              <div className="hidden sm:grid gap-4"
-                   style={{
-                     gridTemplateColumns: `repeat(${Math.min(availableInCategory.length, 4)}, 1fr)`
-                   }}>
+              <div className={`hidden sm:grid gap-4 ${getGridColumns(availableInCategory.length)}`}>
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={metricKey}
@@ -106,7 +112,7 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
                     value={formatMetric(metricKey, metrics[metricKey])}
                     tooltip={`Computed ${metricKey.replace(/_/g,' ')}`}
                     ariaLabel={`${metricKey} metric`}
-                    className="min-h-[96px]"
+                    className="min-h-[96px] w-full"
                   />
                 ))}
               </div>
@@ -116,21 +122,21 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
       </div>
 
       {/* Metrics coverage summary */}
-      <div className="mt-8 max-w-4xl mx-auto">
-        <div className="bg-muted/30 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
+      <div className="mt-8 w-full max-w-6xl mx-auto px-4">
+        <div className="bg-muted/30 rounded-lg p-4 border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <h5 className="text-sm font-medium">Metrics Coverage</h5>
             <span className="text-xs text-muted-foreground">
               {availableMetrics.length} of {Object.keys(FINANCIAL_BENCHMARKS).length} metrics available
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <div 
               className="bg-primary h-2 rounded-full transition-all duration-300"
               style={{ width: `${(availableMetrics.length / Object.keys(FINANCIAL_BENCHMARKS).length) * 100}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
             {availableMetrics.length === 0 
               ? 'No financial metrics available. Upload financial statements to see analysis.'
               : `Showing ${availableMetrics.length} computed financial metrics with industry benchmarks.`

@@ -19,7 +19,7 @@ export default function VisualEnhancementsDemo() {
       warning: 'Please review your input before proceeding.',
       info: 'Here is some helpful information.'
     };
-    
+
     const titles = {
       success: 'Success',
       error: 'Error',
@@ -45,16 +45,16 @@ export default function VisualEnhancementsDemo() {
     <div className="min-h-screen bg-background p-6 space-y-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center space-y-4 mb-8">
-          <h1 className="text-4xl font-bold text-foreground animate-fade-in">
+          <h1 className="text-4xl font-bold text-foreground">
             Visual Enhancements Demo
           </h1>
-          <p className="text-xl text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <p className="text-xl text-muted-foreground">
             Showcasing enhanced visual feedback and micro-interactions
           </p>
         </div>
 
         {/* Toast Demonstrations */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Toast Notifications</CardTitle>
             <CardDescription>
@@ -80,11 +80,11 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Enhanced Buttons */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Enhanced Buttons</CardTitle>
             <CardDescription>
-              Buttons with improved hover effects, shadows, and active states
+              Buttons with improved hover effects and active states
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -100,30 +100,30 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Enhanced Cards */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Enhanced Cards</CardTitle>
             <CardDescription>
-              Cards with hover effects and smooth transitions
+              Cards with subtle hover effects and smooth transitions
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card hoverable className="transition-all duration-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">Hoverable Card 1</CardTitle>
-                  <CardDescription>Hover over me to see effects</CardDescription>
+                  <CardTitle className="text-lg">Interactive Card 1</CardTitle>
+                  <CardDescription>Hover over me to see subtle effects</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    This card has enhanced hover effects including shadow, scale, and border changes.
+                    This card has refined hover effects including shadow and border changes.
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card hoverable className="transition-all duration-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">Hoverable Card 2</CardTitle>
+                  <CardTitle className="text-lg">Interactive Card 2</CardTitle>
                   <CardDescription>Try hovering here too</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -132,15 +132,15 @@ export default function VisualEnhancementsDemo() {
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card hoverable className="transition-all duration-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">Hoverable Card 3</CardTitle>
-                  <CardDescription>Interactive elements</CardDescription>
+                  <CardTitle className="text-lg">Interactive Card 3</CardTitle>
+                  <CardDescription>Professional interactions</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Micro-interactions improve user experience and make the app feel alive.
+                    Micro-interactions improve user experience without being distracting.
                   </p>
                 </CardContent>
               </Card>
@@ -149,7 +149,7 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Enhanced Inputs */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Enhanced Inputs</CardTitle>
             <CardDescription>
@@ -175,7 +175,7 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Loading States */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Loading States & Skeletons</CardTitle>
             <CardDescription>
@@ -194,7 +194,7 @@ export default function VisualEnhancementsDemo() {
               </div>
 
               {showSkeletons && (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6">
                   <div>
                     <h4 className="text-sm font-medium mb-3">Basic Skeletons</h4>
                     <div className="space-y-2">
@@ -233,7 +233,7 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Enhanced File Dropzone */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Enhanced File Dropzone</CardTitle>
             <CardDescription>
@@ -249,7 +249,7 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Enhanced Metric Cards */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Enhanced Metric Cards</CardTitle>
             <CardDescription>
@@ -284,11 +284,11 @@ export default function VisualEnhancementsDemo() {
         </Card>
 
         {/* Animation Showcase */}
-        <Card className="mb-8 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Animation Showcase</CardTitle>
             <CardDescription>
-              Various animation classes and effects
+              Various subtle animation classes and effects
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -302,7 +302,7 @@ export default function VisualEnhancementsDemo() {
               <div className="p-4 border rounded-lg text-center animate-slide-in-right">
                 <p className="text-sm font-medium">Slide In</p>
               </div>
-              <div className="p-4 border rounded-lg text-center animate-shimmer bg-gradient-to-r from-muted via-background to-muted">
+              <div className="p-4 border rounded-lg text-center bg-muted animate-shimmer">
                 <p className="text-sm font-medium">Shimmer</p>
               </div>
             </div>

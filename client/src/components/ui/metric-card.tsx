@@ -106,12 +106,12 @@ export function MetricCard({
   const content = (
     <div
       className={cn(
-        "group relative h-full w-[220px] rounded-lg border p-4 flex flex-col items-center justify-center gap-1 text-center",
+        "group relative h-full w-full rounded-lg border p-4 flex flex-col items-center justify-center gap-1 text-center",
         "bg-card text-card-foreground",
         statusRing,
         // uniform card height across grids
         "min-h-[112px]",
-        hoverable && "transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:border-[hsl(var(--border))]/60 cursor-pointer",
+        hoverable && "transition-all duration-200 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-[hsl(var(--border))]/60 cursor-pointer",
         className,
       )}
       aria-label={ariaLabel || label}
@@ -131,19 +131,19 @@ export function MetricCard({
       )}
       
       {/* Metric label */}
-      <div className="text-xs text-muted-foreground tracking-wide uppercase flex items-center gap-1">
-        {label}
+      <div className="text-xs text-muted-foreground tracking-wide uppercase flex items-center gap-1 max-w-full">
+        <span className="truncate">{label}</span>
         {benchmark && (
-          <Info className="w-3 h-3 text-muted-foreground/60" />
+          <Info className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
         )}
       </div>
       
       {/* Metric value */}
-      <div className="mt-1 text-2xl font-semibold leading-tight">
+      <div className="mt-1 text-2xl font-semibold leading-tight max-w-full">
         {loading ? (
           <div className="h-8 w-16 bg-muted rounded animate-pulse" />
         ) : (
-          value
+          <span className="break-words">{value}</span>
         )}
       </div>
       
@@ -151,15 +151,14 @@ export function MetricCard({
       {showBenchmarks && benchmarkStatus && benchmarkStatus !== 'unknown' && numericValue && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
           {benchmarkStatus === 'excellent' || benchmarkStatus === 'good' ? (
-            <TrendingUp className="w-3 h-3 text-green-500" />
+            <TrendingUp className="w-3 h-3 text-green-500 flex-shrink-0" />
           ) : benchmarkStatus === 'poor' ? (
-            <TrendingDown className="w-3 h-3 text-red-500" />
+            <TrendingDown className="w-3 h-3 text-red-500 flex-shrink-0" />
           ) : (
-            <Minus className="w-3 h-3 text-yellow-500" />
+            <Minus className="w-3 h-3 text-yellow-500 flex-shrink-0" />
           )}
-          <span>
-            {benchmarkStatus === 'excellent' || benchmarkStatus === 'good' ? 'Above' : 
-             benchmarkStatus === 'poor' ? 'Below' : 'Near'} industry average
+          <span className="truncate">
+            {benchmarkStatus.charAt(0).toUpperCase() + benchmarkStatus.slice(1)}
           </span>
         </div>
       )}

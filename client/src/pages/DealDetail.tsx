@@ -1,97 +1,58 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileDropzone } from '@/components/ui/file-dropzone';
-import { RevenueChart } from '@/components/ui/revenue-chart';
+import { ComprehensiveMetrics } from '@/components/ui/comprehensive-metrics';
 import { MetricCard } from '@/components/ui/metric-card';
 import { BenchmarkLegend } from '@/components/ui/benchmark-legend';
-import { ComprehensiveMetrics } from '@/components/ui/comprehensive-metrics';
-import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { HealthScoreDashboard } from '@/components/ui/health-score-dashboard';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip } from '@/components/ui/tooltip';
-import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
-
+import { RevenueChart } from '@/components/ui/revenue-chart';
 import { FileList } from '@/components/FileList';
-import { UploadProgress } from '@/components/UploadProgress';
-import { useFileUpload } from '@/hooks/useFileUpload';
-import { useFiles } from '@/hooks/useFiles';
 import { SaveDealButton } from '@/components/SaveDealButton';
+import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
+import { Badge } from '@/components/ui/badge';
+import { useFiles } from '@/hooks/useFiles';
+import { useToast } from '@/hooks/useToast';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
+// Simple upload tab component
 const UploadTab = ({ dealId }: { dealId: string }) => {
-  // Mock user ID - in real app this would come from auth context
   const userId = 'user_123';
-  
-  const { uploads, isUploading, uploadFiles, clearUploads, removeUpload } = useFileUpload();
   const { files, loading, error, refreshFiles } = useFiles(dealId, userId);
   
-  const handleFilesSelected = async (selectedFiles: File[]) => {
-    await uploadFiles(selectedFiles, dealId, userId);
-    // Refresh the file list after upload completes
-    setTimeout(() => {
-      refreshFiles();
-    }, 1000);
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Document Upload</h3>
-        <FileDropzone
-          onFilesSelected={handleFilesSelected}
-          disabled={isUploading}
-          acceptedFileTypes={[
-            'application/pdf',
-            'text/csv',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-excel'
-          ]}
-          maxFileSize={10}
-          multiple={true}
-        />
+        <h4 className="font-medium mb-3">Uploaded Documents</h4>
+        <Button variant="ghost" size="sm" onClick={refreshFiles} disabled={loading}>
+          {loading ? 'Loading...' : 'Refresh'}
+        </Button>
       </div>
-
-      {uploads.length > 0 && (
-        <div>
-          <h4 className="font-medium mb-3">Upload Progress</h4>
-          <UploadProgress
-            uploads={uploads}
-            onRemove={removeUpload}
-            onClear={clearUploads}
-          />
-        </div>
-      )}
-      
-      <div>
-        <div className="flex justify-between items-center mb-3">
-          <h4 className="font-medium">Uploaded Documents</h4>
-          <Button variant="ghost" size="sm" onClick={refreshFiles} disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
-          </Button>
-        </div>
-        <FileList
-          files={files}
-          loading={loading}
-          error={error}
-          onRefresh={refreshFiles}
-        />
-      </div>
+      <FileList
+        files={files}
+        loading={loading}
+        error={error}
+        onRefresh={refreshFiles}
+      />
     </div>
   );
 };
 
-const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => {
+const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: { 
+  deal: any; 
+  refreshKey: number;
+  metricsView: 'simple' | 'comprehensive';
+  setMetricsView: (view: 'simple' | 'comprehensive') => void;
+}) => {
   const userId = 'user_123';
   const { files, refreshFiles } = useFiles(deal.id, userId);
   const [showInventoryDetails, setShowInventoryDetails] = useState(false);
   const [showInventoryWhy, setShowInventoryWhy] = useState(false);
-  const [metricsView, setMetricsView] = useState<'simple' | 'comprehensive'>('simple');
-  const [execOpen, setExecOpen] = useState(true);
+
   const [signalsOpen, setSignalsOpen] = useState(true);
   const [inventoryOpen, setInventoryOpen] = useState(true);
+  const { addToast } = useToast();
 
   useEffect(() => {
     // when refreshKey changes, refetch files/analyses
@@ -155,6 +116,109 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
     if (['current_ratio','debt_to_equity'].includes(key)) return asX(val);
     if (['ar_days','ap_days','dio_days','ccc_days'].includes(key)) return asDays(val);
     return String(val.toFixed(3));
+  };
+
+  // Helper function to format metric names beautifully
+  const formatMetricName = (metricKey: string): string => {
+    const metricNames: Record<string, string> = {
+      'revenue_cagr_3y': 'Revenue Growth (3Y)',
+      'revenue_cagr': 'Revenue Growth',
+      'inventory_turns': 'Inventory Turnover',
+      'ebitda_margin': 'EBITDA Margin',
+      'debt_to_equity': 'Debt-to-Equity Ratio',
+      'current_ratio': 'Current Ratio',
+      'ebitda_to_interest': 'Interest Coverage',
+      'quick_ratio': 'Quick Ratio',
+      'gross_margin': 'Gross Margin',
+      'net_margin': 'Net Margin',
+      'ar_days': 'Accounts Receivable Days',
+      'ap_days': 'Accounts Payable Days',
+      'ccc_days': 'Cash Conversion Cycle',
+      'working_capital_ccc': 'Working Capital Cycle',
+      'dscr_proxy': 'Debt Service Coverage',
+      'seasonality': 'Seasonality Index',
+      'accrual_vs_cash_delta': 'Accrual vs Cash Delta',
+      // Add more comprehensive mappings
+      'dio_days': 'Days Inventory Outstanding',
+      'dso_days': 'Days Sales Outstanding',
+      'dpo_days': 'Days Payable Outstanding',
+      'working_capital': 'Working Capital',
+      'total_debt': 'Total Debt',
+      'cash_flow': 'Cash Flow',
+      'operating_margin': 'Operating Margin',
+      'return_on_equity': 'Return on Equity',
+      'return_on_assets': 'Return on Assets',
+      'asset_turnover': 'Asset Turnover',
+      'leverage_ratio': 'Leverage Ratio',
+      'interest_coverage': 'Interest Coverage Ratio'
+    };
+    
+    return metricNames[metricKey] || metricKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Helper function to format metric values beautifully
+  const formatMetricValue = (metricKey: string, value: any): string => {
+    if (value == null || Number.isNaN(value)) return 'N/A';
+    
+    const numValue = Number(value);
+    if (isNaN(numValue)) return String(value);
+    
+    // Format based on metric type
+    if (metricKey.includes('margin') || metricKey.includes('cagr') || metricKey.includes('seasonality') || metricKey.includes('delta')) {
+      return `${(numValue * 100).toFixed(1)}%`;
+    }
+    if (metricKey.includes('ratio') || metricKey.includes('turns') || metricKey.includes('coverage')) {
+      return `${numValue.toFixed(2)}x`;
+    }
+    if (metricKey.includes('days') || metricKey.includes('ccc')) {
+      return `${Math.round(numValue)} days`;
+    }
+    
+    return numValue.toFixed(3);
+  };
+
+  // Helper function to extract and format metrics from evidence text
+  const formatEvidence = (evidence: string): { title: string; metrics: Array<{ name: string; value: string; key: string }> } => {
+    if (!evidence || typeof evidence !== 'string') {
+      return { title: 'Financial metric analysis', metrics: [] };
+    }
+    
+    // Extract metric patterns like "revenue_cagr_3y=0.9789" and "quick_ratio=null"
+    // Use a more specific pattern to avoid splitting metric names incorrectly
+    const metricPattern = /([a-z_]+(?:_[a-z0-9]+)*)=([\d.-]+|null|undefined)/g;
+    const metrics: Array<{ name: string; value: string; key: string }> = [];
+    let match;
+    
+    while ((match = metricPattern.exec(evidence)) !== null) {
+      const [, key, value] = match;
+      // Skip null/undefined values
+      if (value === 'null' || value === 'undefined') {
+        continue;
+      }
+      
+      metrics.push({
+        key,
+        name: formatMetricName(key),
+        value: formatMetricValue(key, value)
+      });
+    }
+    
+    // Clean up the evidence text by removing raw metric data
+    let cleanEvidence = evidence.replace(metricPattern, '').replace(/,\s*$/, '').trim();
+    
+    // Also clean up any standalone metric names without values
+    cleanEvidence = cleanEvidence.replace(/\b[a-z_]+\b/g, (match) => {
+      if (match.includes('_')) {
+        return formatMetricName(match);
+      }
+      return match;
+    }).trim();
+    
+    // Debug logging
+    console.log('formatEvidence input:', evidence);
+    console.log('formatEvidence output:', { title: cleanEvidence, metrics });
+    
+    return { title: cleanEvidence || 'Financial metric analysis', metrics };
   };
 
   // Extract revenue data from financial analysis for chart
@@ -725,31 +789,66 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 }}
                 onViewDetails={() => {
                   // Toggle to comprehensive metrics view
+                  console.log('View Details clicked, switching to comprehensive view');
                   setMetricsView('comprehensive');
+                  addToast({
+                    title: 'Switched to Comprehensive View',
+                    message: 'You are now viewing the comprehensive financial analysis.',
+                    type: 'info',
+                  });
+                  // Also scroll to the metrics section to show the change
+                  setTimeout(() => {
+                    const metricsSection = document.querySelector('[data-metrics-section]');
+                    if (metricsSection) {
+                      metricsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
                 }}
                 className="mb-8"
               />
             )}
 
             {/* Metrics grouped */}
-            <div className="space-y-6">
+            <div className="space-y-6" data-metrics-section>
               {/* Metrics View Toggle */}
               <div className="max-w-3xl mx-auto">
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <Button
                     size="sm"
                     variant={metricsView === 'simple' ? 'default' : 'outline'}
-                    onClick={() => setMetricsView('simple')}
+                    onClick={() => {
+                      setMetricsView('simple');
+                                             addToast({
+                         title: 'Switched to Simple View',
+                         message: 'You are now viewing the simplified financial metrics.',
+                         type: 'info',
+                       });
+                    }}
                   >
                     Simple View
                   </Button>
                   <Button
                     size="sm"
                     variant={metricsView === 'comprehensive' ? 'default' : 'outline'}
-                    onClick={() => setMetricsView('comprehensive')}
+                    onClick={() => {
+                      setMetricsView('comprehensive');
+                                             addToast({
+                         title: 'Switched to Comprehensive View',
+                         message: 'You are now viewing the comprehensive financial analysis.',
+                         type: 'info',
+                       });
+                    }}
                   >
                     Comprehensive View
                   </Button>
+                </div>
+                {/* Active view indicator */}
+                <div className="text-center">
+                  <span className="text-xs text-muted-foreground">
+                    Currently viewing: <span className="font-medium text-foreground">
+                      {metricsView === 'simple' ? 'Simple Metrics' : 'Comprehensive Analysis'}
+                    </span>
+                  </span>
                 </div>
               </div>
               
@@ -798,13 +897,46 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
                     {/* Mobile: swipeable */}
                     <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                      {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                      {['current_ratio','debt_to_equity'].map((k) => (
                         <MetricCard
                           key={`l-${k}`}
-                          metricId={k === 'periodicity' ? undefined : k}
+                          metricId={k}
                           label={k.replace(/_/g,' ')}
-                          value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px] snap-start min-w-[200px]"
+                        />
+                      ))}
+                    </div>
+                    {/* Tablet/desktop grid - 2 fixed columns for perfect centering */}
+                    <div className="hidden sm:grid grid-cols-2 place-items-center gap-6">
+                      {['current_ratio','debt_to_equity'].map((k) => (
+                        <MetricCard
+                          key={k}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px]"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="max-w-3xl mx-auto">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Efficiency & Working Capital</h4>
+                    {/* Mobile: swipeable */}
+                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                      {['ar_days','ap_days','ccc_days'].map((k) => (
+                        <MetricCard
+                          key={`e-${k}`}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
                           tooltip={`Computed ${k.replace(/_/g,' ')}`}
                           ariaLabel={`${k} metric`}
                           className="min-h-[96px] snap-start min-w-[200px]"
@@ -813,46 +945,13 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     </div>
                     {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
                     <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                      {['current_ratio','debt_to_equity','periodicity'].map((k) => (
-                        <MetricCard
-                          key={k}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Additional Efficiency & Working Capital Metrics */}
-                  <div className="max-w-3xl mx-auto">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Efficiency & Working Capital</h4>
-                    {/* Mobile: swipeable */}
-                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                      {['ar_days','ap_days','inventory_turns','ccc_days'].map((k) => (
-                        <MetricCard
-                          key={`e-${k}`}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px] snap-start min-w-[200px]"
-                        />
-                      ))}
-                    </div>
-                    {/* Tablet/desktop grid - 4 columns for efficiency metrics */}
-                    <div className="hidden sm:grid grid-cols-4 place-items-center gap-4">
-                      {['ar_days','ap_days','inventory_turns','ccc_days'].map((k) => (
+                      {['ar_days','ap_days','ccc_days'].map((k) => (
                         <MetricCard
                           key={k}
                           metricId={k}
                           label={k.replace(/_/g,' ')}
                           value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
                           tooltip={`Computed ${k.replace(/_/g,' ')}`}
                           ariaLabel={`${k} metric`}
                           className="min-h-[96px]"
@@ -865,10 +964,12 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               
               {/* Comprehensive Metrics View */}
               {metricsView === 'comprehensive' && (
-                <ComprehensiveMetrics 
-                  metrics={metrics} 
-                  showLegend={false}
-                />
+                <div className="w-full overflow-hidden">
+                  <ComprehensiveMetrics 
+                    metrics={metrics} 
+                    showLegend={false}
+                  />
+                </div>
               )}
             </div>
 
@@ -882,60 +983,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         )}
       </div>
 
-      {/* Executive summary (LLM) */}
-      {summary && summary.analysis_result && (
-        <div className="bg-card text-card-foreground border rounded-lg p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-bold">Executive Summary</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                AI-generated insights and key findings
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:inline text-sm text-muted-foreground">Updated {new Date(summary.created_at).toLocaleString()}</span>
-              <Button size="sm" variant="ghost" className="sm:hidden" onClick={()=>setExecOpen(v=>!v)}>{execOpen ? 'Hide' : 'Show'}</Button>
-            </div>
-          </div>
-          <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(summary.created_at).toLocaleString()}</span>
-          <div className={execOpen ? '' : 'hidden sm:block'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Top Strengths
-              </h4>
-              <ul className="space-y-3">
-                {(summary.analysis_result.top_strengths || []).map((it: any, idx: number) => (
-                  <li key={`str-${idx}`} className="border border-green-200 rounded-lg p-4 bg-green-50/50">
-                    <div className="font-medium text-green-900">{it.title}</div>
-                    <div className="text-sm text-green-700 mt-1">
-                      {it.evidence} {it.page ? <span className="ml-2 text-green-600">(page {it.page})</span> : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div id="risks-section">
-              <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                Top Risks
-              </h4>
-              <ul className="space-y-3">
-                {(summary.analysis_result.top_risks || []).map((it: any, idx: number) => (
-                  <li key={`risk-${idx}`} className="border border-red-200 rounded-lg p-4 bg-red-50/50">
-                    <div className="font-medium text-red-900">{it.title}</div>
-                    <div className="text-sm text-red-700 mt-1">
-                      {it.evidence} {it.page ? <span className="ml-2 text-red-600">(page {it.page})</span> : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Deterministic Due Diligence Signals */}
       {ddSignals && ddSignals.analysis_result && (
@@ -1287,6 +1335,24 @@ export default function DealDetail() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisRefresh, setAnalysisRefresh] = useState(0);
   const [showUploadOnly, setShowUploadOnly] = useState(false);
+  const [metricsView, setMetricsView] = useState<'simple' | 'comprehensive'>('simple');
+
+  // Add debugging
+  useEffect(() => {
+    console.log('DealDetail mounted with dealId:', dealId);
+  }, [dealId]);
+
+  useEffect(() => {
+    console.log('Deal state changed:', deal);
+  }, [deal]);
+
+  useEffect(() => {
+    console.log('Loading state changed:', loading);
+  }, [loading]);
+
+  useEffect(() => {
+    console.log('Error state changed:', error);
+  }, [error]);
 
   const handleBackToDeals = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1335,139 +1401,158 @@ export default function DealDetail() {
 
   // Tabs removed in favor of a single consolidated page
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
-            <div>
-              <h1 className="text-2xl font-bold">{deal.title}</h1>
-                              {deal.description && <p className="text-muted-foreground">
-                  {deal.description.includes('[METRICS:') 
-                    ? deal.description.split('[METRICS:')[0].trim()
-                    : deal.description
+  try {
+    console.log('Rendering DealDetail component');
+    
+    return (
+      <div className="min-h-screen bg-background">
+        <div className={`mx-auto p-6 ${metricsView === 'comprehensive' ? 'max-w-7xl' : 'max-w-5xl'}`}>
+          <div className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-3">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={handleBackToDeals}>← Back to Deals</Button>
+              <div>
+                <h1 className="text-2xl font-bold">{deal.title}</h1>
+                                {deal.description && <p className="text-muted-foreground">
+                    {deal.description.includes('[METRICS:') 
+                      ? deal.description.split('[METRICS:')[0].trim()
+                      : deal.description
+                    }
+                  </p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <SaveDealButton
+                dealId={deal.id}
+                isSaved={deal.is_saved || false}
+                onSaveChange={(isSaved) => {
+                  setDeal(prev => prev ? { ...prev, is_saved: isSaved } : null);
+                }}
+              />
+              <span className="px-3 py-1 bg-muted text-foreground/80 rounded-full text-sm font-medium">
+                Active
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Created: {new Date(deal.created_at).toLocaleDateString()}
+              </span>
+              <Button
+                onClick={async () => {
+                  try {
+                    setAnalyzing(true);
+                    const res = await fetch(`${API_BASE_URL}/analyze`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
+                    });
+                    if (!res.ok) throw new Error(await res.text());
+                    setAnalysisRefresh((x) => x + 1);
+                    setShowUploadOnly(false); // navigate to overview state
+                  } catch (e) {
+                    alert(`Analyze failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                  } finally {
+                    setAnalyzing(false);
                   }
-                </p>}
+                }}
+                disabled={analyzing}
+              >
+                {analyzing ? 'Analyzing…' : 'Analyze'}
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <SaveDealButton
-              dealId={deal.id}
-              isSaved={deal.is_saved || false}
-              onSaveChange={(isSaved) => {
-                setDeal(prev => prev ? { ...prev, is_saved: isSaved } : null);
-              }}
-            />
-            <span className="px-3 py-1 bg-muted text-foreground/80 rounded-full text-sm font-medium">
-              Active
-            </span>
-            <span className="text-sm text-muted-foreground">
-              Created: {new Date(deal.created_at).toLocaleDateString()}
-            </span>
+
+          {/* Upload-only onboarding state */}
+          {showUploadOnly ? (
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold mb-4">Upload</h3>
+              <UploadTab dealId={deal.id} />
+              <div className="mt-6 flex justify-end">
+                <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
+              </div>
+            </div>
+                  ) : (
+            <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
+              <div className="p-6">
+                <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} metricsView={metricsView} setMetricsView={setMetricsView} />
+              </div>
+            </div>
+          )}
+
+          {/* Embedded Upload and Q&A sections (compact) */}
+          {!showUploadOnly && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-base font-semibold">Upload</h3>
+                  <Button size="sm" variant="outline" onClick={() => setShowUploadOnly(true)}>Upload more files</Button>
+                </div>
+                <div className="max-h-[480px] overflow-auto pr-1">
+                  <UploadTab dealId={deal.id} />
+                </div>
+              </div>
+              <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-base font-semibold">Q&A</h3>
+                </div>
+                <div className="max-h-[480px] overflow-auto pr-1">
+                  <QATab />
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Low-key delete at bottom-right */}
+          <div className="flex justify-end mt-4">
             <Button
-              onClick={async () => {
-                try {
-                  setAnalyzing(true);
-                  const res = await fetch(`${API_BASE_URL}/analyze`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
-                  });
-                  if (!res.ok) throw new Error(await res.text());
-                  setAnalysisRefresh((x) => x + 1);
-                  setShowUploadOnly(false); // navigate to overview state
-                } catch (e) {
-                  alert(`Analyze failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
-                } finally {
-                  setAnalyzing(false);
-                }
-              }}
-              disabled={analyzing}
+              variant="outline"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => setConfirmDelete(true)}
             >
-              {analyzing ? 'Analyzing…' : 'Analyze'}
+              Delete Deal
             </Button>
           </div>
+
+          {confirmDelete && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div className="bg-card text-card-foreground border rounded-lg p-6 w-full max-w-md shadow-xl">
+                <h3 className="text-lg font-semibold mb-2">Delete Deal</h3>
+                <p className="text-muted-foreground mb-4">
+                  Are you sure you want to delete "{deal.title}"? This will remove associated documents and cannot be undone.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${API_BASE_URL}/deals/${deal.id}?user_id=user_123`, { method: 'DELETE' });
+                        if (!res.ok && res.status !== 204) throw new Error(await res.text());
+                        navigate('/deals');
+                      } catch (e) {
+                        alert(`Failed to delete: ${e instanceof Error ? e.message : 'Unknown error'}`);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Upload-only onboarding state */}
-        {showUploadOnly ? (
-          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">Upload</h3>
-            <UploadTab dealId={deal.id} />
-            <div className="mt-6 flex justify-end">
-              <Button onClick={() => setShowUploadOnly(false)} variant="secondary">Skip for now</Button>
-            </div>
-          </div>
-                ) : (
-          <div className="bg-card text-card-foreground border rounded-lg shadow-sm">
-            <div className="p-6">
-              <SummaryTab key={analysisRefresh} deal={deal} refreshKey={analysisRefresh} />
-            </div>
-          </div>
-        )}
-
-        {/* Embedded Upload and Q&A sections (compact) */}
-        {!showUploadOnly && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-semibold">Upload</h3>
-                <Button size="sm" variant="outline" onClick={() => setShowUploadOnly(true)}>Upload more files</Button>
-              </div>
-              <div className="max-h-[480px] overflow-auto pr-1">
-                <UploadTab dealId={deal.id} />
-              </div>
-            </div>
-            <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-semibold">Q&A</h3>
-              </div>
-              <div className="max-h-[480px] overflow-auto pr-1">
-                <QATab />
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Low-key delete at bottom-right */}
-        <div className="flex justify-end mt-4">
-          <Button
-            variant="outline"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            onClick={() => setConfirmDelete(true)}
-          >
-            Delete Deal
-          </Button>
-        </div>
-
-        {confirmDelete && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-card text-card-foreground border rounded-lg p-6 w-full max-w-md shadow-xl">
-              <h3 className="text-lg font-semibold mb-2">Delete Deal</h3>
-              <p className="text-muted-foreground mb-4">
-                Are you sure you want to delete "{deal.title}"? This will remove associated documents and cannot be undone.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-                <Button
-                  variant="destructive"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`${API_BASE_URL}/deals/${deal.id}?user_id=user_123`, { method: 'DELETE' });
-                      if (!res.ok && res.status !== 204) throw new Error(await res.text());
-                      navigate('/deals');
-                    } catch (e) {
-                      alert(`Failed to delete: ${e instanceof Error ? e.message : 'Unknown error'}`);
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error('Error rendering DealDetail component:', error);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+        <Card className="border">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Error Rendering Deal</h2>
+            <p className="text-muted-foreground mb-4">
+              An unexpected error occurred while trying to render the deal details.
+            </p>
+            <Button onClick={handleBackToDeals}>Back to Deals</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 }

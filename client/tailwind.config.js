@@ -23,31 +23,6 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        // Semantic palette
-        brand: {
-          DEFAULT: "hsl(var(--brand))",
-          foreground: "hsl(var(--brand-foreground))",
-        },
-        success: {
-          DEFAULT: "hsl(var(--success))",
-          foreground: "hsl(var(--success-foreground))",
-        },
-        warning: {
-          DEFAULT: "hsl(var(--warning))",
-          foreground: "hsl(var(--warning-foreground))",
-        },
-        danger: {
-          DEFAULT: "hsl(var(--danger))",
-          foreground: "hsl(var(--danger-foreground))",
-        },
-        info: {
-          DEFAULT: "hsl(var(--info))",
-          foreground: "hsl(var(--info-foreground))",
-        },
-        surface: {
-          DEFAULT: "hsl(var(--surface))",
-          foreground: "hsl(var(--surface-foreground))",
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -76,24 +51,23 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-      },
-      fontSize: {
-        // Typography scale
-        title: ["24px", { lineHeight: "28px", fontWeight: "600" }],
-        section: ["18px", { lineHeight: "24px", fontWeight: "600" }],
-        label: ["12px", { lineHeight: "16px", fontWeight: "500" }],
-        value: ["22px", { lineHeight: "28px", fontWeight: "700" }],
-        caption: ["11px", { lineHeight: "14px", fontWeight: "500" }],
-      },
-      spacing: {
-        // Spacing system
-        'section-y': '1.5rem', // py-6
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        '2xl': '1rem',
       },
       keyframes: {
         "accordion-down": {
@@ -105,25 +79,24 @@ export default {
           to: { height: "0" },
         },
         "fade-in": {
-          from: { opacity: "0", transform: "translateY(10px)" },
+          from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-out": {
           from: { opacity: "1", transform: "translateY(0)" },
-          to: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "0", transform: "translateY(8px)" },
         },
         "slide-in-right": {
-          from: { transform: "translateX(100%)" },
-          to: { transform: "translateX(0)" },
+          from: { transform: "translateX(20px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
         },
         "slide-out-right": {
-          from: { transform: "translateX(0)" },
-          to: { transform: "translateX(100%)" },
+          from: { transform: "translateX(0)", opacity: "1" },
+          to: { transform: "translateX(20px)", opacity: "0" },
         },
         "bounce-in": {
-          "0%": { transform: "scale(0.3)", opacity: "0" },
-          "50%": { transform: "scale(1.05)" },
-          "70%": { transform: "scale(0.9)" },
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "70%": { transform: "scale(1.02)" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
         "shimmer": {
@@ -134,12 +107,12 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "fade-out": "fade-out 0.3s ease-out",
-        "slide-in-right": "slide-in-right 0.3s ease-out",
-        "slide-out-right": "slide-out-right 0.3s ease-out",
-        "bounce-in": "bounce-in 0.6s ease-out",
-        "shimmer": "shimmer 2s infinite",
+        "fade-in": "fade-in 0.2s ease-out",
+        "fade-out": "fade-out 0.2s ease-out",
+        "slide-in-right": "slide-in-right 0.2s ease-out",
+        "slide-out-right": "slide-out-right 0.2s ease-out",
+        "bounce-in": "bounce-in 0.3s ease-out",
+        "shimmer": "shimmer 1.5s ease-in-out infinite",
       },
     },
   },

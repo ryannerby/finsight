@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import DealsList from './pages/DealsList';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { MetricTest } from './components/ui/metric-test';
 import HealthScoreDemo from './pages/HealthScoreDemo';
 import VisualEnhancementsDemo from './pages/VisualEnhancementsDemo';
-import { ToastProvider, ToastContainer } from '@/hooks/useToast';
+import { ToastProvider } from '@/hooks/useToast';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -133,12 +134,11 @@ export default function App() {
             <Route path="/deals/:dealId" element={<DealDetail />} />
             <Route path="/saved-deals" element={<SavedDeals />} />
             <Route path="/head-to-head" element={<HeadToHead />} />
-                      <Route path="/metrics-demo" element={<MetricTest />} />
-          <Route path="/health-score-demo" element={<HealthScoreDemo />} />
-          <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
-          <Route path="*" element={<SetupPage />} />
+            <Route path="/metrics-demo" element={<MetricTest />} />
+            <Route path="/health-score-demo" element={<HealthScoreDemo />} />
+            <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
+            <Route path="*" element={<SetupPage />} />
           </Routes>
-
         </div>
       </ToastProvider>
     );
@@ -167,7 +167,6 @@ export default function App() {
           <Route path="/visual-enhancements-demo" element={<Protected><VisualEnhancementsDemo /></Protected>} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-
       </ToastProvider>
     </ClerkProvider>
   );

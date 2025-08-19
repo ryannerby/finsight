@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { ToastProps } from '@/components/ui/toast';
+import { ToastProps, ToastContainer } from '@/components/ui/toast';
 
 interface ToastContextType {
   toasts: ToastProps[];
@@ -60,5 +60,4 @@ export function useToastHelpers() {
   };
 }
 
-// Export ToastContainer from the toast component
-export { ToastContainer } from '@/components/ui/toast';
+
