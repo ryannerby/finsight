@@ -8,6 +8,7 @@ import { MetricCard } from '@/components/ui/metric-card';
 import { BenchmarkLegend } from '@/components/ui/benchmark-legend';
 import { ComprehensiveMetrics } from '@/components/ui/comprehensive-metrics';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
+import { HealthScoreDashboard } from '@/components/ui/health-score-dashboard';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
@@ -206,194 +207,472 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
               <Button
                 size="sm"
                 variant="outline"
+                data-export-pdf
                 onClick={async () => {
                   try {
-                    // Generate enhanced HTML content for PDF export
-                    const htmlContent = `
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <meta charset="utf-8">
-                          <title>Deal Summary - ${deal.title}</title>
-                          <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-                            * { margin: 0; padding: 0; box-sizing: border-box; }
-                            body { 
-                              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-                              line-height: 1.6; 
-                              color: #1f2937; 
-                              background: #ffffff;
-                              padding: 40px;
-                            }
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px; 
-                              padding-bottom: 20px;
-                              border-bottom: 2px solid #e5e7eb;
-                            }
-                            .header h1 { 
-                              font-size: 32px; 
-                              font-weight: 700; 
-                              color: #111827; 
-                              margin-bottom: 8px;
-                            }
-                            .header .subtitle { 
-                              font-size: 16px; 
-                              color: #6b7280; 
-                              font-weight: 500;
-                            }
-                            .disclaimer {
-                              background: #fef3c7;
-                              border: 1px solid #f59e0b;
-                              border-radius: 8px;
-                              padding: 16px;
-                              margin-bottom: 30px;
-                              font-size: 14px;
-                              color: #92400e;
-                            }
-                            .disclaimer strong { font-weight: 600; }
-                            .health-section {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-                              border-radius: 12px;
-                              padding: 24px;
-                              margin-bottom: 30px;
-                              text-align: center;
-                            }
-                            .health-score {
-                              font-size: 48px;
-                              font-weight: 700;
-                              color: #059669;
-                              margin-bottom: 8px;
-                            }
-                            .recommendation {
-                              font-size: 20px;
-                              font-weight: 600;
-                              margin-bottom: 16px;
-                            }
-                            .traffic-lights {
-                              display: flex;
-                              justify-content: center;
-                              gap: 12px;
-                              flex-wrap: wrap;
-                            }
-                            .traffic-light {
-                              padding: 8px 16px;
-                              border-radius: 20px;
-                              font-size: 12px;
-                              font-weight: 600;
-                              text-transform: uppercase;
-                            }
-                            .green { background: #dcfce7; color: #166534; }
-                            .yellow { background: #fef3c7; color: #92400e; }
-                            .red { background: #fee2e2; color: #991b1b; }
-                            .metrics-section {
-                              margin-bottom: 30px;
-                            }
-                            .metrics-grid {
-                              display: grid;
-                              grid-template-columns: repeat(3, 1fr);
-                              gap: 20px;
-                              margin: 20px 0;
-                            }
-                            .metric-card {
-                              background: #ffffff;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 12px;
-                              padding: 20px;
-                              text-align: center;
-                              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                            }
-                            .metric-label {
-                              font-size: 14px;
-                              color: #6b7280;
-                              font-weight: 500;
-                              margin-bottom: 8px;
-                              text-transform: uppercase;
-                              letter-spacing: 0.5px;
-                            }
-                            .metric-value {
-                              font-size: 24px;
-                              font-weight: 700;
-                              color: #111827;
-                            }
-                            .section-title {
-                              font-size: 20px;
-                              font-weight: 600;
-                              color: #111827;
-                              margin-bottom: 16px;
-                              padding-bottom: 8px;
-                              border-bottom: 1px solid #e5e7eb;
-                            }
-                            .footer {
-                              margin-top: 40px;
-                              padding-top: 20px;
-                              border-top: 1px solid #e5e7eb;
-                              text-align: center;
-                              font-size: 12px;
-                              color: #6b7280;
-                            }
-                            .page-break { page-break-before: always; }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="header">
-                            <h1>Deal Summary</h1>
-                            <div class="subtitle">${deal.title}</div>
-                            <div style="margin-top: 8px; font-size: 14px; color: #6b7280;">
-                              Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-                            </div>
-                          </div>
+                    console.log('Starting PDF export...');
+                    // Generate clean HTML content for PDF export
+                    const dealTitle = deal?.title || 'Unknown Deal';
+                    const healthScore = summary?.analysis_result?.health_score || 'N/A';
+                    const recommendation = summary?.analysis_result?.recommendation || 'N/A';
+                    
+                    // Create a comprehensive, detailed HTML template for professional PDF export
+                    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Deal Analysis - ${dealTitle}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            background: #ffffff;
+            font-size: 12px;
+        }
+        
+        .page {
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2d3748;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header .meta {
+            font-size: 14px;
+            color: #718096;
+            font-weight: 400;
+        }
+        
+        .health-summary {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .health-score-display {
+            margin-bottom: 20px;
+        }
+        
+        .health-score-number {
+            font-size: 48px;
+            font-weight: 800;
+            color: ${healthScore >= 80 ? '#059669' : healthScore >= 60 ? '#d97706' : '#dc2626'};
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .health-score-label {
+            font-size: 16px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .recommendation-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .recommendation-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .recommendation-text {
+            font-size: 14px;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        .traffic-lights-section {
+            margin: 20px 0;
+        }
+        
+        .traffic-lights-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 12px;
+        }
+        
+        .traffic-lights-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .traffic-light {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .traffic-light.green {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .traffic-light.yellow {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        
+        .traffic-light.red {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .metrics-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: #718096;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .metric-trend {
+            font-size: 10px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        
+        .analysis-section {
+            margin-bottom: 40px;
+        }
+        
+        .strengths-risks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .strengths-box, .risks-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .strengths-box {
+            border-left: 4px solid #059669;
+        }
+        
+        .risks-box {
+            border-left: 4px solid #dc2626;
+        }
+        
+        .box-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .strengths-box .box-title {
+            color: #059669;
+        }
+        
+        .risks-box .box-title {
+            color: #dc2626;
+        }
+        
+        .strength-item, .risk-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+        
+        .confidence-section {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .confidence-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #22543d;
+            margin-bottom: 12px;
+        }
+        
+        .confidence-metrics {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        
+        .confidence-metric {
+            text-align: center;
+        }
+        
+        .confidence-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #22543d;
+        }
+        
+        .confidence-label {
+            font-size: 11px;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+            color: #718096;
+            font-size: 11px;
+        }
+        
+        .disclaimer {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 11px;
+            color: #742a2a;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>Comprehensive Deal Analysis</h1>
+            <div class="subtitle">${dealTitle}</div>
+            <div class="meta">
+                Generated on ${new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                })} at ${new Date().toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })}
+            </div>
+        </div>
 
-                          <div class="disclaimer">
-                            <strong>⚠️ Not Financial Advice:</strong> This analysis is for informational purposes only and should not be considered as financial, investment, or legal advice. Always consult with qualified professionals before making investment decisions.
-                          </div>
+        <div class="health-summary">
+            <div class="health-score-display">
+                <div class="health-score-number">${healthScore}/100</div>
+                <div class="health-score-label">Overall Deal Health Score</div>
+            </div>
+            
+            <div class="recommendation-box">
+                <div class="recommendation-title">Investment Recommendation</div>
+                <div class="recommendation-text">${recommendation}</div>
+            </div>
+            
+            ${summary?.analysis_result?.traffic_lights ? `
+            <div class="traffic-lights-section">
+                <div class="traffic-lights-title">Risk Assessment by Category</div>
+                <div class="traffic-lights-grid">
+                    ${Object.entries(summary.analysis_result.traffic_lights).map(([category, status]) => 
+                        `<span class="traffic-light ${status}">${category.replace(/_/g, ' ')}</span>`
+                    ).join('')}
+                </div>
+            </div>
+            ` : ''}
+        </div>
 
-                          <div class="health-section">
-                            <div class="health-score">${summary?.analysis_result?.health_score || 'N/A'}/100</div>
-                            <div class="recommendation">${summary?.analysis_result?.recommendation || 'N/A'}</div>
-                            <div class="traffic-lights">
-                              ${Object.entries(summary?.analysis_result?.traffic_lights || {}).map(([k, v]: any) => 
-                                `<span class="traffic-light ${v}">${String(k).replace(/_/g, ' ')}</span>`
-                              ).join('')}
-                            </div>
-                          </div>
+        <div class="confidence-section">
+            <div class="confidence-title">Data Quality & Confidence Metrics</div>
+            <div class="confidence-metrics">
+                <div class="confidence-metric">
+                    <div class="confidence-value">${Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100).toFixed(0) : 0}%</div>
+                    <div class="confidence-label">Data Completeness</div>
+                </div>
+                <div class="confidence-metric">
+                    <div class="confidence-value">${Math.max(60, 100 - (Object.values(summary?.analysis_result?.traffic_lights || {}).filter(v => v === 'red').length * 10))}%</div>
+                    <div class="confidence-label">Confidence Score</div>
+                </div>
+            </div>
+        </div>
 
-                          <div class="metrics-section">
-                            <div class="section-title">Key Financial Metrics</div>
-                            <div class="metrics-grid">
-                              ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity'].map(k => {
-                                const value = metrics[k];
-                                const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
-                                return `
-                                  <div class="metric-card">
-                                    <div class="metric-label">${k.replace(/_/g, ' ')}</div>
-                                    <div class="metric-value">${formattedValue}</div>
-                                  </div>
-                                `;
-                              }).join('')}
-                            </div>
-                          </div>
-
-                          <div class="footer">
-                            <p>Generated by Finsight - Financial Analysis Platform</p>
-                            <p>This report contains AI-generated analysis and should be reviewed by qualified professionals.</p>
-                          </div>
-                        </body>
-                      </html>
+        <div class="metrics-section">
+            <div class="section-title">Key Financial Metrics</div>
+            <div class="metrics-grid">
+                ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity', 'roe', 'roa', 'revenue_growth', 'ebitda_margin'].map(k => {
+                    const value = metrics?.[k];
+                    const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+                    return `
+                        <div class="metric-card">
+                            <div class="metric-label">${k.replace(/_/g, ' ')}</div>
+                            <div class="metric-value">${formattedValue}</div>
+                            <div class="metric-trend">${value != null ? (value > 0 ? '↗ Positive' : value < 0 ? '↘ Negative' : '→ Neutral') : 'N/A'}</div>
+                        </div>
                     `;
+                }).join('')}
+            </div>
+        </div>
+
+        ${summary?.analysis_result?.top_strengths && summary.analysis_result.top_strengths.length > 0 ? `
+        <div class="analysis-section">
+            <div class="section-title">Key Strengths</div>
+            <div class="strengths-box">
+                <div class="box-title">💪 Top Strengths</div>
+                ${summary.analysis_result.top_strengths.map(strength => 
+                    `<div class="strength-item">• ${strength}</div>`
+                ).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        ${summary?.analysis_result?.top_risks && summary.analysis_result.top_risks.length > 0 ? `
+        <div class="analysis-section">
+            <div class="section-title">Risk Factors</div>
+            <div class="risks-box">
+                <div class="box-title">⚠️ Top Risks</div>
+                ${summary.analysis_result.top_risks.map(risk => 
+                    `<div class="risk-item">• ${risk}</div>`
+                ).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        <div class="disclaimer">
+            <strong>Disclaimer:</strong> This analysis is generated by Finsight's AI-powered financial analysis platform. 
+            All data and insights should be reviewed by qualified financial professionals before making investment decisions. 
+            Past performance does not guarantee future results.
+        </div>
+
+        <div class="footer">
+            <p><strong>Generated by Finsight - Advanced Financial Analysis Platform</strong></p>
+            <p>Professional-grade deal analysis and risk assessment</p>
+            <p>Report ID: ${Date.now()}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+                    
+                    console.log('HTML content generated, length:', htmlContent.length);
+                    console.log('HTML preview (first 500 chars):', htmlContent.substring(0, 500));
+                    console.log('Making request to export endpoint...');
+                    
+                    const requestBody = { html: htmlContent };
+                    console.log('Request body size:', JSON.stringify(requestBody).length);
                     
                     const response = await fetch('http://localhost:3001/api/export', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ html: htmlContent })
+                      headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/pdf'
+                      },
+                      body: JSON.stringify(requestBody)
+                    }).catch(fetchError => {
+                      console.error('Fetch error:', fetchError);
+                      throw new Error(`Network error: ${fetchError.message}`);
                     });
                     
+                    console.log('Response received:', response.status, response.statusText);
+                    
                     if (!response.ok) {
-                      throw new Error('Failed to generate PDF');
+                      const errorText = await response.text();
+                      console.error('Server error response:', errorText);
+                      throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText}`);
                     }
                     
-                    // Create blob and download
+                    console.log('Creating blob from response...');
                     const blob = await response.blob();
+                    console.log('Blob created, size:', blob.size);
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -402,9 +681,11 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     a.click();
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
+                    
+                    console.log('PDF export completed successfully');
                   } catch (error) {
                     console.error('PDF export failed:', error);
-                    alert('Failed to export PDF. Please try again.');
+                    alert(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
                   }
                 }}
               >
@@ -418,33 +699,36 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         )}
         {financial && (
           <>
-            {/* Health score + recommendation */}
+            {/* Enhanced Health Score Dashboard */}
             {summary && summary.analysis_result && (
-              <div className="flex items-center gap-6 mb-8">
-                <HealthScoreRing
-                  score={summary.analysis_result.health_score}
-                  tooltip="Overall deal health based on liquidity, margins, growth, and volatility"
-                />
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Recommendation</div>
-                  <Badge
-                    variant={summary.analysis_result.recommendation === 'Proceed' ? 'success' : summary.analysis_result.recommendation === 'Caution' ? 'warning' : 'destructive'}
-                    aria-label={`Recommendation: ${summary.analysis_result.recommendation}`}
-                    className="text-sm px-3 py-1"
-                  >
-                    {summary.analysis_result.recommendation}
-                  </Badge>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {Object.entries(summary.analysis_result.traffic_lights || {}).map(([k, v]: any) => (
-                      <Tooltip key={k} content={`Factor: ${String(k).replace(/_/g,' ')}`}>
-                        <Badge variant={v === 'green' ? 'success' : v === 'yellow' ? 'warning' : 'destructive'}>
-                          {String(k).replace(/_/g, ' ')}
-                        </Badge>
-                      </Tooltip>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <HealthScoreDashboard
+                healthScore={summary.analysis_result.health_score}
+                trafficLights={summary.analysis_result.traffic_lights || {}}
+                recommendation={summary.analysis_result.recommendation}
+                topStrengths={summary.analysis_result.top_strengths || []}
+                topRisks={summary.analysis_result.top_risks || []}
+                dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
+                confidenceScore={Math.max(60, 100 - (Object.values(summary.analysis_result.traffic_lights || {}).filter(v => v === 'red').length * 10))}
+                onReviewConcerns={() => {
+                  // Scroll to risks section or open a modal
+                  const risksSection = document.getElementById('risks-section');
+                  if (risksSection) {
+                    risksSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                onDownloadReport={() => {
+                  // Trigger PDF export
+                  const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
+                  if (exportButton) {
+                    exportButton.click();
+                  }
+                }}
+                onViewDetails={() => {
+                  // Toggle to comprehensive metrics view
+                  setMetricsView('comprehensive');
+                }}
+                className="mb-8"
+              />
             )}
 
             {/* Metrics grouped */}
@@ -632,7 +916,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 ))}
               </ul>
             </div>
-            <div>
+            <div id="risks-section">
               <h4 className="font-semibold mb-3 text-red-700 flex items-center gap-2">
                 <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 Top Risks
