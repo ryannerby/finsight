@@ -26,16 +26,14 @@ router.post('/', async (req, res) => {
 
     console.log('Starting PDF generation...');
 
-    // Launch browser with improved settings for PDF generation
+    // Launch browser with basic settings for PDF generation
     browser = await puppeteer.launch({
       headless: true,
       executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-dev-shm-usage'
       ]
     });
 
@@ -46,30 +44,27 @@ router.post('/', async (req, res) => {
     // Set viewport for consistent rendering
     await page.setViewport({ width: 1200, height: 800 });
 
-    // Set content and wait for it to fully load
+    // Set content and wait for it to load
     await page.setContent(html, { 
-      waitUntil: ['domcontentloaded', 'networkidle0'],
+      waitUntil: 'domcontentloaded',
       timeout: 30000
     });
 
     // Wait a bit more for any dynamic content to settle
-    await page.waitForTimeout(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log('HTML content set, generating PDF...');
 
-    // Generate PDF with improved settings for better compatibility
+    // Generate PDF with basic settings for compatibility
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      preferCSSPageSize: true,
       margin: {
-        top: '15mm',
-        right: '15mm',
-        bottom: '15mm',
-        left: '15mm'
-      },
-      displayHeaderFooter: false,
-      scale: 1.0
+        top: '20mm',
+        right: '20mm',
+        bottom: '20mm',
+        left: '20mm'
+      }
     });
 
     console.log(`PDF generated successfully, size: ${pdf.length} bytes`);
