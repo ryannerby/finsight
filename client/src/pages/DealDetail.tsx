@@ -211,95 +211,189 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 onClick={async () => {
                   try {
                     console.log('Starting PDF export...');
-                    // Generate simple HTML content for PDF export (simplified for testing)
+                    // Generate clean HTML content for PDF export
                     const dealTitle = deal?.title || 'Unknown Deal';
                     const healthScore = summary?.analysis_result?.health_score || 'N/A';
                     const recommendation = summary?.analysis_result?.recommendation || 'N/A';
                     
-                    const htmlContent = `
-                      <!DOCTYPE html>
-                      <html>
-                        <head>
-                          <meta charset="utf-8">
-                          <title>Deal Summary - ${dealTitle}</title>
-                          <style>
-                            body { 
-                              font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-                              line-height: 1.6; 
-                              color: #1f2937; 
-                              background: #ffffff;
-                              padding: 40px;
-                            }
-                            .header { 
-                              text-align: center; 
-                              margin-bottom: 40px; 
-                              padding-bottom: 20px;
-                              border-bottom: 2px solid #e5e7eb;
-                            }
-                            .header h1 { 
-                              font-size: 32px; 
-                              font-weight: 700; 
-                              color: #111827; 
-                              margin-bottom: 8px;
-                            }
-                            .health-section {
-                              background: #f8fafc;
-                              border-radius: 12px;
-                              padding: 24px;
-                              margin-bottom: 30px;
-                              text-align: center;
-                            }
-                            .health-score {
-                              font-size: 48px;
-                              font-weight: 700;
-                              color: #059669;
-                              margin-bottom: 8px;
-                            }
-                            .metrics-grid {
-                              display: grid;
-                              grid-template-columns: repeat(3, 1fr);
-                              gap: 20px;
-                              margin: 20px 0;
-                            }
-                            .metric-card {
-                              background: #ffffff;
-                              border: 1px solid #e5e7eb;
-                              border-radius: 8px;
-                              padding: 20px;
-                              text-align: center;
-                            }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="header">
-                            <h1>Deal Summary - ${dealTitle}</h1>
-                            <div>Financial Analysis Report</div>
-                          </div>
+                    // Create a clean, simple HTML template that works well with Puppeteer
+                    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deal Summary - ${dealTitle}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background: #ffffff;
+            padding: 40px;
+            font-size: 14px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .health-section {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .health-score {
+            font-size: 36px;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+        
+        .recommendation {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .metrics-section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+        }
+        
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .traffic-lights {
+            margin-top: 16px;
+        }
+        
+        .traffic-light {
+            display: inline-block;
+            padding: 4px 12px;
+            margin: 2px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .green { background: #dcfce7; color: #166534; }
+        .yellow { background: #fef3c7; color: #92400e; }
+        .red { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Deal Summary</h1>
+        <div class="subtitle">${dealTitle}</div>
+        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+            Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+        </div>
+    </div>
 
-                          <div class="health-section">
-                            <div class="health-score">${healthScore}/100</div>
-                            <div>Recommendation: ${recommendation}</div>
-                          </div>
+    <div class="health-section">
+        <div class="health-score">${healthScore}/100</div>
+        <div class="recommendation">${recommendation}</div>
+        ${summary?.analysis_result?.traffic_lights ? `
+        <div class="traffic-lights">
+            ${Object.entries(summary.analysis_result.traffic_lights).map(([k, v]) => 
+                `<span class="traffic-light ${v}">${k.replace(/_/g, ' ')}</span>`
+            ).join('')}
+        </div>
+        ` : ''}
+    </div>
 
-                          <div class="metrics-grid">
-                            ${['gross_margin', 'net_margin', 'revenue_cagr_3y'].map(k => {
-                              const value = metrics?.[k];
-                              const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
-                              return `
-                                <div class="metric-card">
-                                  <div>${k.replace(/_/g, ' ')}</div>
-                                  <div style="font-size: 24px; font-weight: 700;">${formattedValue}</div>
-                                </div>
-                              `;
-                            }).join('')}
-                          </div>
+    <div class="metrics-section">
+        <div class="section-title">Key Financial Metrics</div>
+        <div class="metrics-grid">
+            ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity'].map(k => {
+                const value = metrics?.[k];
+                const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+                return `
+                    <div class="metric-card">
+                        <div class="metric-label">${k.replace(/_/g, ' ')}</div>
+                        <div class="metric-value">${formattedValue}</div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    </div>
 
-                          <div style="margin-top: 40px; text-align: center; color: #6b7280;">
-                            <p>Generated by Finsight - Financial Analysis Platform</p>
-                          </div>
-                        </body>
-                      </html>
-                    `;
+    <div class="footer">
+        <p>Generated by Finsight - Financial Analysis Platform</p>
+        <p>This report contains AI-generated analysis and should be reviewed by qualified professionals.</p>
+    </div>
+</body>
+</html>`;
                     
                     console.log('HTML content generated, length:', htmlContent.length);
                     console.log('Making request to export endpoint...');
