@@ -14,6 +14,8 @@ export interface MetricCardProps {
   className?: string
   ariaLabel?: string
   showBenchmarks?: boolean // Whether to show benchmark indicators
+  loading?: boolean // Whether to show loading state
+  hoverable?: boolean // Whether to show hover effects
 }
 
 export function MetricCard({ 
@@ -24,7 +26,9 @@ export function MetricCard({
   tooltip, 
   className, 
   ariaLabel,
-  showBenchmarks = true 
+  showBenchmarks = true,
+  loading = false,
+  hoverable = true
 }: MetricCardProps) {
   // Get benchmark data if metricId is provided
   const benchmark = metricId ? FINANCIAL_BENCHMARKS[metricId] : null;
@@ -107,6 +111,7 @@ export function MetricCard({
         statusRing,
         // uniform card height across grids
         "min-h-[112px]",
+        hoverable && "transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] hover:border-[hsl(var(--border))]/60 cursor-pointer",
         className,
       )}
       aria-label={ariaLabel || label}
@@ -134,7 +139,13 @@ export function MetricCard({
       </div>
       
       {/* Metric value */}
-      <div className="mt-1 text-2xl font-semibold leading-tight">{value}</div>
+      <div className="mt-1 text-2xl font-semibold leading-tight">
+        {loading ? (
+          <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+        ) : (
+          value
+        )}
+      </div>
       
       {/* Benchmark comparison indicator */}
       {showBenchmarks && benchmarkStatus && benchmarkStatus !== 'unknown' && numericValue && (
