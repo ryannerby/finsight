@@ -106,11 +106,11 @@ export function MetricCard({
   const content = (
     <div
       className={cn(
-        "group relative h-full w-full rounded-lg border p-4 flex flex-col items-center justify-center gap-1 text-center",
+        "group relative h-full w-full rounded-lg border p-3 flex flex-col items-center justify-center gap-1 text-center",
         "bg-card text-card-foreground",
         statusRing,
         // uniform card height across grids
-        "min-h-[112px]",
+        "min-h-[96px]",
         hoverable && "transition-all duration-200 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-[hsl(var(--border))]/60 cursor-pointer",
         className,
       )}
@@ -139,9 +139,9 @@ export function MetricCard({
       </div>
       
       {/* Metric value */}
-      <div className="mt-1 text-2xl font-semibold leading-tight max-w-full">
+      <div className="mt-1 text-xl font-semibold leading-tight max-w-full">
         {loading ? (
-          <div className="h-8 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-6 w-14 bg-muted rounded animate-pulse" />
         ) : (
           <span className="break-words">{value}</span>
         )}

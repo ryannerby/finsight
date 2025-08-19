@@ -70,25 +70,25 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
   return (
     <div className={className}>
       {showLegend && (
-        <div className="mb-6">
+        <div className="mb-4">
           <BenchmarkLegend />
         </div>
       )}
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         {Object.entries(metricCategories).map(([category, metricKeys]) => {
           const availableInCategory = metricKeys.filter(metric => availableMetrics.includes(metric));
           
           if (availableInCategory.length === 0) return null;
 
           return (
-            <div key={category} className="w-full max-w-6xl mx-auto px-4">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-4 text-center">
+            <div key={category} className="w-full max-w-6xl mx-auto">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 text-center uppercase tracking-wide">
                 {getCategoryTitle(category)}
               </h4>
               
               {/* Mobile: swipeable */}
-              <div className="flex gap-3 overflow-x-auto sm:hidden -mx-4 px-4 snap-x pb-2 scrollbar-hide">
+              <div className="flex gap-2 overflow-x-auto sm:hidden -mx-4 px-4 snap-x pb-2 scrollbar-hide">
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={`${category}-${metricKey}`}
@@ -97,13 +97,13 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
                     value={formatMetric(metricKey, metrics[metricKey])}
                     tooltip={`Computed ${metricKey.replace(/_/g,' ')}`}
                     ariaLabel={`${metricKey} metric`}
-                    className="min-h-[96px] snap-start flex-shrink-0"
+                    className="min-h-[80px] snap-start flex-shrink-0"
                   />
                 ))}
               </div>
               
               {/* Desktop: responsive grid */}
-              <div className={`hidden sm:grid gap-4 ${getGridColumns(availableInCategory.length)}`}>
+              <div className={`hidden sm:grid gap-3 ${getGridColumns(availableInCategory.length)}`}>
                 {availableInCategory.map((metricKey) => (
                   <MetricCard
                     key={metricKey}
@@ -112,7 +112,7 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
                     value={formatMetric(metricKey, metrics[metricKey])}
                     tooltip={`Computed ${metricKey.replace(/_/g,' ')}`}
                     ariaLabel={`${metricKey} metric`}
-                    className="min-h-[96px] w-full"
+                    className="min-h-[80px] w-full"
                   />
                 ))}
               </div>
@@ -122,21 +122,21 @@ export function ComprehensiveMetrics({ metrics, className, showLegend = true }: 
       </div>
 
       {/* Metrics coverage summary */}
-      <div className="mt-8 w-full max-w-6xl mx-auto px-4">
-        <div className="bg-muted/30 rounded-lg p-4 border">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+      <div className="mt-6 w-full max-w-6xl mx-auto">
+        <div className="bg-muted/30 rounded-lg p-3 border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
             <h5 className="text-sm font-medium">Metrics Coverage</h5>
             <span className="text-xs text-muted-foreground">
               {availableMetrics.length} of {Object.keys(FINANCIAL_BENCHMARKS).length} metrics available
             </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
+              className="bg-primary h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${(availableMetrics.length / Object.keys(FINANCIAL_BENCHMARKS).length) * 100}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center sm:text-left">
+          <p className="text-xs text-muted-foreground mt-1.5 text-center sm:text-left">
             {availableMetrics.length === 0 
               ? 'No financial metrics available. Upload financial statements to see analysis.'
               : `Showing ${availableMetrics.length} computed financial metrics with industry benchmarks.`
