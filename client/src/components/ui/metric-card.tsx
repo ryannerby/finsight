@@ -110,7 +110,7 @@ export function MetricCard({
         "bg-card text-card-foreground",
         statusRing,
         // uniform card height across grids
-        "min-h-[96px]",
+        "min-h-[80px]",
         hoverable && "transition-all duration-200 ease-in-out hover:shadow-md hover:scale-[1.01] hover:border-[hsl(var(--border))]/60 cursor-pointer",
         className,
       )}
