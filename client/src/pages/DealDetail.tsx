@@ -216,96 +216,429 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     const healthScore = summary?.analysis_result?.health_score || 'N/A';
                     const recommendation = summary?.analysis_result?.recommendation || 'N/A';
                     
-                    // Create a very simple, static HTML template to avoid corruption issues
+                    // Create a comprehensive, detailed HTML template for professional PDF export
                     const htmlContent = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Deal Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Deal Analysis - ${dealTitle}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            line-height: 1.6;
-            color: #333;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            background: #ffffff;
+            font-size: 12px;
+        }
+        
+        .page {
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
         .header {
             text-align: center;
-            border-bottom: 2px solid #ccc;
+            margin-bottom: 40px;
             padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 3px solid #2d3748;
         }
-        .health-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header .meta {
+            font-size: 14px;
+            color: #718096;
+            font-weight: 400;
+        }
+        
+        .health-summary {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
             text-align: center;
-            margin-bottom: 30px;
         }
-        .health-score {
-            font-size: 36px;
-            font-weight: bold;
-            color: #059669;
-            margin-bottom: 10px;
+        
+        .health-score-display {
+            margin-bottom: 20px;
         }
+        
+        .health-score-number {
+            font-size: 48px;
+            font-weight: 800;
+            color: ${healthScore >= 80 ? '#059669' : healthScore >= 60 ? '#d97706' : '#dc2626'};
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .health-score-label {
+            font-size: 16px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .recommendation-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .recommendation-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        
+        .recommendation-text {
+            font-size: 14px;
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        .traffic-lights-section {
+            margin: 20px 0;
+        }
+        
+        .traffic-lights-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 12px;
+        }
+        
+        .traffic-lights-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .traffic-light {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .traffic-light.green {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .traffic-light.yellow {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        
+        .traffic-light.red {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .metrics-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            gap: 16px;
             margin: 20px 0;
         }
+        
         .metric-card {
-            border: 1px solid #ddd;
-            padding: 15px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
             text-align: center;
-            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+        
         .metric-label {
-            font-size: 12px;
-            color: #666;
+            font-size: 11px;
+            color: #718096;
+            font-weight: 600;
             margin-bottom: 8px;
             text-transform: capitalize;
+            letter-spacing: 0.5px;
         }
+        
         .metric-value {
             font-size: 18px;
-            font-weight: bold;
+            font-weight: 700;
+            color: #2d3748;
         }
+        
+        .metric-trend {
+            font-size: 10px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        
+        .analysis-section {
+            margin-bottom: 40px;
+        }
+        
+        .strengths-risks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .strengths-box, .risks-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .strengths-box {
+            border-left: 4px solid #059669;
+        }
+        
+        .risks-box {
+            border-left: 4px solid #dc2626;
+        }
+        
+        .box-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .strengths-box .box-title {
+            color: #059669;
+        }
+        
+        .risks-box .box-title {
+            color: #dc2626;
+        }
+        
+        .strength-item, .risk-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #4a5568;
+        }
+        
+        .confidence-section {
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .confidence-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #22543d;
+            margin-bottom: 12px;
+        }
+        
+        .confidence-metrics {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        
+        .confidence-metric {
+            text-align: center;
+        }
+        
+        .confidence-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #22543d;
+        }
+        
+        .confidence-label {
+            font-size: 11px;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
         .footer {
             margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
             text-align: center;
-            color: #666;
-            font-size: 12px;
+            color: #718096;
+            font-size: 11px;
+        }
+        
+        .disclaimer {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 11px;
+            color: #742a2a;
+        }
+        
+        .page-break {
+            page-break-before: always;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Deal Summary</h1>
-        <p><strong>${dealTitle}</strong></p>
-        <p>Generated on ${new Date().toLocaleDateString()}</p>
-    </div>
+    <div class="page">
+        <div class="header">
+            <h1>Comprehensive Deal Analysis</h1>
+            <div class="subtitle">${dealTitle}</div>
+            <div class="meta">
+                Generated on ${new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                })} at ${new Date().toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })}
+            </div>
+        </div>
 
-    <div class="health-section">
-        <div class="health-score">${healthScore}/100</div>
-        <p><strong>Recommendation:</strong> ${recommendation}</p>
-    </div>
-
-    <h2>Key Financial Metrics</h2>
-    <div class="metrics-grid">
-        ${['gross_margin', 'net_margin', 'revenue_cagr_3y'].map(k => {
-            const value = metrics?.[k];
-            const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
-            return `
-                <div class="metric-card">
-                    <div class="metric-label">${k.replace(/_/g, ' ')}</div>
-                    <div class="metric-value">${formattedValue}</div>
+        <div class="health-summary">
+            <div class="health-score-display">
+                <div class="health-score-number">${healthScore}/100</div>
+                <div class="health-score-label">Overall Deal Health Score</div>
+            </div>
+            
+            <div class="recommendation-box">
+                <div class="recommendation-title">Investment Recommendation</div>
+                <div class="recommendation-text">${recommendation}</div>
+            </div>
+            
+            ${summary?.analysis_result?.traffic_lights ? `
+            <div class="traffic-lights-section">
+                <div class="traffic-lights-title">Risk Assessment by Category</div>
+                <div class="traffic-lights-grid">
+                    ${Object.entries(summary.analysis_result.traffic_lights).map(([category, status]) => 
+                        `<span class="traffic-light ${status}">${category.replace(/_/g, ' ')}</span>`
+                    ).join('')}
                 </div>
-            `;
-        }).join('')}
-    </div>
+            </div>
+            ` : ''}
+        </div>
 
-    <div class="footer">
-        <p>Generated by Finsight - Financial Analysis Platform</p>
+        <div class="confidence-section">
+            <div class="confidence-title">Data Quality & Confidence Metrics</div>
+            <div class="confidence-metrics">
+                <div class="confidence-metric">
+                    <div class="confidence-value">${Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100).toFixed(0) : 0}%</div>
+                    <div class="confidence-label">Data Completeness</div>
+                </div>
+                <div class="confidence-metric">
+                    <div class="confidence-value">${Math.max(60, 100 - (Object.values(summary?.analysis_result?.traffic_lights || {}).filter(v => v === 'red').length * 10))}%</div>
+                    <div class="confidence-label">Confidence Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="metrics-section">
+            <div class="section-title">Key Financial Metrics</div>
+            <div class="metrics-grid">
+                ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity', 'roe', 'roa', 'revenue_growth', 'ebitda_margin'].map(k => {
+                    const value = metrics?.[k];
+                    const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+                    return `
+                        <div class="metric-card">
+                            <div class="metric-label">${k.replace(/_/g, ' ')}</div>
+                            <div class="metric-value">${formattedValue}</div>
+                            <div class="metric-trend">${value != null ? (value > 0 ? '↗ Positive' : value < 0 ? '↘ Negative' : '→ Neutral') : 'N/A'}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+
+        ${summary?.analysis_result?.top_strengths && summary.analysis_result.top_strengths.length > 0 ? `
+        <div class="analysis-section">
+            <div class="section-title">Key Strengths</div>
+            <div class="strengths-box">
+                <div class="box-title">💪 Top Strengths</div>
+                ${summary.analysis_result.top_strengths.map(strength => 
+                    `<div class="strength-item">• ${strength}</div>`
+                ).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        ${summary?.analysis_result?.top_risks && summary.analysis_result.top_risks.length > 0 ? `
+        <div class="analysis-section">
+            <div class="section-title">Risk Factors</div>
+            <div class="risks-box">
+                <div class="box-title">⚠️ Top Risks</div>
+                ${summary.analysis_result.top_risks.map(risk => 
+                    `<div class="risk-item">• ${risk}</div>`
+                ).join('')}
+            </div>
+        </div>
+        ` : ''}
+
+        <div class="disclaimer">
+            <strong>Disclaimer:</strong> This analysis is generated by Finsight's AI-powered financial analysis platform. 
+            All data and insights should be reviewed by qualified financial professionals before making investment decisions. 
+            Past performance does not guarantee future results.
+        </div>
+
+        <div class="footer">
+            <p><strong>Generated by Finsight - Advanced Financial Analysis Platform</strong></p>
+            <p>Professional-grade deal analysis and risk assessment</p>
+            <p>Report ID: ${Date.now()}</p>
+        </div>
     </div>
 </body>
 </html>`;
