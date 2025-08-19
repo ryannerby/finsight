@@ -56,8 +56,81 @@ export default function HealthScoreDemo() {
     alert('Review Concerns button clicked! This would scroll to the risks section in a real deal.');
   };
 
-  const handleDownloadReport = () => {
-    alert('Download Report button clicked! This would trigger PDF export in a real deal.');
+  const handleDownloadReport = async () => {
+    try {
+      console.log('Testing PDF export from demo page...');
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Test PDF Export</title>
+            <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+                padding: 40px;
+              }
+              .header { 
+                text-align: center; 
+                margin-bottom: 40px; 
+                padding-bottom: 20px;
+                border-bottom: 2px solid #e5e7eb;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Test PDF Export</h1>
+              <div>This is a test PDF generated from the demo page</div>
+            </div>
+            <p>Health Score: ${sampleData.healthScore}/100</p>
+            <p>Recommendation: ${sampleData.recommendation}</p>
+            <p>Generated at: ${new Date().toLocaleString()}</p>
+          </body>
+        </html>
+      `;
+      
+      console.log('HTML content generated, length:', htmlContent.length);
+      console.log('Making request to export endpoint...');
+      
+      const response = await fetch('http://localhost:3001/api/export', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/pdf'
+        },
+        body: JSON.stringify({ html: htmlContent })
+      });
+      
+      console.log('Response received:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText}`);
+      }
+      
+      console.log('Creating blob from response...');
+      const blob = await response.blob();
+      console.log('Blob created, size:', blob.size);
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `test-health-score-demo.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log('PDF export completed successfully');
+      alert('PDF export successful! Check your downloads folder.');
+      
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert(`Failed to export PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleViewDetails = () => {
