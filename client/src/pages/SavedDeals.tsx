@@ -134,14 +134,15 @@ export default function SavedDeals() {
 
       {savedDeals.length === 0 && !loading ? (
         <EmptyState
-          icon={<Bookmark className="w-12 h-12" />}
+          variant="saved-deals"
           title="No saved deals yet"
-          description="Deals you save will appear here for quick access."
+          helper="Deals you save will appear here for quick access and comparison. Start by browsing deals and saving the ones you want to track."
           action={
             <Button onClick={() => navigate('/deals')}>
               Browse Deals
             </Button>
           }
+          showTips={true}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -310,9 +310,14 @@ export default function DealsList() {
 
         {deals.length === 0 && (
           <EmptyState
-            title="No deals found"
-            helper="Seed sample data with the server seed script or create a new deal."
+            variant="deals"
+            title="Start your first deal analysis"
+            helper="Upload financial documents to analyze deals and generate insights. Get started with our sample data or upload your own files."
             action={<Button onClick={()=>setShowCreate(true)}>Create Deal</Button>}
+            showSampleData={true}
+            showQuickStart={true}
+            showFileExamples={true}
+            showTips={true}
           />
         )}
       </div>

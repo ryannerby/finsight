@@ -1,4 +1,5 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { EmptyState } from './empty-state';
 
 interface RevenueData {
   year: string;
@@ -15,9 +16,12 @@ export function RevenueChart({ data, title = "Revenue Trend" }: RevenueChartProp
     return (
       <div className="bg-card text-card-foreground border rounded-lg p-6">
         <h3 className="text-lg font-bold mb-4">{title}</h3>
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          <p>No revenue data available</p>
-        </div>
+        <EmptyState
+          variant="metrics"
+          title="No revenue data available"
+          helper="Upload financial statements with revenue data to see trend analysis and charts."
+          showSampleData={true}
+        />
       </div>
     );
   }
