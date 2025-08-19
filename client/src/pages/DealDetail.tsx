@@ -211,7 +211,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                 onClick={async () => {
                   try {
                     console.log('Starting PDF export...');
-                    // Generate enhanced HTML content for PDF export
+                    // Generate simple HTML content for PDF export (simplified for testing)
                     const htmlContent = `
                       <!DOCTYPE html>
                       <html>
@@ -219,10 +219,8 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                           <meta charset="utf-8">
                           <title>Deal Summary - ${deal.title}</title>
                           <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-                            * { margin: 0; padding: 0; box-sizing: border-box; }
                             body { 
-                              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+                              font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
                               line-height: 1.6; 
                               color: #1f2937; 
                               background: #ffffff;
@@ -240,23 +238,8 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                               color: #111827; 
                               margin-bottom: 8px;
                             }
-                            .header .subtitle { 
-                              font-size: 16px; 
-                              color: #6b7280; 
-                              font-weight: 500;
-                            }
-                            .disclaimer {
-                              background: #fef3c7;
-                              border: 1px solid #f59e0b;
-                              border-radius: 8px;
-                              padding: 16px;
-                              margin-bottom: 30px;
-                              font-size: 14px;
-                              color: #92400e;
-                            }
-                            .disclaimer strong { font-weight: 600; }
                             .health-section {
-                              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                              background: #f8fafc;
                               border-radius: 12px;
                               padding: 24px;
                               margin-bottom: 30px;
@@ -268,30 +251,6 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                               color: #059669;
                               margin-bottom: 8px;
                             }
-                            .recommendation {
-                              font-size: 20px;
-                              font-weight: 600;
-                              margin-bottom: 16px;
-                            }
-                            .traffic-lights {
-                              display: flex;
-                              justify-content: center;
-                              gap: 12px;
-                              flex-wrap: wrap;
-                            }
-                            .traffic-light {
-                              padding: 8px 16px;
-                              border-radius: 20px;
-                              font-size: 12px;
-                              font-weight: 600;
-                              text-transform: uppercase;
-                            }
-                            .green { background: #dcfce7; color: #166534; }
-                            .yellow { background: #fef3c7; color: #92400e; }
-                            .red { background: #fee2e2; color: #991b1b; }
-                            .metrics-section {
-                              margin-bottom: 30px;
-                            }
                             .metrics-grid {
                               display: grid;
                               grid-template-columns: repeat(3, 1fr);
@@ -301,85 +260,38 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                             .metric-card {
                               background: #ffffff;
                               border: 1px solid #e5e7eb;
-                              border-radius: 12px;
+                              border-radius: 8px;
                               padding: 20px;
                               text-align: center;
-                              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
                             }
-                            .metric-label {
-                              font-size: 14px;
-                              color: #6b7280;
-                              font-weight: 500;
-                              margin-bottom: 8px;
-                              text-transform: uppercase;
-                              letter-spacing: 0.5px;
-                            }
-                            .metric-value {
-                              font-size: 24px;
-                              font-weight: 700;
-                              color: #111827;
-                            }
-                            .section-title {
-                              font-size: 20px;
-                              font-weight: 600;
-                              color: #111827;
-                              margin-bottom: 16px;
-                              padding-bottom: 8px;
-                              border-bottom: 1px solid #e5e7eb;
-                            }
-                            .footer {
-                              margin-top: 40px;
-                              padding-top: 20px;
-                              border-top: 1px solid #e5e7eb;
-                              text-align: center;
-                              font-size: 12px;
-                              color: #6b7280;
-                            }
-                            .page-break { page-break-before: always; }
                           </style>
                         </head>
                         <body>
                           <div class="header">
-                            <h1>Deal Summary</h1>
-                            <div class="subtitle">${deal.title}</div>
-                            <div style="margin-top: 8px; font-size: 14px; color: #6b7280;">
-                              Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-                            </div>
-                          </div>
-
-                          <div class="disclaimer">
-                            <strong>⚠️ Not Financial Advice:</strong> This analysis is for informational purposes only and should not be considered as financial, investment, or legal advice. Always consult with qualified professionals before making investment decisions.
+                            <h1>Deal Summary - ${deal.title}</h1>
+                            <div>Financial Analysis Report</div>
                           </div>
 
                           <div class="health-section">
                             <div class="health-score">${summary?.analysis_result?.health_score || 'N/A'}/100</div>
-                            <div class="recommendation">${summary?.analysis_result?.recommendation || 'N/A'}</div>
-                            <div class="traffic-lights">
-                              ${Object.entries(summary?.analysis_result?.traffic_lights || {}).map(([k, v]: any) => 
-                                `<span class="traffic-light ${v}">${String(k).replace(/_/g, ' ')}</span>`
-                              ).join('')}
-                            </div>
+                            <div>Recommendation: ${summary?.analysis_result?.recommendation || 'N/A'}</div>
                           </div>
 
-                          <div class="metrics-section">
-                            <div class="section-title">Key Financial Metrics</div>
-                            <div class="metrics-grid">
-                              ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity'].map(k => {
-                                const value = metrics[k];
-                                const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
-                                return `
-                                  <div class="metric-card">
-                                    <div class="metric-label">${k.replace(/_/g, ' ')}</div>
-                                    <div class="metric-value">${formattedValue}</div>
-                                  </div>
-                                `;
-                              }).join('')}
-                            </div>
+                          <div class="metrics-grid">
+                            ${['gross_margin', 'net_margin', 'revenue_cagr_3y'].map(k => {
+                              const value = metrics[k];
+                              const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+                              return `
+                                <div class="metric-card">
+                                  <div>${k.replace(/_/g, ' ')}</div>
+                                  <div style="font-size: 24px; font-weight: 700;">${formattedValue}</div>
+                                </div>
+                              `;
+                            }).join('')}
                           </div>
 
-                          <div class="footer">
+                          <div style="margin-top: 40px; text-align: center; color: #6b7280;">
                             <p>Generated by Finsight - Financial Analysis Platform</p>
-                            <p>This report contains AI-generated analysis and should be reviewed by qualified professionals.</p>
                           </div>
                         </body>
                       </html>
@@ -392,6 +304,9 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ html: htmlContent })
+                    }).catch(fetchError => {
+                      console.error('Fetch error:', fetchError);
+                      throw new Error(`Network error: ${fetchError.message}`);
                     });
                     
                     console.log('Response received:', response.status, response.statusText);
