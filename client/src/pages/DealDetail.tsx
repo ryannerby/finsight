@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { RevenueChart } from '@/components/ui/revenue-chart';
 import { MetricCard } from '@/components/ui/metric-card';
+import { BenchmarkLegend } from '@/components/ui/benchmark-legend';
+import { ComprehensiveMetrics } from '@/components/ui/comprehensive-metrics';
 import { HealthScoreRing } from '@/components/ui/health-score-ring';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -85,6 +87,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
   const { files, refreshFiles } = useFiles(deal.id, userId);
   const [showInventoryDetails, setShowInventoryDetails] = useState(false);
   const [showInventoryWhy, setShowInventoryWhy] = useState(false);
+  const [metricsView, setMetricsView] = useState<'simple' | 'comprehensive'>('simple');
   const [execOpen, setExecOpen] = useState(true);
   const [signalsOpen, setSignalsOpen] = useState(true);
   const [inventoryOpen, setInventoryOpen] = useState(true);
@@ -187,12 +190,6 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
   return (
     <div className="space-y-10">
-      {/* Disclaimers */}
-      <div className="space-y-4">
-        <FinancialDisclaimer />
-        <AnalysisDisclaimer />
-      </div>
-
       <div className="bg-card text-card-foreground border rounded-lg p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -452,68 +449,143 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
 
             {/* Metrics grouped */}
             <div className="space-y-6">
+              {/* Metrics View Toggle */}
               <div className="max-w-3xl mx-auto">
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
-                {/* Mobile: swipeable */}
-                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                    <MetricCard
-                      key={`m-${k}`}
-                      label={k.replace(/_/g,' ')}
-                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px] snap-start min-w-[200px]"
-                    />
-                  ))}
-                </div>
-                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
-                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                    <MetricCard
-                      key={k}
-                      label={k.replace(/_/g,' ')}
-                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px]"
-                    />
-                  ))}
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Button
+                    size="sm"
+                    variant={metricsView === 'simple' ? 'default' : 'outline'}
+                    onClick={() => setMetricsView('simple')}
+                  >
+                    Simple View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={metricsView === 'comprehensive' ? 'default' : 'outline'}
+                    onClick={() => setMetricsView('comprehensive')}
+                  >
+                    Comprehensive View
+                  </Button>
                 </div>
               </div>
+              
+              {/* Benchmark Legend */}
               <div className="max-w-3xl mx-auto">
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
-                {/* Mobile: swipeable */}
-                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
-                    <MetricCard
-                      key={`l-${k}`}
-                      label={k.replace(/_/g,' ')}
-                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px] snap-start min-w-[200px]"
-                    />
-                  ))}
-                </div>
-                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
-                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                  {['current_ratio','debt_to_equity','periodicity'].map((k) => (
-                    <MetricCard
-                      key={k}
-                      label={k.replace(/_/g,' ')}
-                      value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
-                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                      ariaLabel={`${k} metric`}
-                      className="min-h-[96px]"
-                    />
-                  ))}
-                </div>
+                <BenchmarkLegend />
               </div>
+              
+              {/* Simple Metrics View */}
+              {metricsView === 'simple' && (
+                <>
+                  <div className="max-w-3xl mx-auto">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
+                    {/* Mobile: swipeable */}
+                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                      {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                        <MetricCard
+                          key={`m-${k}`}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px] snap-start min-w-[200px]"
+                        />
+                      ))}
+                    </div>
+                    {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                    <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                      {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                        <MetricCard
+                          key={k}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'warning' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px]"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="max-w-3xl mx-auto">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
+                    {/* Mobile: swipeable */}
+                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                      {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                        <MetricCard
+                          key={`l-${k}`}
+                          metricId={k === 'periodicity' ? undefined : k}
+                          label={k.replace(/_/g,' ')}
+                          value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px] snap-start min-w-[200px]"
+                        />
+                      ))}
+                    </div>
+                    {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                    <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                      {['current_ratio','debt_to_equity','periodicity'].map((k) => (
+                        <MetricCard
+                          key={k}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={k === 'periodicity' ? (coverage.periodicity || '—') : metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] >= 1.5 ? 'good' : metrics[k] != null && metrics[k] >= 1.0 ? 'warning' : 'bad') : 'neutral'}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px]"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Additional Efficiency & Working Capital Metrics */}
+                  <div className="max-w-3xl mx-auto">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Efficiency & Working Capital</h4>
+                    {/* Mobile: swipeable */}
+                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                      {['ar_days','ap_days','inventory_turns','ccc_days'].map((k) => (
+                        <MetricCard
+                          key={`e-${k}`}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px] snap-start min-w-[200px]"
+                        />
+                      ))}
+                    </div>
+                    {/* Tablet/desktop grid - 4 columns for efficiency metrics */}
+                    <div className="hidden sm:grid grid-cols-4 place-items-center gap-4">
+                      {['ar_days','ap_days','inventory_turns','ccc_days'].map((k) => (
+                        <MetricCard
+                          key={k}
+                          metricId={k}
+                          label={k.replace(/_/g,' ')}
+                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                          ariaLabel={`${k} metric`}
+                          className="min-h-[96px]"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* Comprehensive Metrics View */}
+              {metricsView === 'comprehensive' && (
+                <ComprehensiveMetrics 
+                  metrics={metrics} 
+                  showLegend={false}
+                />
+              )}
             </div>
 
             {/* Revenue Trend Chart */}
@@ -543,7 +615,7 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
           </div>
           <span className="sm:hidden block text-xs text-muted-foreground mb-2">Updated {new Date(summary.created_at).toLocaleString()}</span>
           <div className={execOpen ? '' : 'hidden sm:block'}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold mb-3 text-green-700 flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -855,6 +927,11 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
         );
       })()}
 
+      {/* Disclaimers moved to bottom */}
+      <div className="space-y-4">
+        <FinancialDisclaimer />
+        <AnalysisDisclaimer />
+      </div>
       
     </div>
   );
