@@ -216,186 +216,102 @@ const SummaryTab = ({ deal, refreshKey }: { deal: any; refreshKey: number }) => 
                     const healthScore = summary?.analysis_result?.health_score || 'N/A';
                     const recommendation = summary?.analysis_result?.recommendation || 'N/A';
                     
-                    // Create a clean, simple HTML template that works well with Puppeteer
+                    // Create a very simple, static HTML template to avoid corruption issues
                     const htmlContent = `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deal Summary - ${dealTitle}</title>
+    <title>Deal Summary</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Arial, sans-serif;
+            margin: 40px;
             line-height: 1.6;
-            color: #1f2937;
-            background: #ffffff;
-            padding: 40px;
-            font-size: 14px;
+            color: #333;
         }
-        
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            border-bottom: 2px solid #ccc;
             padding-bottom: 20px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 8px;
-        }
-        
-        .header .subtitle {
-            font-size: 16px;
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        .health-section {
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 24px;
             margin-bottom: 30px;
-            text-align: center;
         }
-        
+        .health-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
         .health-score {
             font-size: 36px;
-            font-weight: 700;
+            font-weight: bold;
             color: #059669;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
-        
-        .recommendation {
-            font-size: 18px;
-            font-weight: 600;
-            color: #111827;
-        }
-        
-        .metrics-section {
-            margin-bottom: 30px;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 20px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            gap: 20px;
             margin: 20px 0;
         }
-        
         .metric-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 16px;
+            border: 1px solid #ddd;
+            padding: 15px;
             text-align: center;
+            border-radius: 6px;
         }
-        
         .metric-label {
             font-size: 12px;
-            color: #6b7280;
-            font-weight: 500;
+            color: #666;
             margin-bottom: 8px;
             text-transform: capitalize;
         }
-        
         .metric-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #111827;
+            font-size: 18px;
+            font-weight: bold;
         }
-        
         .footer {
             margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
             text-align: center;
+            color: #666;
             font-size: 12px;
-            color: #6b7280;
         }
-        
-        .traffic-lights {
-            margin-top: 16px;
-        }
-        
-        .traffic-light {
-            display: inline-block;
-            padding: 4px 12px;
-            margin: 2px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .green { background: #dcfce7; color: #166534; }
-        .yellow { background: #fef3c7; color: #92400e; }
-        .red { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Deal Summary</h1>
-        <div class="subtitle">${dealTitle}</div>
-        <div style="margin-top: 8px; font-size: 12px; color: #6b7280;">
-            Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-        </div>
+        <p><strong>${dealTitle}</strong></p>
+        <p>Generated on ${new Date().toLocaleDateString()}</p>
     </div>
 
     <div class="health-section">
         <div class="health-score">${healthScore}/100</div>
-        <div class="recommendation">${recommendation}</div>
-        ${summary?.analysis_result?.traffic_lights ? `
-        <div class="traffic-lights">
-            ${Object.entries(summary.analysis_result.traffic_lights).map(([k, v]) => 
-                `<span class="traffic-light ${v}">${k.replace(/_/g, ' ')}</span>`
-            ).join('')}
-        </div>
-        ` : ''}
+        <p><strong>Recommendation:</strong> ${recommendation}</p>
     </div>
 
-    <div class="metrics-section">
-        <div class="section-title">Key Financial Metrics</div>
-        <div class="metrics-grid">
-            ${['gross_margin', 'net_margin', 'revenue_cagr_3y', 'current_ratio', 'debt_to_equity'].map(k => {
-                const value = metrics?.[k];
-                const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
-                return `
-                    <div class="metric-card">
-                        <div class="metric-label">${k.replace(/_/g, ' ')}</div>
-                        <div class="metric-value">${formattedValue}</div>
-                    </div>
-                `;
-            }).join('')}
-        </div>
+    <h2>Key Financial Metrics</h2>
+    <div class="metrics-grid">
+        ${['gross_margin', 'net_margin', 'revenue_cagr_3y'].map(k => {
+            const value = metrics?.[k];
+            const formattedValue = value != null ? formatMetric(k, value) : 'N/A';
+            return `
+                <div class="metric-card">
+                    <div class="metric-label">${k.replace(/_/g, ' ')}</div>
+                    <div class="metric-value">${formattedValue}</div>
+                </div>
+            `;
+        }).join('')}
     </div>
 
     <div class="footer">
         <p>Generated by Finsight - Financial Analysis Platform</p>
-        <p>This report contains AI-generated analysis and should be reviewed by qualified professionals.</p>
     </div>
 </body>
 </html>`;
                     
                     console.log('HTML content generated, length:', htmlContent.length);
+                    console.log('HTML preview (first 500 chars):', htmlContent.substring(0, 500));
                     console.log('Making request to export endpoint...');
                     
                     const requestBody = { html: htmlContent };
