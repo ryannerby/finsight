@@ -5,7 +5,7 @@ export const anthropic = new Anthropic({
 });
 
 export async function jsonCall(
-  {system, prompt, model="claude-3-5-sonnet-20240620"}:{ system: string; prompt: string; model?: string }
+  {system, prompt, model="claude-3-haiku-20240307"}:{ system: string; prompt: string; model?: string }
 ) {
   const resp = await anthropic.messages.create(
     {

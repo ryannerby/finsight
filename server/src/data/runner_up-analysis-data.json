@@ -1,0 +1,138 @@
+{
+  "financial": {
+    "deal_id": "InnovateCorp Ltd",
+    "metrics": {
+      "gross_margin": 0.4,
+      "net_margin": null,
+      "current_ratio": null,
+      "debt_to_equity": null,
+      "quick_ratio": null,
+      "ar_days": null,
+      "ap_days": null,
+      "dio_days": 40.55555555555555,
+      "inventory_turns": 9,
+      "ccc_days": null,
+      "revenue_cagr_3y": 0.1499999999999999,
+      "seasonality_volatility_index": null,
+      "wc_to_sales": 0,
+      "ebitda_margin": null,
+      "ebitda_to_interest": null
+    },
+    "coverage": {
+      "periodicity": "annual"
+    },
+    "revenue_data": [
+      {
+        "year": "2021",
+        "revenue": 1200000
+      },
+      {
+        "year": "2022",
+        "revenue": 1380000
+      },
+      {
+        "year": "2023",
+        "revenue": 1587000
+      },
+      {
+        "year": "2024",
+        "revenue": 1825050
+      }
+    ]
+  },
+  "documentInventory": {
+    "deal_id": "InnovateCorp Ltd",
+    "expected": [
+      "income_statement",
+      "balance_sheet"
+    ],
+    "present": [
+      "income_statement"
+    ],
+    "missing": [
+      "balance_sheet"
+    ],
+    "coverage": {
+      "income_statement": {
+        "canon": {
+          "2021": {
+            "revenue": 1200000,
+            "cogs": 720000,
+            "inventory": 80000
+          },
+          "2022": {
+            "revenue": 1380000,
+            "cogs": 828000,
+            "inventory": 92000
+          },
+          "2023": {
+            "revenue": 1587000,
+            "cogs": 952200,
+            "inventory": 105800
+          },
+          "2024": {
+            "revenue": 1825050,
+            "cogs": 1095030,
+            "inventory": 121670
+          }
+        },
+        "periods": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ]
+      }
+    }
+  },
+  "ddSignals": {
+    "deal_id": "InnovateCorp Ltd",
+    "working_capital_ccc": {
+      "status": "pass",
+      "value": null,
+      "detail": "Working capital cycle is within acceptable range"
+    },
+    "current_ratio": {
+      "status": "caution",
+      "value": null,
+      "detail": "Monitor liquidity closely"
+    },
+    "dscr_proxy": {
+      "status": "pass",
+      "value": null,
+      "detail": "Debt service coverage appears adequate"
+    },
+    "seasonality": {
+      "status": "pass",
+      "value": 0.05,
+      "detail": "Revenue shows consistent patterns"
+    },
+    "accrual_vs_cash_delta": {
+      "status": "pass",
+      "value": 0.02,
+      "detail": "Accruals and cash flows are aligned"
+    }
+  },
+  "summary": {
+    "health_score": 82,
+    "traffic_lights": {
+      "revenue_quality": "green",
+      "profitability": "green",
+      "liquidity": "green",
+      "leverage": "yellow",
+      "efficiency": "green"
+    },
+    "top_strengths": [
+      "Strong revenue growth trend over 3 years",
+      "Healthy gross margins above industry average",
+      "Good working capital efficiency",
+      "Consistent profitability with positive net margins"
+    ],
+    "top_risks": [
+      "Moderate debt levels require monitoring",
+      "Seasonal variations in cash flow patterns",
+      "Dependency on key customer relationships"
+    ],
+    "recommendation": "Buy"
+  }
+}

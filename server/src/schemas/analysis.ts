@@ -51,8 +51,8 @@ export const Summary = z.object({
   deal_id: z.string().uuid(),
   health_score: z.number().min(0).max(100),
   traffic_lights: z.record(z.string(), z.enum(['green','yellow','red'])),
-  top_strengths: z.array(z.object({ title: z.string(), evidence: z.string(), page: z.number().optional() })),
-  top_risks: z.array(z.object({ title: z.string(), evidence: z.string(), page: z.number().optional() })),
+  top_strengths: z.array(z.object({ title: z.string(), evidence: z.string(), page: z.number().nullable().optional() })),
+  top_risks: z.array(z.object({ title: z.string(), evidence: z.string(), page: z.number().nullable().optional() })),
   recommendation: z.enum(['Proceed','Caution','Pass'])
 });
 

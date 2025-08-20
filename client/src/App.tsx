@@ -90,6 +90,7 @@ function SetupPage() {
           >
             Visual Enhancements Demo
           </Button>
+
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
