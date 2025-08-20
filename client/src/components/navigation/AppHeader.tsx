@@ -50,6 +50,9 @@ export function AppHeader({ className }: { className?: string }) {
             <Bookmark className="w-4 h-4" />
             Saved Deals
           </Button>
+          <Button variant="ghost" onClick={() => navigate('/project-docs')}>
+            Documentation
+          </Button>
           <Button onClick={() => navigate('/deals?create=1')}>Create Deal</Button>
           <Button variant="outline" onClick={handleLogout}>Logout</Button>
         </div>
