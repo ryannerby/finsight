@@ -114,12 +114,21 @@ export default function HeadToHead() {
           }
 
           return {
-          deal: { ...deal, metrics: realMetrics, health_score: realHealthScore },
-          score: Math.round(score),
-          rank: 0,
-          strengths,
-          weaknesses
-        };
+            deal: { 
+              ...deal, 
+              metrics: {
+                ...realMetrics,
+                revenue: realRevenue,
+                profit_margin: profitMargin,
+                growth_rate: growthRate
+              }, 
+              health_score: realHealthScore 
+            },
+            score: Math.round(score),
+            rank: 0,
+            strengths,
+            weaknesses
+          };
       });
 
       // Sort by score (highest first) and assign ranks
