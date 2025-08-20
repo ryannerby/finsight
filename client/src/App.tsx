@@ -120,8 +120,11 @@ function Protected({ children }: { children: JSX.Element }) {
 export default function App() {
   const navigate = useNavigate();
   
+  // Force real app mode for development
+  const forceRealApp = true;
+  
   // If Clerk is not configured, show demo mode without authentication
-  if (!pk) {
+  if (!pk && !forceRealApp) {
     return (
       <ToastProvider>
         <div>
@@ -145,29 +148,21 @@ export default function App() {
   }
   
   return (
-    <ClerkProvider
-      publishableKey={pk}
-      routerPush={(to: string) => navigate(to)}
-      routerReplace={(to: string) => navigate(to, { replace: true })}
-      afterSignInUrl="/deals"
-      afterSignUpUrl="/deals"
-    >
-      <ToastProvider>
-        <AppHeader />
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/deals" element={<Protected><DealsList /></Protected>} />
-          <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
-          <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
-          <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
-          <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
-          <Route path="/metrics-demo" element={<Protected><MetricTest /></Protected>} />
-          <Route path="/health-score-demo" element={<Protected><HealthScoreDemo /></Protected>} />
-          <Route path="/visual-enhancements-demo" element={<Protected><VisualEnhancementsDemo /></Protected>} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </ToastProvider>
-    </ClerkProvider>
+    <ToastProvider>
+      <AppHeader />
+      <Routes>
+        <Route path="/" element={<Navigate to="/deals" replace />} />
+        <Route path="/login" element={<Navigate to="/deals" replace />} />
+        <Route path="/deals" element={<DealsList />} />
+        <Route path="/deals/new" element={<CreateDeal />} />
+        <Route path="/deals/:dealId" element={<DealDetail />} />
+        <Route path="/saved-deals" element={<SavedDeals />} />
+        <Route path="/head-to-head" element={<HeadToHead />} />
+        <Route path="/metrics-demo" element={<MetricTest />} />
+        <Route path="/health-score-demo" element={<HealthScoreDemo />} />
+        <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
+        <Route path="*" element={<Navigate to="/deals" replace />} />
+      </Routes>
+    </ToastProvider>
   );
 }
