@@ -17,6 +17,40 @@ import { withTimeout, TIMEOUTS } from '../services/timeoutWrapper';
 
 export const analyzeRouter = Router();
 
+// Serve real analysis data generated from CSV files
+analyzeRouter.get('/real-analysis-data', async (req: Request, res: Response) => {
+  console.log('Real analysis data endpoint called');
+  try {
+    const dataPath = path.join(__dirname, '../data/real-analysis-data.json');
+    if (fs.existsSync(dataPath)) {
+      const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Real analysis data not found' });
+    }
+  } catch (error) {
+    console.error('Error loading real analysis data:', error);
+    res.status(500).json({ error: 'Failed to load real analysis data' });
+  }
+});
+
+// Serve multi-company analysis data
+analyzeRouter.get('/multi-company-data', async (req: Request, res: Response) => {
+  console.log('Multi-company analysis data endpoint called');
+  try {
+    const dataPath = path.join(__dirname, '../data/multi-company-analysis-data.json');
+    if (fs.existsSync(dataPath)) {
+      const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+      res.json(data);
+    } else {
+      res.status(404).json({ error: 'Multi-company analysis data not found' });
+    }
+  } catch (error) {
+    console.error('Error loading multi-company analysis data:', error);
+    res.status(500).json({ error: 'Failed to load multi-company analysis data' });
+  }
+});
+
 // naive periodicity detector
 function detectPeriodicity(keys: PeriodKey[]): Periodicity {
   if (keys.some(k => /^\d{4}-\d{2}$/.test(k))) return "monthly";
