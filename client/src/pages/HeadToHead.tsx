@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, BarChart3, Target } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, BarChart3, Target, BarChart } from 'lucide-react';
+import { DetailedComparison } from '@/components/ui/detailed-comparison';
 
 interface Deal {
   id: string;
@@ -33,6 +34,7 @@ export default function HeadToHead() {
   const navigate = useNavigate();
   const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDetailed, setShowDetailed] = useState(false);
 
   const deals: Deal[] = location.state?.deals || [];
   const selectedDealIds: string[] = location.state?.selectedDealIds || [];
@@ -153,6 +155,18 @@ export default function HeadToHead() {
     );
   }
 
+  // Show detailed comparison if requested
+  if (showDetailed) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <DetailedComparison 
+          deals={deals} 
+          onBack={() => setShowDetailed(false)} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
@@ -174,13 +188,23 @@ export default function HeadToHead() {
 
       {/* Summary */}
       <div className="mb-8 p-6 bg-primary/5 border border-primary/20 rounded-lg">
-        <div className="flex items-center gap-2 mb-4">
-          <Target className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Comparison Summary</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-semibold">Comparison Summary</h2>
+          </div>
+          <Button 
+            onClick={() => setShowDetailed(true)}
+            className="gap-2"
+            size="sm"
+          >
+            <BarChart className="w-4 h-4" />
+            See Detailed Head to Head
+          </Button>
         </div>
         <p className="text-muted-foreground">
           Comparing {deals.length} deals based on health score, revenue, profit margin, and growth rate.
-          Deals are ranked from best to worst performance.
+          Deals are ranked from best to worst performance. Click "See Detailed Head to Head" for a comprehensive analysis with charts and metrics breakdown.
         </p>
       </div>
 
