@@ -16,7 +16,10 @@ import {
   ArrowRight,
   CheckCircle,
   AlertTriangle,
-  Info
+  Info,
+  GitCompare,
+  BarChart3,
+  Target
 } from 'lucide-react';
 
 const ProjectDocumentation = () => {
@@ -55,6 +58,11 @@ const ProjectDocumentation = () => {
       title: 'Financial Metrics',
       description: '20+ industry-standard financial ratios',
       details: ['Profitability ratios', 'Liquidity metrics', 'Leverage analysis', 'Efficiency indicators', 'Growth measurements']
+    },
+    {
+      title: 'Head-to-Head Comparison',
+      description: 'Side-by-side deal analysis and benchmarking',
+      details: ['Deal comparison matrix', 'Relative risk assessment', 'Investment prioritization', 'Benchmark analysis']
     }
   ];
 
@@ -134,6 +142,50 @@ const ProjectDocumentation = () => {
     }
   ];
 
+  // Head-to-Head Comparison Demo Data
+  const headToHeadDemo = {
+    dealA: {
+      name: 'Tech Startup Alpha',
+      industry: 'SaaS',
+      revenue: '$2.5M',
+      employees: 15,
+      healthScore: 78,
+      strengths: ['High growth rate', 'Strong margins', 'Low debt'],
+      risks: ['Customer concentration', 'Seasonal revenue'],
+      metrics: {
+        grossMargin: 0.75,
+        netMargin: 0.25,
+        currentRatio: 2.1,
+        debtToEquity: 0.15,
+        revenueCagr: 0.45
+      }
+    },
+    dealB: {
+      name: 'Manufacturing Beta',
+      industry: 'Industrial',
+      revenue: '$8.2M',
+      employees: 45,
+      healthScore: 62,
+      strengths: ['Stable revenue', 'Diversified customer base', 'Asset-backed'],
+      risks: ['High leverage', 'Working capital issues'],
+      metrics: {
+        grossMargin: 0.35,
+        netMargin: 0.08,
+        currentRatio: 1.3,
+        debtToEquity: 0.85,
+        revenueCagr: 0.12
+      }
+    }
+  };
+
+  const comparisonMetrics = [
+    { name: 'Gross Margin', dealA: headToHeadDemo.dealA.metrics.grossMargin, dealB: headToHeadDemo.dealB.metrics.grossMargin, unit: '%', better: 'higher' },
+    { name: 'Net Margin', dealA: headToHeadDemo.dealA.metrics.netMargin, dealB: headToHeadDemo.dealB.metrics.netMargin, unit: '%', better: 'higher' },
+    { name: 'Current Ratio', dealA: headToHeadDemo.dealA.metrics.currentRatio, dealB: headToHeadDemo.dealB.metrics.currentRatio, unit: 'x', better: 'higher' },
+    { name: 'Debt-to-Equity', dealA: headToHeadDemo.dealA.metrics.debtToEquity, dealB: headToHeadDemo.dealB.metrics.debtToEquity, unit: 'x', better: 'lower' },
+    { name: 'Revenue CAGR', dealA: headToHeadDemo.dealA.metrics.revenueCagr, dealB: headToHeadDemo.dealB.metrics.revenueCagr, unit: '%', better: 'higher' }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -207,7 +259,7 @@ const ProjectDocumentation = () => {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Architecture
@@ -223,6 +275,10 @@ const ProjectDocumentation = () => {
             <TabsTrigger value="dataflow" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               Data Flow
+            </TabsTrigger>
+            <TabsTrigger value="headtohead" className="flex items-center gap-2">
+              <GitCompare className="h-4 w-4" />
+              Head-to-Head
             </TabsTrigger>
           </TabsList>
 
@@ -568,6 +624,197 @@ const ProjectDocumentation = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Head-to-Head Comparison Tab */}
+          <TabsContent value="headtohead" className="space-y-6">
+            {/* Demo Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GitCompare className="h-5 w-5" />
+                  Head-to-Head Deal Comparison Demo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  This demo showcases Finsight's ability to compare multiple deals side-by-side, 
+                  helping investors make informed decisions between competing opportunities.
+                </p>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Deal A */}
+                  <Card className="border-2 border-blue-200">
+                    <CardHeader className="bg-blue-50">
+                      <CardTitle className="text-blue-800">{headToHeadDemo.dealA.name}</CardTitle>
+                      <div className="flex items-center gap-2 text-sm text-blue-700">
+                        <Badge variant="secondary">{headToHeadDemo.dealA.industry}</Badge>
+                        <span>• {headToHeadDemo.dealA.revenue} • {headToHeadDemo.dealA.employees} employees</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Health Score:</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                            {headToHeadDemo.dealA.healthScore}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold text-green-700 mb-2">Strengths</h4>
+                        <ul className="space-y-1">
+                          {headToHeadDemo.dealA.strengths.map((strength, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              {strength}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold text-red-700 mb-2">Risks</h4>
+                        <ul className="space-y-1">
+                          {headToHeadDemo.dealA.risks.map((risk, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <AlertTriangle className="h-3 w-3 text-red-500" />
+                              {risk}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Deal B */}
+                  <Card className="border-2 border-orange-200">
+                    <CardHeader className="bg-orange-50">
+                      <CardTitle className="text-orange-800">{headToHeadDemo.dealB.name}</CardTitle>
+                      <div className="flex items-center gap-2 text-sm text-orange-700">
+                        <Badge variant="secondary">{headToHeadDemo.dealB.industry}</Badge>
+                        <span>• {headToHeadDemo.dealB.revenue} • {headToHeadDemo.dealB.employees} employees</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">Health Score:</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
+                            {headToHeadDemo.dealB.healthScore}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold text-green-700 mb-2">Strengths</h4>
+                        <ul className="space-y-1">
+                          {headToHeadDemo.dealB.strengths.map((strength, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="h-3 w-3 text-green-500" />
+                              {strength}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold text-red-700 mb-2">Risks</h4>
+                        <ul className="space-y-1">
+                          {headToHeadDemo.dealB.risks.map((risk, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <AlertTriangle className="h-3 w-3 text-red-500" />
+                              {risk}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Metrics Comparison */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Financial Metrics Comparison
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {comparisonMetrics.map((metric, index) => {
+                    const dealAValue = metric.dealA * (metric.unit === '%' ? 100 : 1);
+                    const dealBValue = metric.dealB * (metric.unit === '%' ? 100 : 1);
+                    const dealABetter = metric.better === 'higher' ? dealAValue > dealBValue : dealAValue < dealBValue;
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <span className="font-medium">{metric.name}</span>
+                        <div className="flex items-center gap-4">
+                          <div className={`text-center ${dealABetter ? 'text-blue-600 font-semibold' : 'text-gray-600'}`}>
+                            <div className="text-lg font-bold">{dealAValue.toFixed(1)}{metric.unit}</div>
+                            <div className="text-xs">Deal A</div>
+                          </div>
+                          <div className="text-gray-400">vs</div>
+                          <div className={`text-center ${!dealABetter ? 'text-orange-600 font-semibold' : 'text-gray-600'}`}>
+                            <div className="text-lg font-bold">{dealBValue.toFixed(1)}{metric.unit}</div>
+                            <div className="text-xs">Deal B</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Investment Recommendation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Investment Recommendation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2">Deal A: Tech Startup Alpha</h4>
+                    <p className="text-blue-700 text-sm mb-3">
+                      <strong>Recommendation:</strong> Proceed with Caution
+                    </p>
+                    <p className="text-blue-600 text-sm">
+                      Higher health score (78) with strong growth potential and margins, but customer concentration 
+                      and seasonal revenue patterns require careful consideration.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <h4 className="font-semibold text-orange-800 mb-2">Deal B: Manufacturing Beta</h4>
+                    <p className="text-orange-700 text-sm mb-3">
+                      <strong>Recommendation:</strong> Pass
+                    </p>
+                    <p className="text-orange-600 text-sm">
+                      Lower health score (62) with high leverage and working capital issues. While stable revenue 
+                      and asset-backed, the risk profile may not justify the investment.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="font-semibold text-green-800 mb-2">Overall Assessment</h4>
+                    <p className="text-green-700 text-sm">
+                      <strong>Deal A</strong> presents a better investment opportunity despite higher risk, 
+                      offering superior growth potential and financial health. <strong>Deal B</strong> has 
+                      fundamental issues that would require significant restructuring to address.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Quick Actions */}
@@ -582,6 +829,9 @@ const ProjectDocumentation = () => {
               </Button>
               <Button variant="outline" onClick={() => window.open('/health-score-demo', '_blank')}>
                 Health Score Demo
+              </Button>
+              <Button variant="outline" onClick={() => window.open('/head-to-head', '_blank')}>
+                Head-to-Head Demo
               </Button>
               <Button variant="outline" onClick={() => window.open('/visual-enhancements-demo', '_blank')}>
                 Visual Enhancements
