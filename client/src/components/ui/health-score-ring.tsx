@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect, useRef } from "react"
 import { Tooltip } from "./tooltip"
 
 interface HealthScoreRingProps {
@@ -14,6 +14,21 @@ export function HealthScoreRing({ score, size = 88, stroke = 10, tooltip }: Heal
   const clamped = Math.max(0, Math.min(100, Math.round(score)))
   const offset = circumference - (clamped / 100) * circumference
   const colorClass = clamped >= 80 ? 'text-green-600' : clamped >= 60 ? 'text-yellow-600' : 'text-red-600'
+  const circleRef = useRef<SVGCircleElement>(null)
+
+  useEffect(() => {
+    if (circleRef.current) {
+      // Animate the stroke on mount
+      const circle = circleRef.current;
+      circle.style.strokeDasharray = circumference.toString();
+      circle.style.strokeDashoffset = circumference.toString();
+      
+      // Trigger animation
+      setTimeout(() => {
+        circle.style.strokeDashoffset = offset.toString();
+      }, 100);
+    }
+  }, [circumference, offset])
 
   const ring = (
     <div className="inline-flex items-center justify-center" aria-label={`Health score ${clamped}`}>
@@ -27,12 +42,11 @@ export function HealthScoreRing({ score, size = 88, stroke = 10, tooltip }: Heal
           cy={size / 2}
         />
         <circle
-          className={`stroke-current ${colorClass}`}
+          ref={circleRef}
+          className={`stroke-current ${colorClass} transition-all duration-1000 ease-out`}
           fill="transparent"
           strokeLinecap="round"
           strokeWidth={stroke}
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={offset}
           r={radius}
           cx={size / 2}
           cy={size / 2}

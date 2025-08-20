@@ -6,6 +6,104 @@ import { HealthScoreRing } from './health-score-ring';
 import { Tooltip } from './tooltip';
 import { Download, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, BarChart3, FileText } from 'lucide-react';
 
+// Helper function to format metric names beautifully
+const formatMetricName = (metricKey: string): string => {
+  const metricNames: Record<string, string> = {
+    'revenue_cagr_3y': 'Revenue Growth (3Y)',
+    'revenue_cagr': 'Revenue Growth',
+    'inventory_turns': 'Inventory Turnover',
+    'ebitda_margin': 'EBITDA Margin',
+    'debt_to_equity': 'Debt-to-Equity Ratio',
+    'current_ratio': 'Current Ratio',
+    'ebitda_to_interest': 'Interest Coverage',
+    'quick_ratio': 'Quick Ratio',
+    'gross_margin': 'Gross Margin',
+    'net_margin': 'Net Margin',
+    'ar_days': 'Accounts Receivable Days',
+    'ap_days': 'Accounts Payable Days',
+    'ccc_days': 'Cash Conversion Cycle',
+    'working_capital_ccc': 'Working Capital Cycle',
+    'dscr_proxy': 'Debt Service Coverage',
+    'seasonality': 'Seasonality Index',
+    'accrual_vs_cash_delta': 'Accrual vs Cash Delta',
+    'dio_days': 'Days Inventory Outstanding',
+    'dso_days': 'Days Sales Outstanding',
+    'dpo_days': 'Days Payable Outstanding',
+    'working_capital': 'Working Capital',
+    'total_debt': 'Total Debt',
+    'cash_flow': 'Cash Flow',
+    'operating_margin': 'Operating Margin',
+    'return_on_equity': 'Return on Equity',
+    'return_on_assets': 'Return on Assets',
+    'asset_turnover': 'Asset Turnover',
+    'leverage_ratio': 'Leverage Ratio',
+    'interest_coverage': 'Interest Coverage Ratio'
+  };
+  
+  return metricNames[metricKey] || metricKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+// Helper function to format metric values beautifully
+const formatMetricValue = (metricKey: string, value: any): string => {
+  if (value == null || Number.isNaN(value)) return 'N/A';
+  
+  const numValue = Number(value);
+  if (isNaN(numValue)) return String(value);
+  
+  // Format based on metric type
+  if (metricKey.includes('margin') || metricKey.includes('cagr') || metricKey.includes('seasonality') || metricKey.includes('delta')) {
+    return `${(numValue * 100).toFixed(1)}%`;
+  }
+  if (metricKey.includes('ratio') || metricKey.includes('turns') || metricKey.includes('coverage')) {
+    return `${numValue.toFixed(2)}x`;
+  }
+  if (metricKey.includes('days') || metricKey.includes('ccc')) {
+    return `${Math.round(numValue)} days`;
+  }
+  
+  return numValue.toFixed(3);
+};
+
+// Helper function to extract and format metrics from evidence text
+const formatEvidence = (evidence: string): { title: string; metrics: Array<{ name: string; value: string; key: string }> } => {
+  if (!evidence || typeof evidence !== 'string') {
+    return { title: 'Financial metric analysis', metrics: [] };
+  }
+  
+  // Extract metric patterns like "revenue_cagr_3y=0.9789" and "quick_ratio=null"
+  // Use a more specific pattern to avoid splitting metric names incorrectly
+  const metricPattern = /([a-z_]+(?:_[a-z0-9]+)*)=([\d.-]+|null|undefined)/g;
+  const metrics: Array<{ name: string; value: string; key: string }> = [];
+  let match;
+  
+  while ((match = metricPattern.exec(evidence)) !== null) {
+    const [, key, value] = match;
+    // Skip null/undefined values
+    if (value === 'null' || value === 'undefined') {
+      continue;
+    }
+    
+    metrics.push({
+      key,
+      name: formatMetricName(key),
+      value: formatMetricValue(key, value)
+    });
+  }
+  
+  // Clean up the evidence text by removing raw metric data
+  let cleanEvidence = evidence.replace(metricPattern, '').replace(/,\s*$/, '').trim();
+  
+  // Also clean up any standalone metric names without values
+  cleanEvidence = cleanEvidence.replace(/\b[a-z_]+\b/g, (match) => {
+    if (match.includes('_')) {
+      return formatMetricName(match);
+    }
+    return match;
+  }).trim();
+  
+  return { title: cleanEvidence || 'Financial metric analysis', metrics };
+};
+
 interface HealthScoreDashboardProps {
   healthScore: number;
   trafficLights: Record<string, 'green' | 'yellow' | 'red'>;
@@ -208,15 +306,32 @@ export function HealthScoreDashboard({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {topStrengths.map((strength, index) => (
-              <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="font-medium text-green-800 text-sm">{strength.title}</div>
-                <div className="text-xs text-green-600 mt-1">{strength.evidence}</div>
-                {strength.page && (
-                  <div className="text-xs text-green-500 mt-1">Page {strength.page}</div>
-                )}
-              </div>
-            ))}
+            {topStrengths.map((strength, index) => {
+              const formattedEvidence = formatEvidence(strength.evidence);
+              return (
+                <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="font-medium text-green-800 text-sm">{strength.title}</div>
+                  {formattedEvidence.title && (
+                    <div className="text-xs text-green-600 mt-1">{formattedEvidence.title}</div>
+                  )}
+                  {formattedEvidence.metrics.length > 0 && (
+                    <div className="space-y-1 mt-2">
+                      {formattedEvidence.metrics.map((metric, metricIdx) => (
+                        <div key={metricIdx} className="flex items-center justify-between bg-white/50 rounded px-2 py-1 border border-green-100">
+                          <span className="text-xs font-medium text-green-700">{metric.name}</span>
+                          <span className="text-xs font-semibold text-green-800 bg-green-100 px-1.5 py-0.5 rounded">
+                            {metric.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {strength.page && (
+                    <div className="text-xs text-green-500 mt-1">Page {strength.page}</div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -229,15 +344,32 @@ export function HealthScoreDashboard({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {topRisks.map((risk, index) => (
-              <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="font-medium text-red-800 text-sm">{risk.title}</div>
-                <div className="text-xs text-red-600 mt-1">{risk.evidence}</div>
-                {risk.page && (
-                  <div className="text-xs text-red-500 mt-1">Page {risk.page}</div>
-                )}
-              </div>
-            ))}
+            {topRisks.map((risk, index) => {
+              const formattedEvidence = formatEvidence(risk.evidence);
+              return (
+                <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="font-medium text-red-800 text-sm">{risk.title}</div>
+                  {formattedEvidence.title && (
+                    <div className="text-xs text-red-600 mt-1">{formattedEvidence.title}</div>
+                  )}
+                  {formattedEvidence.metrics.length > 0 && (
+                    <div className="space-y-1 mt-2">
+                      {formattedEvidence.metrics.map((metric, metricIdx) => (
+                        <div key={metricIdx} className="flex items-center justify-between bg-white/50 rounded px-2 py-1 border border-red-100">
+                          <span className="text-xs font-medium text-red-700">{metric.name}</span>
+                          <span className="text-xs font-semibold text-red-800 bg-red-100 px-1.5 py-0.5 rounded">
+                            {metric.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {risk.page && (
+                    <div className="text-xs text-red-500 mt-1">Page {risk.page}</div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       </div>
