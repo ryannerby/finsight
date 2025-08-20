@@ -180,13 +180,13 @@ export default function App() {
         <Route path="/deals/new" element={<CreateDeal />} />
         <Route path="/deals/:dealId" element={<DealDetail />} />
         <Route path="/saved-deals" element={<SavedDeals />} />
-        <Route path="/head-to-head" element={<HeadToHead />} />
+                <Route path="/head-to-head" element={<HeadToHead />} />
         <Route path="/metrics-demo" element={<MetricTest />} />
         <Route path="/health-score-demo" element={<HealthScoreDemo />} />
-                    <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
-            <Route path="/project-docs" element={<ProjectDocumentation />} />
-            <Route path="/pitch" element={<Pitch />} />
-            <Route path="*" element={<Navigate to="/deals" replace />} />
+        <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
+        <Route path="/project-docs" element={<ProjectDocumentation />} />
+        <Route path="/pitch" element={<Pitch />} />
+        <Route path="*" element={<Navigate to="/deals" replace />} />
       </Routes>
     </ToastProvider>
   );

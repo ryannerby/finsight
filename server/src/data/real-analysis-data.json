@@ -1,0 +1,226 @@
+{
+  "financial": {
+    "deal_id": "sample_deal",
+    "metrics": {
+      "gross_margin": 0.4,
+      "net_margin": 0.09954921111945905,
+      "current_ratio": 1.7333333333333334,
+      "debt_to_equity": null,
+      "quick_ratio": null,
+      "ar_days": 25.366265965439517,
+      "ap_days": 26.28036563986977,
+      "dio_days": 31.99348860505885,
+      "inventory_turns": 11.40857142857143,
+      "ccc_days": 31.079388930628596,
+      "revenue_cagr_3y": 0.10000000000000009,
+      "seasonality_volatility_index": null,
+      "wc_to_sales": 0.10330578512396695,
+      "ebitda_margin": null,
+      "ebitda_to_interest": null
+    },
+    "coverage": {
+      "periodicity": "annual"
+    },
+    "revenue_data": [
+      {
+        "year": "2021",
+        "revenue": 800000
+      },
+      {
+        "year": "2022",
+        "revenue": 880000
+      },
+      {
+        "year": "2023",
+        "revenue": 968000
+      },
+      {
+        "year": "2024",
+        "revenue": 1064800
+      }
+    ]
+  },
+  "documentInventory": {
+    "deal_id": "sample_deal",
+    "expected": [
+      "income_statement",
+      "balance_sheet",
+      "cash_flow"
+    ],
+    "present": [
+      "income_statement",
+      "balance_sheet"
+    ],
+    "missing": [
+      "cash_flow"
+    ],
+    "coverage": {
+      "income_statement": {
+        "canon": {
+          "2021": {
+            "revenue": 800000,
+            "cogs": 480000,
+            "gross_profit": 320000,
+            "net_income": 80000,
+            "current_assets": 200000,
+            "current_liabilities": 120000,
+            "accounts_receivable": 60000,
+            "accounts_payable": 40000,
+            "inventory": 50000,
+            "shareholders_equity": 250000
+          },
+          "2022": {
+            "revenue": 880000,
+            "cogs": 528000,
+            "gross_profit": 352000,
+            "net_income": 88000,
+            "current_assets": 220000,
+            "current_liabilities": 130000,
+            "accounts_receivable": 65000,
+            "accounts_payable": 42000,
+            "inventory": 52000,
+            "shareholders_equity": 260000
+          },
+          "2023": {
+            "revenue": 968000,
+            "cogs": 580800,
+            "gross_profit": 387200,
+            "net_income": 96000,
+            "current_assets": 240000,
+            "current_liabilities": 140000,
+            "accounts_receivable": 70000,
+            "accounts_payable": 44000,
+            "inventory": 54000,
+            "shareholders_equity": 270000
+          },
+          "2024": {
+            "revenue": 1064800,
+            "cogs": 638880,
+            "gross_profit": 426920,
+            "net_income": 106000,
+            "current_assets": 260000,
+            "current_liabilities": 150000,
+            "accounts_receivable": 74000,
+            "accounts_payable": 46000,
+            "inventory": 56000,
+            "shareholders_equity": 280000
+          }
+        },
+        "periods": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ]
+      },
+      "balance_sheet": {
+        "canon": {
+          "2021": {
+            "revenue": 800000,
+            "cogs": 480000,
+            "gross_profit": 320000,
+            "net_income": 80000,
+            "current_assets": 200000,
+            "current_liabilities": 120000,
+            "accounts_receivable": 60000,
+            "accounts_payable": 40000,
+            "inventory": 50000,
+            "shareholders_equity": 250000
+          },
+          "2022": {
+            "revenue": 880000,
+            "cogs": 528000,
+            "gross_profit": 352000,
+            "net_income": 88000,
+            "current_assets": 220000,
+            "current_liabilities": 130000,
+            "accounts_receivable": 65000,
+            "accounts_payable": 42000,
+            "inventory": 52000,
+            "shareholders_equity": 260000
+          },
+          "2023": {
+            "revenue": 968000,
+            "cogs": 580800,
+            "gross_profit": 387200,
+            "net_income": 96000,
+            "current_assets": 240000,
+            "current_liabilities": 140000,
+            "accounts_receivable": 70000,
+            "accounts_payable": 44000,
+            "inventory": 54000,
+            "shareholders_equity": 270000
+          },
+          "2024": {
+            "revenue": 1064800,
+            "cogs": 638880,
+            "gross_profit": 426920,
+            "net_income": 106000,
+            "current_assets": 260000,
+            "current_liabilities": 150000,
+            "accounts_receivable": 74000,
+            "accounts_payable": 46000,
+            "inventory": 56000,
+            "shareholders_equity": 280000
+          }
+        },
+        "periods": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ]
+      }
+    }
+  },
+  "ddSignals": {
+    "deal_id": "sample_deal",
+    "working_capital_ccc": {
+      "status": "pass",
+      "value": 31.079388930628596,
+      "detail": "Working capital cycle is within acceptable range"
+    },
+    "current_ratio": {
+      "status": "pass",
+      "value": 1.7333333333333334,
+      "detail": "Strong liquidity position"
+    },
+    "dscr_proxy": {
+      "status": "pass",
+      "value": null,
+      "detail": "Debt service coverage appears adequate"
+    },
+    "seasonality": {
+      "status": "pass",
+      "value": 0.05,
+      "detail": "Revenue shows consistent patterns"
+    },
+    "accrual_vs_cash_delta": {
+      "status": "pass",
+      "value": 0.02,
+      "detail": "Accruals and cash flows are aligned"
+    }
+  },
+  "summary": {
+    "health_score": 85,
+    "traffic_lights": {
+      "revenue_quality": "green",
+      "profitability": "green",
+      "liquidity": "green",
+      "leverage": "yellow",
+      "efficiency": "green"
+    },
+    "top_strengths": [
+      "Strong revenue growth trend over 3 years",
+      "Healthy gross margins above industry average",
+      "Improving working capital efficiency",
+      "Consistent profitability with positive net margins"
+    ],
+    "top_risks": [
+      "Moderate debt levels require monitoring",
+      "Seasonal variations in cash flow patterns",
+      "Dependency on key customer relationships"
+    ],
+    "recommendation": "Proceed"
+  }
+}

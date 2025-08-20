@@ -1,0 +1,417 @@
+{
+  "TechChampion Inc": {
+    "financial": {
+      "deal_id": "TechChampion Inc",
+      "metrics": {
+        "gross_margin": 0.549999872,
+        "net_margin": null,
+        "current_ratio": null,
+        "debt_to_equity": null,
+        "quick_ratio": null,
+        "ar_days": null,
+        "ap_days": null,
+        "dio_days": 58.39998338844917,
+        "inventory_turns": 6.250001777777777,
+        "ccc_days": null,
+        "revenue_cagr_3y": 0.25,
+        "seasonality_volatility_index": null,
+        "wc_to_sales": 0,
+        "ebitda_margin": null,
+        "ebitda_to_interest": null
+      },
+      "coverage": {
+        "periodicity": "annual"
+      },
+      "revenue_data": [
+        {
+          "year": "2021",
+          "revenue": 2000000
+        },
+        {
+          "year": "2022",
+          "revenue": 2500000
+        },
+        {
+          "year": "2023",
+          "revenue": 3125000
+        },
+        {
+          "year": "2024",
+          "revenue": 3906250
+        }
+      ]
+    },
+    "documentInventory": {
+      "deal_id": "TechChampion Inc",
+      "expected": [
+        "income_statement",
+        "balance_sheet"
+      ],
+      "present": [
+        "income_statement"
+      ],
+      "missing": [
+        "balance_sheet"
+      ],
+      "coverage": {
+        "income_statement": {
+          "canon": {
+            "2021": {
+              "revenue": 2000000,
+              "cogs": 900000,
+              "inventory": 150000
+            },
+            "2022": {
+              "revenue": 2500000,
+              "cogs": 1125000,
+              "inventory": 180000
+            },
+            "2023": {
+              "revenue": 3125000,
+              "cogs": 1406250,
+              "inventory": 225000
+            },
+            "2024": {
+              "revenue": 3906250,
+              "cogs": 1757813,
+              "inventory": 281250
+            }
+          },
+          "periods": [
+            "2021",
+            "2022",
+            "2023",
+            "2024"
+          ]
+        }
+      }
+    },
+    "ddSignals": {
+      "deal_id": "TechChampion Inc",
+      "working_capital_ccc": {
+        "status": "pass",
+        "value": null,
+        "detail": "Working capital cycle is within acceptable range"
+      },
+      "current_ratio": {
+        "status": "caution",
+        "value": null,
+        "detail": "Monitor liquidity closely"
+      },
+      "dscr_proxy": {
+        "status": "pass",
+        "value": null,
+        "detail": "Debt service coverage appears adequate"
+      },
+      "seasonality": {
+        "status": "pass",
+        "value": 0.05,
+        "detail": "Revenue shows consistent patterns"
+      },
+      "accrual_vs_cash_delta": {
+        "status": "pass",
+        "value": 0.02,
+        "detail": "Accruals and cash flows are aligned"
+      }
+    },
+    "summary": {
+      "health_score": 95,
+      "traffic_lights": {
+        "revenue_quality": "green",
+        "profitability": "green",
+        "liquidity": "green",
+        "leverage": "green",
+        "efficiency": "green"
+      },
+      "top_strengths": [
+        "Exceptional revenue growth trend over 3 years",
+        "Outstanding gross margins above 50%",
+        "Excellent working capital efficiency",
+        "Strong profitability with high net margins"
+      ],
+      "top_risks": [
+        "High growth may be difficult to sustain",
+        "Market competition could intensify",
+        "Dependency on continued innovation"
+      ],
+      "recommendation": "Strong Buy"
+    }
+  },
+  "InnovateCorp Ltd": {
+    "financial": {
+      "deal_id": "InnovateCorp Ltd",
+      "metrics": {
+        "gross_margin": 0.4,
+        "net_margin": null,
+        "current_ratio": null,
+        "debt_to_equity": null,
+        "quick_ratio": null,
+        "ar_days": null,
+        "ap_days": null,
+        "dio_days": 40.55555555555555,
+        "inventory_turns": 9,
+        "ccc_days": null,
+        "revenue_cagr_3y": 0.1499999999999999,
+        "seasonality_volatility_index": null,
+        "wc_to_sales": 0,
+        "ebitda_margin": null,
+        "ebitda_to_interest": null
+      },
+      "coverage": {
+        "periodicity": "annual"
+      },
+      "revenue_data": [
+        {
+          "year": "2021",
+          "revenue": 1200000
+        },
+        {
+          "year": "2022",
+          "revenue": 1380000
+        },
+        {
+          "year": "2023",
+          "revenue": 1587000
+        },
+        {
+          "year": "2024",
+          "revenue": 1825050
+        }
+      ]
+    },
+    "documentInventory": {
+      "deal_id": "InnovateCorp Ltd",
+      "expected": [
+        "income_statement",
+        "balance_sheet"
+      ],
+      "present": [
+        "income_statement"
+      ],
+      "missing": [
+        "balance_sheet"
+      ],
+      "coverage": {
+        "income_statement": {
+          "canon": {
+            "2021": {
+              "revenue": 1200000,
+              "cogs": 720000,
+              "inventory": 80000
+            },
+            "2022": {
+              "revenue": 1380000,
+              "cogs": 828000,
+              "inventory": 92000
+            },
+            "2023": {
+              "revenue": 1587000,
+              "cogs": 952200,
+              "inventory": 105800
+            },
+            "2024": {
+              "revenue": 1825050,
+              "cogs": 1095030,
+              "inventory": 121670
+            }
+          },
+          "periods": [
+            "2021",
+            "2022",
+            "2023",
+            "2024"
+          ]
+        }
+      }
+    },
+    "ddSignals": {
+      "deal_id": "InnovateCorp Ltd",
+      "working_capital_ccc": {
+        "status": "pass",
+        "value": null,
+        "detail": "Working capital cycle is within acceptable range"
+      },
+      "current_ratio": {
+        "status": "caution",
+        "value": null,
+        "detail": "Monitor liquidity closely"
+      },
+      "dscr_proxy": {
+        "status": "pass",
+        "value": null,
+        "detail": "Debt service coverage appears adequate"
+      },
+      "seasonality": {
+        "status": "pass",
+        "value": 0.05,
+        "detail": "Revenue shows consistent patterns"
+      },
+      "accrual_vs_cash_delta": {
+        "status": "pass",
+        "value": 0.02,
+        "detail": "Accruals and cash flows are aligned"
+      }
+    },
+    "summary": {
+      "health_score": 82,
+      "traffic_lights": {
+        "revenue_quality": "green",
+        "profitability": "green",
+        "liquidity": "green",
+        "leverage": "yellow",
+        "efficiency": "green"
+      },
+      "top_strengths": [
+        "Strong revenue growth trend over 3 years",
+        "Healthy gross margins above industry average",
+        "Good working capital efficiency",
+        "Consistent profitability with positive net margins"
+      ],
+      "top_risks": [
+        "Moderate debt levels require monitoring",
+        "Seasonal variations in cash flow patterns",
+        "Dependency on key customer relationships"
+      ],
+      "recommendation": "Buy"
+    }
+  },
+  "SteadyGrowth Co": {
+    "financial": {
+      "deal_id": "SteadyGrowth Co",
+      "metrics": {
+        "gross_margin": 0.2,
+        "net_margin": null,
+        "current_ratio": null,
+        "debt_to_equity": null,
+        "quick_ratio": null,
+        "ar_days": null,
+        "ap_days": null,
+        "dio_days": 34.21899632869021,
+        "inventory_turns": 10.666589881655101,
+        "ccc_days": null,
+        "revenue_cagr_3y": 0.050000000000000044,
+        "seasonality_volatility_index": null,
+        "wc_to_sales": 0,
+        "ebitda_margin": null,
+        "ebitda_to_interest": null
+      },
+      "coverage": {
+        "periodicity": "annual"
+      },
+      "revenue_data": [
+        {
+          "year": "2021",
+          "revenue": 800000
+        },
+        {
+          "year": "2022",
+          "revenue": 840000
+        },
+        {
+          "year": "2023",
+          "revenue": 882000
+        },
+        {
+          "year": "2024",
+          "revenue": 926100
+        }
+      ]
+    },
+    "documentInventory": {
+      "deal_id": "SteadyGrowth Co",
+      "expected": [
+        "income_statement",
+        "balance_sheet"
+      ],
+      "present": [
+        "income_statement"
+      ],
+      "missing": [
+        "balance_sheet"
+      ],
+      "coverage": {
+        "income_statement": {
+          "canon": {
+            "2021": {
+              "revenue": 800000,
+              "cogs": 640000,
+              "inventory": 60000
+            },
+            "2022": {
+              "revenue": 840000,
+              "cogs": 672000,
+              "inventory": 63000
+            },
+            "2023": {
+              "revenue": 882000,
+              "cogs": 705600,
+              "inventory": 66150
+            },
+            "2024": {
+              "revenue": 926100,
+              "cogs": 740880,
+              "inventory": 69458
+            }
+          },
+          "periods": [
+            "2021",
+            "2022",
+            "2023",
+            "2024"
+          ]
+        }
+      }
+    },
+    "ddSignals": {
+      "deal_id": "SteadyGrowth Co",
+      "working_capital_ccc": {
+        "status": "pass",
+        "value": null,
+        "detail": "Working capital cycle is within acceptable range"
+      },
+      "current_ratio": {
+        "status": "caution",
+        "value": null,
+        "detail": "Monitor liquidity closely"
+      },
+      "dscr_proxy": {
+        "status": "pass",
+        "value": null,
+        "detail": "Debt service coverage appears adequate"
+      },
+      "seasonality": {
+        "status": "pass",
+        "value": 0.05,
+        "detail": "Revenue shows consistent patterns"
+      },
+      "accrual_vs_cash_delta": {
+        "status": "pass",
+        "value": 0.02,
+        "detail": "Accruals and cash flows are aligned"
+      }
+    },
+    "summary": {
+      "health_score": 68,
+      "traffic_lights": {
+        "revenue_quality": "yellow",
+        "profitability": "yellow",
+        "liquidity": "green",
+        "leverage": "yellow",
+        "efficiency": "yellow"
+      },
+      "top_strengths": [
+        "Stable revenue growth pattern",
+        "Consistent operational performance",
+        "Maintained market position",
+        "Adequate liquidity position"
+      ],
+      "top_risks": [
+        "Lower profit margins compared to peers",
+        "Slower growth rate may impact valuation",
+        "Higher working capital requirements",
+        "Limited competitive advantages"
+      ],
+      "recommendation": "Hold"
+    }
+  }
+}
