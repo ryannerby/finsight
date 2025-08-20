@@ -264,7 +264,10 @@ export default function DealsList() {
                   <div className="min-w-0">
                     <div className="text-title truncate">{deal.title}</div>
                     {deal.description && (() => {
-                      const first = String(deal.description).split('|')[0]?.trim();
+                      const cleanDescription = deal.description.includes('[METRICS:') 
+                        ? deal.description.split('[METRICS:')[0].trim()
+                        : deal.description;
+                      const first = String(cleanDescription).split('|')[0]?.trim();
                       return first ? (
                         <div className="text-sm text-muted-foreground truncate">{first}</div>
                       ) : null;
@@ -307,9 +310,14 @@ export default function DealsList() {
 
         {deals.length === 0 && (
           <EmptyState
-            title="No deals found"
-            helper="Seed sample data with the server seed script or create a new deal."
+            variant="deals"
+            title="Start your first deal analysis"
+            helper="Upload financial documents to analyze deals and generate insights. Get started with our sample data or upload your own files."
             action={<Button onClick={()=>setShowCreate(true)}>Create Deal</Button>}
+            showSampleData={true}
+            showQuickStart={true}
+            showFileExamples={true}
+            showTips={true}
           />
         )}
       </div>

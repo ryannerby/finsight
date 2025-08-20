@@ -14,25 +14,48 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'HTML content is required' });
     }
 
+    // Validate HTML content
+    if (typeof html !== 'string' || html.length === 0) {
+      return res.status(400).json({ error: 'Invalid HTML content' });
+    }
+
+    // Ensure HTML has proper structure
+    if (!html.includes('<html') || !html.includes('<body')) {
+      return res.status(400).json({ error: 'HTML content must include <html> and <body> tags' });
+    }
+
     console.log('Starting PDF generation...');
 
-    // Launch browser
+    // Launch browser with basic settings for PDF generation
     browser = await puppeteer.launch({
       headless: true,
       executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'
+      ]
     });
 
     console.log('Browser launched successfully');
 
     const page = await browser.newPage();
 
+    // Set viewport for consistent rendering
+    await page.setViewport({ width: 1200, height: 800 });
+
     // Set content and wait for it to load
-    await page.setContent(html, { waitUntil: 'domcontentloaded' });
+    await page.setContent(html, { 
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
+
+    // Wait a bit more for any dynamic content to settle
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log('HTML content set, generating PDF...');
 
-    // Generate PDF with A4 format
+    // Generate PDF with basic settings for compatibility
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -45,13 +68,17 @@ router.post('/', async (req, res) => {
     });
 
     console.log(`PDF generated successfully, size: ${pdf.length} bytes`);
+    console.log('PDF buffer type:', typeof pdf);
+    console.log('PDF buffer is Buffer:', Buffer.isBuffer(pdf));
+    console.log('PDF first 20 bytes:', pdf.slice(0, 20));
 
     // Set headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="deal-summary.pdf"');
     res.setHeader('Content-Length', pdf.length);
 
-    res.send(pdf);
+    // Use res.end() for binary data to avoid JSON conversion
+    res.end(pdf);
 
   } catch (error) {
     console.error('PDF generation error:', error);

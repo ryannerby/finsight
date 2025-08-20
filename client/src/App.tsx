@@ -4,9 +4,12 @@ import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
 import SavedDeals from './pages/SavedDeals';
+import HeadToHead from './pages/HeadToHead';
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import AppHeader from './components/navigation/AppHeader';
 import { Button } from '@/components/ui/button';
+import { MetricTest } from './components/ui/metric-test';
+import HealthScoreDemo from './pages/HealthScoreDemo';
 import './App.css';
 
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -51,6 +54,28 @@ function SetupPage() {
           >
             View Deal Detail (Demo)
           </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/metrics-demo');
+            }}
+          >
+            Enhanced Metrics Demo
+          </Button>
+          <Button 
+            className="w-full"
+            variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate('/health-score-demo');
+            }}
+          >
+            Health Score Dashboard Demo
+          </Button>
         </div>
         
         <div className="mt-6 text-sm text-muted-foreground">
@@ -93,6 +118,9 @@ export default function App() {
           <Route path="/deals/new" element={<CreateDeal />} />
           <Route path="/deals/:dealId" element={<DealDetail />} />
           <Route path="/saved-deals" element={<SavedDeals />} />
+          <Route path="/head-to-head" element={<HeadToHead />} />
+          <Route path="/metrics-demo" element={<MetricTest />} />
+          <Route path="/health-score-demo" element={<HealthScoreDemo />} />
           <Route path="*" element={<SetupPage />} />
         </Routes>
       </div>
@@ -108,15 +136,18 @@ export default function App() {
       afterSignUpUrl="/deals"
     >
       <AppHeader />
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/deals" element={<Protected><DealsList /></Protected>} />
-        <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
-        <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
-        <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+              <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/deals" element={<Protected><DealsList /></Protected>} />
+          <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
+          <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
+          <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
+          <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
+          <Route path="/metrics-demo" element={<Protected><MetricTest /></Protected>} />
+          <Route path="/health-score-demo" element={<Protected><HealthScoreDemo /></Protected>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
     </ClerkProvider>
   );
 }

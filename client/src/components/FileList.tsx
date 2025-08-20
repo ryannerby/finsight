@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { EmptyState } from './ui/empty-state';
 import { UploadedFile } from '../hooks/useFileUpload';
 
 const API_BASE_URL = 'http://localhost:3001/api';
@@ -107,15 +108,13 @@ export function FileList({ files, loading, error, onRefresh }: FileListProps) {
 
   if (files.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="text-foreground/40 mb-2">
-          <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        </div>
-        <p className="text-foreground/60">No files uploaded yet</p>
-        <p className="text-sm text-foreground/40">Upload some documents to get started</p>
-      </div>
+      <EmptyState
+        variant="files"
+        title="No files uploaded yet"
+        helper="Upload financial documents to start analyzing deals. We support CSV, Excel, and PDF formats."
+        showFileExamples={true}
+        showTips={true}
+      />
     );
   }
 
