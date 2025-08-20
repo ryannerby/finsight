@@ -64,10 +64,13 @@ export default function HeadToHead() {
             if (metricsMatch) {
               metrics = JSON.parse(metricsMatch[1]);
               healthScore = metrics.health_score || 0;
+              console.log('Extracted metrics for deal:', deal.title, metrics);
             }
           } catch (e) {
             console.log('Failed to parse metrics from description for deal:', deal.id);
           }
+        } else {
+          console.log('No metrics found for deal:', deal.title, deal.description);
         }
 
         if (healthScore) {
@@ -157,10 +160,12 @@ export default function HeadToHead() {
 
   // Show detailed comparison if requested
   if (showDetailed) {
+    // Use the processed deals with metrics from comparisonResults
+    const processedDeals = comparisonResults.map(result => result.deal);
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <DetailedComparison 
-          deals={deals} 
+          deals={processedDeals} 
           onBack={() => setShowDetailed(false)} 
         />
       </div>

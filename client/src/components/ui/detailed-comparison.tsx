@@ -105,6 +105,8 @@ const comparisonCategories: ComparisonCategory[] = [
 ];
 
 export function DetailedComparison({ deals, onBack }: DetailedComparisonProps) {
+  console.log('DetailedComparison received deals:', deals);
+  
   const getMetricValue = (deal: Deal, metric: string): number | null => {
     if (metric === 'health_score') {
       return deal.health_score || null;
