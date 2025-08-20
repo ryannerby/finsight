@@ -64,13 +64,10 @@ export default function HeadToHead() {
             if (metricsMatch) {
               metrics = JSON.parse(metricsMatch[1]);
               healthScore = metrics.health_score || 0;
-              console.log('Extracted metrics for deal:', deal.title, metrics);
             }
           } catch (e) {
-            console.log('Failed to parse metrics from description for deal:', deal.id);
+            // Failed to parse metrics from description
           }
-        } else {
-          console.log('No metrics found for deal:', deal.title, deal.description);
         }
 
         if (healthScore) {

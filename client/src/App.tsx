@@ -120,11 +120,8 @@ function Protected({ children }: { children: JSX.Element }) {
 export default function App() {
   const navigate = useNavigate();
   
-  // Force real app mode for development
-  const forceRealApp = true;
-  
   // If Clerk is not configured, show demo mode without authentication
-  if (!pk && !forceRealApp) {
+  if (!pk) {
     return (
       <ToastProvider>
         <div>
