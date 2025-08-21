@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
+import SignUp from './pages/SignUp';
 import DealsList from './pages/DealsList';
 import DealDetail from './pages/DealDetail';
 import CreateDeal from './pages/CreateDeal';
@@ -171,23 +172,26 @@ export default function App() {
   }
   
   return (
-    <ToastProvider>
-      <AppHeader />
-      <Routes>
-        <Route path="/" element={<Navigate to="/deals" replace />} />
-        <Route path="/login" element={<Navigate to="/deals" replace />} />
-        <Route path="/deals" element={<DealsList />} />
-        <Route path="/deals/new" element={<CreateDeal />} />
-        <Route path="/deals/:dealId" element={<DealDetail />} />
-        <Route path="/saved-deals" element={<SavedDeals />} />
-                <Route path="/head-to-head" element={<HeadToHead />} />
-        <Route path="/metrics-demo" element={<MetricTest />} />
-        <Route path="/health-score-demo" element={<HealthScoreDemo />} />
-        <Route path="/visual-enhancements-demo" element={<VisualEnhancementsDemo />} />
-        <Route path="/project-docs" element={<ProjectDocumentation />} />
-        <Route path="/pitch" element={<Pitch />} />
-        <Route path="*" element={<Navigate to="/deals" replace />} />
-      </Routes>
-    </ToastProvider>
+    <ClerkProvider publishableKey={pk}>
+      <ToastProvider>
+        <AppHeader />
+        <Routes>
+          <Route path="/" element={<Navigate to="/deals" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/deals" element={<Protected><DealsList /></Protected>} />
+          <Route path="/deals/new" element={<Protected><CreateDeal /></Protected>} />
+          <Route path="/deals/:dealId" element={<Protected><DealDetail /></Protected>} />
+          <Route path="/saved-deals" element={<Protected><SavedDeals /></Protected>} />
+          <Route path="/head-to-head" element={<Protected><HeadToHead /></Protected>} />
+          <Route path="/metrics-demo" element={<Protected><MetricTest /></Protected>} />
+          <Route path="/health-score-demo" element={<Protected><HealthScoreDemo /></Protected>} />
+          <Route path="/visual-enhancements-demo" element={<Protected><VisualEnhancementsDemo /></Protected>} />
+          <Route path="/project-docs" element={<Protected><ProjectDocumentation /></Protected>} />
+          <Route path="/pitch" element={<Protected><Pitch /></Protected>} />
+          <Route path="*" element={<Navigate to="/deals" replace />} />
+        </Routes>
+      </ToastProvider>
+    </ClerkProvider>
   );
 }

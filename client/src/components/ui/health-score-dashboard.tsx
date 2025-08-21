@@ -93,15 +93,31 @@ const formatEvidence = (evidence: string): { title: string; metrics: Array<{ nam
   // Clean up the evidence text by removing raw metric data
   let cleanEvidence = evidence.replace(metricPattern, '').replace(/,\s*$/, '').trim();
   
-  // Also clean up any standalone metric names without values
-  cleanEvidence = cleanEvidence.replace(/\b[a-z_]+\b/g, (match) => {
-    if (match.includes('_')) {
+  // Also clean up any standalone metric names without values, but be more careful
+  cleanEvidence = cleanEvidence.replace(/\b[a-z_]+(?:_[a-z0-9]+)*\b/g, (match) => {
+    // Only format if it looks like a metric name, not regular words
+    if (match.includes('_') && !['strength', 'risk', 'strong', 'healthy', 'improving', 'consistent', 'moderate', 'seasonal', 'dependency'].includes(match.toLowerCase())) {
       return formatMetricName(match);
     }
     return match;
   }).trim();
   
-  return { title: cleanEvidence || 'Financial metric analysis', metrics };
+  // If we have meaningful evidence text, use it; otherwise fall back to default
+  // Only use "Financial metric analysis" if the evidence is truly empty or just contains raw metrics
+  if (cleanEvidence && cleanEvidence.length > 0 && !/^[a-z_\s]+$/.test(cleanEvidence)) {
+    return { title: cleanEvidence, metrics };
+  }
+  
+  // If we have metrics but no meaningful text, create a descriptive title
+  if (metrics.length > 0) {
+    const metricNames = metrics.slice(0, 2).map(m => m.name).join(', ');
+    return { 
+      title: metrics.length > 2 ? `${metricNames} and ${metrics.length - 2} other metrics` : metricNames, 
+      metrics 
+    };
+  }
+  
+  return { title: 'Financial metric analysis', metrics };
 };
 
 interface HealthScoreDashboardProps {

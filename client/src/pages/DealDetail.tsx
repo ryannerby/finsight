@@ -16,112 +16,6 @@ import { useToast } from '@/hooks/useToast';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
-  // Function to load real analysis data from CSV files
-  const loadRealAnalysisData = async () => {
-    try {
-      // Load real data from the backend endpoint
-      const response = await fetch(`${API_BASE_URL}/analyze/real-analysis-data`);
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      }
-    
-    // Fallback: return the data we know should be generated from CSV files
-    return {
-      financial: {
-        deal_id: 'sample_deal',
-        metrics: {
-          gross_margin: 0.4,
-          net_margin: 0.09954921111945905,
-          current_ratio: 1.7333333333333334,
-          debt_to_equity: null,
-          quick_ratio: null,
-          ar_days: 25.366265965439517,
-          ap_days: 26.28036563986977,
-          dio_days: 31.99348860505885,
-          inventory_turns: 11.40857142857143,
-          ccc_days: 31.079388930628596,
-          revenue_cagr_3y: 0.10000000000000009,
-          seasonality_volatility_index: null,
-          wc_to_sales: 0.10330578512396695,
-          ebitda_margin: null,
-          ebitda_to_interest: null
-        },
-        coverage: { periodicity: 'annual' },
-        revenue_data: [
-          { year: '2021', revenue: 800000 },
-          { year: '2022', revenue: 880000 },
-          { year: '2023', revenue: 968000 },
-          { year: '2024', revenue: 1064800 }
-        ]
-      },
-      documentInventory: {
-        deal_id: 'sample_deal',
-        expected: ['income_statement', 'balance_sheet', 'cash_flow'],
-        present: ['income_statement', 'balance_sheet'],
-        missing: ['cash_flow'],
-        coverage: {
-          income_statement: { periods: ['2021', '2022', '2023', '2024'] },
-          balance_sheet: { periods: ['2021', '2022', '2023', '2024'] }
-        }
-      },
-      ddSignals: {
-        deal_id: 'sample_deal',
-        working_capital_ccc: {
-          status: 'pass',
-          value: 31.079388930628596,
-          detail: 'Working capital cycle is within acceptable range'
-        },
-        current_ratio: {
-          status: 'pass',
-          value: 1.7333333333333334,
-          detail: 'Strong liquidity position'
-        },
-        dscr_proxy: {
-          status: 'pass',
-          value: null,
-          detail: 'Debt service coverage appears adequate'
-        },
-        seasonality: {
-          status: 'pass',
-          value: 0.05,
-          detail: 'Revenue shows consistent patterns'
-        },
-        accrual_vs_cash_delta: {
-          status: 'pass',
-          value: 0.02,
-          detail: 'Accruals and cash flows are aligned'
-        }
-      },
-      summary: {
-        health_score: 85,
-        traffic_lights: {
-          revenue_quality: 'green',
-          profitability: 'green',
-          liquidity: 'green',
-          leverage: 'yellow',
-          efficiency: 'green'
-        },
-        top_strengths: [
-          'Strong revenue growth trend over 3 years',
-          'Healthy gross margins above industry average',
-          'Improving working capital efficiency',
-          'Consistent profitability with positive net margins'
-        ],
-        top_risks: [
-          'Moderate debt levels require monitoring',
-          'Seasonal variations in cash flow patterns',
-          'Dependency on key customer relationships'
-        ],
-        recommendation: 'Proceed'
-      }
-    };
-  } catch (error) {
-    console.error('Error loading real analysis data:', error);
-    return null;
-  }
-};
-
 // Simple upload tab component
 const UploadTab = ({ dealId }: { dealId: string }) => {
   const userId = 'user_123';
@@ -157,25 +51,204 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
   const [showInventoryWhy, setShowInventoryWhy] = useState(false);
   const [realAnalysisData, setRealAnalysisData] = useState<any>(null);
   const [loadingRealData, setLoadingRealData] = useState(true);
+  const [analyzingFiles, setAnalyzingFiles] = useState(false);
 
   const [signalsOpen, setSignalsOpen] = useState(true);
   const [inventoryOpen, setInventoryOpen] = useState(true);
   const { addToast } = useToast();
+
+  // Function to manually trigger analysis of uploaded files
+  const triggerAnalysis = async () => {
+    if (!files || files.length === 0) {
+      addToast({
+        title: 'No Files to Analyze',
+        message: 'Please upload financial files first.',
+        type: 'warning'
+      });
+      return;
+    }
+
+    setAnalyzingFiles(true);
+    try {
+      console.log(`Triggering analysis of ${files.length} uploaded files...`);
+      
+      const analysisResponse = await fetch(`${API_BASE_URL}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dealId: deal.id,
+          userId: userId
+        })
+      });
+
+      if (analysisResponse.ok) {
+        const analysisData = await analysisResponse.json();
+        console.log('Real analysis completed:', analysisData);
+        
+        // Transform the analysis data to match our expected format
+        const transformedData = {
+          financial: {
+            deal_id: deal.id,
+            metrics: analysisData.financial?.metrics || {},
+            coverage: analysisData.financial?.coverage || {},
+            revenue_data: analysisData.financial?.revenue_data || []
+          },
+          documentInventory: analysisData.documentInventory || {},
+          ddSignals: analysisData.ddSignals || {},
+          summary: analysisData.summary || {}
+        };
+        
+        setRealAnalysisData(transformedData);
+        addToast({
+          title: 'Analysis Complete',
+          message: `Successfully analyzed ${files.length} financial files.`,
+          type: 'success'
+        });
+      } else {
+        const errorData = await analysisResponse.json();
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+    } catch (error) {
+      console.error('Error during analysis:', error);
+      addToast({
+        title: 'Analysis Failed',
+        message: error instanceof Error ? error.message : 'Failed to analyze files',
+        type: 'error'
+      });
+    } finally {
+      setAnalyzingFiles(false);
+    }
+  };
 
   useEffect(() => {
     // when refreshKey changes, refetch files/analyses
     refreshFiles();
   }, [refreshKey, refreshFiles]);
 
-  // Load real analysis data from CSV files
+  // Load real analysis data from uploaded files or fallback to sample data
   useEffect(() => {
-            const loadData = async () => {
-          setLoadingRealData(true);
-          try {
-            const data = await loadRealAnalysisData();
-            setRealAnalysisData(data);
-          } catch (error) {
-        // Fallback to default data
+    const loadData = async () => {
+      setLoadingRealData(true);
+      try {
+        // First, check if we have uploaded files to analyze
+        if (files && files.length > 0) {
+          console.log(`Found ${files.length} uploaded files, triggering real analysis...`);
+          
+          // Trigger real analysis of uploaded files
+          const analysisResponse = await fetch(`${API_BASE_URL}/analyze`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              dealId: deal.id,
+              userId: userId
+            })
+          });
+
+          if (analysisResponse.ok) {
+            const analysisData = await analysisResponse.json();
+            console.log('Real analysis completed:', analysisData);
+            
+            // Transform the analysis data to match our expected format
+            const transformedData = {
+              financial: {
+                deal_id: deal.id,
+                metrics: analysisData.financial?.metrics || {},
+                coverage: analysisData.financial?.coverage || {},
+                revenue_data: analysisData.financial?.revenue_data || []
+              },
+              documentInventory: analysisData.documentInventory || {},
+              ddSignals: analysisData.ddSignals || {},
+              summary: analysisData.summary || {}
+            };
+            
+            setRealAnalysisData(transformedData);
+            return;
+          } else {
+            console.warn('Real analysis failed, falling back to sample data');
+          }
+        } else {
+          console.log('No uploaded files found, using sample data');
+        }
+        
+        // Fallback to sample data if no files or analysis failed
+        const response = await fetch(`${API_BASE_URL}/analyze/real-analysis-data`);
+        if (response.ok) {
+          const data = await response.json();
+          setRealAnalysisData(data);
+        } else {
+          // Final fallback to hardcoded data
+          setRealAnalysisData({
+            financial: {
+              deal_id: 'sample_deal',
+              metrics: {
+                gross_margin: 0.4,
+                net_margin: 0.09954921111945905,
+                current_ratio: 1.7333333333333334,
+                ar_days: 25.366265965439517,
+                ap_days: 26.28036563986977,
+                dio_days: 31.99348860505885,
+                inventory_turns: 11.40857142857143,
+                ccc_days: 31.079388930628596,
+                revenue_cagr_3y: 0.10000000000000009,
+                wc_to_sales: 0.10330578512396695
+              },
+              coverage: { periodicity: 'annual' },
+              revenue_data: [
+                { year: '2021', revenue: 800000 },
+                { year: '2022', revenue: 880000 },
+                { year: '2023', revenue: 968000 },
+                { year: '2024', revenue: 1064800 }
+              ]
+            },
+            documentInventory: {
+              deal_id: 'sample_deal',
+              expected: ['income_statement', 'balance_sheet', 'cash_flow'],
+              present: ['income_statement', 'balance_sheet'],
+              missing: ['cash_flow']
+            },
+            ddSignals: {
+              deal_id: 'sample_deal',
+              working_capital_ccc: {
+                status: 'pass',
+                value: 31.079388930628596,
+                detail: 'Working capital cycle is within acceptable range'
+              },
+              current_ratio: {
+                status: 'pass',
+                value: 1.7333333333333334,
+                detail: 'Strong liquidity position'
+              }
+            },
+            summary: {
+              health_score: 85,
+              traffic_lights: {
+                revenue_quality: 'green',
+                profitability: 'green',
+                liquidity: 'green',
+                leverage: 'yellow',
+                efficiency: 'green'
+              },
+              top_strengths: [
+                'Strong revenue growth trend over 3 years',
+                'Healthy gross margins above industry average',
+                'Improving working capital efficiency',
+                'Consistent profitability with positive net margins'
+              ],
+              top_risks: [
+                'Moderate debt levels require monitoring',
+                'Seasonal variations in cash flow patterns',
+                'Dependency on key customer relationships'
+              ],
+              recommendation: 'Proceed'
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading real analysis data:', error);
         setRealAnalysisData({
           financial: {
             deal_id: 'sample_deal',
@@ -245,7 +318,7 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
       setLoadingRealData(false);
     };
     loadData();
-  }, []);
+  }, [deal.id, files, refreshFiles, userId]); // Added deal.id, files, refreshFiles, userId to dependencies
 
   // Use real analysis data instead of mock data
   const financial = realAnalysisData?.financial || null;
@@ -912,58 +985,130 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
 
 
         {loadingRealData && (
-          <p className="text-muted-foreground">Loading real analysis data from CSV files...</p>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading analysis data...</p>
+          </div>
         )}
         {!loadingRealData && !realAnalysisData && (
-          <p className="text-muted-foreground">No analysis data available. Please ensure CSV files are uploaded and analyzed.</p>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">No analysis data available.</p>
+            {files && files.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Found {files.length} uploaded file{files.length > 1 ? 's' : ''}. Click below to analyze them.
+                </p>
+                <Button 
+                  onClick={triggerAnalysis} 
+                  disabled={analyzingFiles}
+                  className="flex items-center gap-2"
+                >
+                  {analyzingFiles ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Analyzing Files...
+                    </>
+                  ) : (
+                    <>
+                      📊 Analyze Financial Files
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Please upload financial files first to get started.</p>
+            )}
+          </div>
         )}
         {!loadingRealData && realAnalysisData && (
           <>
 
+            {/* Analysis Controls */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold">Financial Analysis Results</h3>
+                <p className="text-sm text-muted-foreground">
+                  Based on {files?.length || 0} uploaded financial file{files?.length === 1 ? '' : 's'}
+                </p>
+              </div>
+              <Button 
+                onClick={triggerAnalysis} 
+                disabled={analyzingFiles}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                {analyzingFiles ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Re-analyzing...
+                  </>
+                ) : (
+                  <>
+                    🔄 Refresh Analysis
+                  </>
+                )}
+              </Button>
+            </div>
+
             {/* Enhanced Health Score Dashboard */}
             {(summary || realAnalysisData?.summary) && (
               <HealthScoreDashboard
-                healthScore={summary?.health_score || realAnalysisData?.summary?.health_score || 85}
-                trafficLights={summary?.traffic_lights || realAnalysisData?.summary?.traffic_lights || {}}
-                recommendation={summary?.recommendation || realAnalysisData?.summary?.recommendation || 'Proceed'}
-                topStrengths={summary?.top_strengths || realAnalysisData?.summary?.top_strengths || []}
-                topRisks={summary?.top_risks || realAnalysisData?.summary?.top_risks || []}
-                dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
-                confidenceScore={Math.max(60, 100 - (Object.values(summary.traffic_lights || {}).filter(v => v === 'red').length * 10))}
-                onReviewConcerns={() => {
-                  // Scroll to risks section or open a modal
-                  const risksSection = document.getElementById('risks-section');
-                  if (risksSection) {
-                    risksSection.scrollIntoView({ behavior: 'smooth' });
+                  healthScore={summary?.health_score || realAnalysisData?.summary?.health_score || 85}
+                  trafficLights={summary?.traffic_lights || realAnalysisData?.summary?.traffic_lights || {}}
+                  recommendation={summary?.recommendation || realAnalysisData?.summary?.recommendation || 'Proceed'}
+                  topStrengths={
+                    summary?.top_strengths || 
+                    (realAnalysisData?.summary?.top_strengths || []).map((strength: string) => ({
+                      title: strength,
+                      evidence: `Strength: ${strength}`,
+                      page: undefined
+                    }))
                   }
-                }}
-                onDownloadReport={() => {
-                  // Trigger PDF export
-                  const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
-                  if (exportButton) {
-                    exportButton.click();
+                  topRisks={
+                    summary?.top_risks || 
+                    (realAnalysisData?.summary?.top_risks || []).map((risk: string) => ({
+                      title: risk,
+                      evidence: `Risk: ${risk}`,
+                      page: undefined
+                    }))
                   }
-                }}
-                onViewDetails={() => {
-                  // Toggle to comprehensive metrics view
-  
-                  setMetricsView('comprehensive');
-                  addToast({
-                    title: 'Switched to Comprehensive View',
-                    message: 'You are now viewing the comprehensive financial analysis.',
-                    type: 'info',
-                  });
-                  // Also scroll to the metrics section to show the change
-                  setTimeout(() => {
-                    const metricsSection = document.querySelector('[data-metrics-section]');
-                    if (metricsSection) {
-                      metricsSection.scrollIntoView({ behavior: 'smooth' });
+                  dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
+                  confidenceScore={Math.max(60, 100 - (Object.values(summary?.traffic_lights || {}).filter(v => v === 'red').length * 10))}
+                  onReviewConcerns={() => {
+                    // Scroll to risks section or open a modal
+                    const risksSection = document.getElementById('risks-section');
+                    if (risksSection) {
+                      risksSection.scrollIntoView({ behavior: 'smooth' });
                     }
-                  }, 100);
-                }}
-                className="mb-8"
-              />
-            )}
+                  }}
+                  onDownloadReport={() => {
+                    // Trigger PDF export
+                    const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
+                    if (exportButton) {
+                      exportButton.click();
+                    }
+                  }}
+                  onViewDetails={() => {
+                    // Toggle to comprehensive metrics view
+  
+                    setMetricsView('comprehensive');
+                    addToast({
+                      title: 'Switched to Comprehensive View',
+                      message: 'You are now viewing the comprehensive financial analysis.',
+                      type: 'info',
+                    });
+                    // Also scroll to the metrics section to show the change
+                    setTimeout(() => {
+                      const metricsSection = document.querySelector('[data-metrics-section]');
+                      if (metricsSection) {
+                        metricsSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
+                  className="mb-8"
+                />
+              )}
 
             {/* Metrics grouped */}
             <div className="space-y-6" data-metrics-section>
