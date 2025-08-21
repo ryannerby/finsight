@@ -45,26 +45,45 @@ export default function HeadToHead() {
       return;
     }
 
-    // Load multi-company analysis data and compare deals
+    // Load complete deal data and compare deals
     const loadAndCompareDeals = async () => {
       setLoading(true);
       try {
-        // Load multi-company analysis data from our endpoint
-        const response = await fetch('http://localhost:3001/api/analyze/multi-company-data');
-        const multiCompanyData = await response.json();
+        // Load complete data for each deal
+        const completeDeals = await Promise.all(
+          deals.map(async (deal) => {
+            try {
+              const response = await fetch(`http://localhost:3001/api/deals/${deal.id}`);
+              if (response.ok) {
+                return await response.json();
+              }
+            } catch (error) {
+              console.error(`Error loading deal ${deal.id}:`, error);
+            }
+            return deal;
+          })
+        );
         
-                     // Compare deals using multi-company data
-             const compareDeals = () => {
-               const results: ComparisonResult[] = deals.map((deal, index) => {
-                 // Map deals to different companies based on index
-                 const companies = Object.keys(multiCompanyData);
-                 const companyKey = companies[index % companies.length];
-                 const companyData = multiCompanyData[companyKey];
-
-                 // Use real company data
-                 const realMetrics = companyData.financial?.metrics || {};
-                 const realHealthScore = companyData.summary?.health_score || 85;
-                 const realRevenue = companyData.financial?.revenue_data?.[companyData.financial.revenue_data.length - 1]?.revenue || 0;
+        // Compare deals using their real analysis data
+        const compareDeals = () => {
+          // Sort deals by their title number to ensure consistent ordering
+          const sortedDeals = [...completeDeals].sort((a, b) => {
+            const aNum = parseInt(a.title.match(/\d+/)?.[0] || '0');
+            const bNum = parseInt(b.title.match(/\d+/)?.[0] || '0');
+            return aNum - bNum;
+          });
+          
+          const results: ComparisonResult[] = sortedDeals.map((deal, index) => {
+            console.log(`Deal ${index}: ${deal.title}`);
+            console.log(`Deal ID: ${deal.id}`);
+            
+            // Use the deal's real analysis data
+            const realMetrics = deal.financial?.metrics || {};
+            const realHealthScore = deal.summary?.health_score || 0;
+            const realRevenue = deal.financial?.revenue_data?.[deal.financial.revenue_data.length - 1]?.revenue || 0;
+            
+            console.log(`Real Health Score: ${realHealthScore}`);
+            console.log(`Real Metrics:`, realMetrics);
             
             // Calculate a score based on real company metrics
             let score = 0;

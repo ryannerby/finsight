@@ -165,10 +165,31 @@ dealsRouter.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Deal not found' });
     }
 
+    // Get the latest analysis data for this deal
+    const { data: analyses, error: analysesError } = await supabase
+      .from('analyses')
+      .select('*')
+      .in('document_id', data.documents?.map((d: any) => d.id) || [])
+      .order('created_at', { ascending: false });
+
+    if (analysesError) {
+      console.error('Error fetching analyses:', analysesError);
+    }
+
+    // Extract analysis data by type
+    const financial = analyses?.find(a => a.analysis_type === 'financial')?.analysis_result;
+    const summary = analyses?.find(a => a.analysis_type === 'summary')?.analysis_result;
+    const documentInventory = analyses?.find(a => a.analysis_type === 'document_inventory')?.analysis_result;
+    const ddSignals = analyses?.find(a => a.analysis_type === 'dd_signals')?.analysis_result;
+
     // Add default is_saved value if the column doesn't exist
     const dealWithDefaults = {
       ...data,
-      is_saved: data.is_saved !== undefined ? data.is_saved : false
+      is_saved: data.is_saved !== undefined ? data.is_saved : false,
+      financial,
+      summary,
+      documentInventory,
+      ddSignals
     };
 
     res.json(dealWithDefaults);
