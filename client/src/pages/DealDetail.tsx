@@ -11,8 +11,11 @@ import { FileList } from '@/components/FileList';
 import { SaveDealButton } from '@/components/SaveDealButton';
 import { FinancialDisclaimer, AnalysisDisclaimer } from '@/components/ui/disclaimer';
 import { Badge } from '@/components/ui/badge';
+import { FileDropzone } from '@/components/ui/file-dropzone';
 import { useFiles } from '@/hooks/useFiles';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/useToast';
+import { UploadProgress } from '@/components/UploadProgress';
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
@@ -20,6 +23,16 @@ const API_BASE_URL = 'http://localhost:3001/api';
 const UploadTab = ({ dealId }: { dealId: string }) => {
   const userId = 'user_123';
   const { files, loading, error, refreshFiles } = useFiles(dealId, userId);
+  const { uploadFiles, uploads, isUploading } = useFileUpload();
+  
+  const handleFilesSelected = async (selectedFiles: File[]) => {
+    try {
+      await uploadFiles(selectedFiles, dealId, userId);
+      refreshFiles();
+    } catch (err) {
+      console.error('Failed to upload files:', err);
+    }
+  };
   
   return (
     <div className="space-y-4">
@@ -29,12 +42,33 @@ const UploadTab = ({ dealId }: { dealId: string }) => {
           {loading ? 'Loading...' : 'Refresh'}
         </Button>
       </div>
-      <FileList
-        files={files}
-        loading={loading}
-        error={error}
-        onRefresh={refreshFiles}
-      />
+      
+      {/* Show upload progress if files are being uploaded */}
+      {uploads && uploads.length > 0 && (
+        <UploadProgress uploads={uploads} />
+      )}
+      
+      {files && files.length > 0 ? (
+        <FileList
+          files={files}
+          loading={loading}
+          error={error}
+          onRefresh={refreshFiles}
+        />
+      ) : (
+        <div className="space-y-4">
+          <FileDropzone
+            onFilesSelected={handleFilesSelected}
+            multiple
+            maxFileSize={10}
+            className="min-h-[200px]"
+            disabled={isUploading}
+          />
+          <div className="text-sm text-muted-foreground text-center">
+            <p>Upload financial documents to start analyzing deals. We support CSV, Excel, and PDF formats.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -72,6 +106,8 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
     try {
       console.log(`Triggering analysis of ${files.length} uploaded files...`);
       
+
+      
       const analysisResponse = await fetch(`${API_BASE_URL}/analyze`, {
         method: 'POST',
         headers: {
@@ -106,6 +142,11 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
           message: `Successfully analyzed ${files.length} financial files.`,
           type: 'success'
         });
+        
+        // Refresh the deal data to get the latest analysis results
+        setTimeout(() => {
+          refreshFiles();
+        }, 1000);
       } else {
         const errorData = await analysisResponse.json();
         throw new Error(errorData.error || 'Analysis failed');
@@ -127,12 +168,32 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
     refreshFiles();
   }, [refreshKey, refreshFiles]);
 
-  // Load real analysis data from uploaded files or fallback to sample data
+  // Load existing analysis data from database
   useEffect(() => {
     const loadData = async () => {
       setLoadingRealData(true);
       try {
-        // First, check if we have uploaded files to analyze
+        // First try to load existing analysis results
+        const dealResponse = await fetch(`${API_BASE_URL}/deals/${deal.id}?user_id=${userId}`);
+        if (dealResponse.ok) {
+          const dealData = await dealResponse.json();
+          console.log('Loaded existing deal data:', dealData);
+          
+          // Check if we have existing analysis results
+          if (dealData.financial || dealData.summary || dealData.documentInventory || dealData.ddSignals) {
+            console.log('Found existing analysis results, using those');
+            setRealAnalysisData({
+              financial: dealData.financial || null,
+              summary: dealData.summary || null,
+              documentInventory: dealData.documentInventory || null,
+              ddSignals: dealData.ddSignals || null
+            });
+            setLoadingRealData(false);
+            return;
+          }
+        }
+        
+        // If no existing analysis, and we have files, trigger new analysis
         if (files && files.length > 0) {
           console.log(`Found ${files.length} uploaded files, triggering real analysis...`);
           
@@ -166,165 +227,51 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
             };
             
             setRealAnalysisData(transformedData);
-            return;
           } else {
-            console.warn('Real analysis failed, falling back to sample data');
+            console.error('Real analysis failed - no fallback to mock data');
+            setRealAnalysisData(null);
+            
+            // Try to get the specific error message from the response
+            let errorMessage = 'Failed to analyze uploaded files. Please check your files and try again.';
+            try {
+              const errorData = await analysisResponse.json();
+              if (errorData.error) {
+                errorMessage = errorData.error;
+              }
+            } catch (parseError) {
+              console.error('Could not parse error response:', parseError);
+            }
+            
+            addToast({
+              title: 'Analysis Failed',
+              message: errorMessage,
+              type: 'error'
+            });
           }
         } else {
-          console.log('No uploaded files found, using sample data');
-        }
-        
-        // Fallback to sample data if no files or analysis failed
-        const response = await fetch(`${API_BASE_URL}/analyze/real-analysis-data`);
-        if (response.ok) {
-          const data = await response.json();
-          setRealAnalysisData(data);
-        } else {
-          // Final fallback to hardcoded data
-          setRealAnalysisData({
-            financial: {
-              deal_id: 'sample_deal',
-              metrics: {
-                gross_margin: 0.4,
-                net_margin: 0.09954921111945905,
-                current_ratio: 1.7333333333333334,
-                ar_days: 25.366265965439517,
-                ap_days: 26.28036563986977,
-                dio_days: 31.99348860505885,
-                inventory_turns: 11.40857142857143,
-                ccc_days: 31.079388930628596,
-                revenue_cagr_3y: 0.10000000000000009,
-                wc_to_sales: 0.10330578512396695
-              },
-              coverage: { periodicity: 'annual' },
-              revenue_data: [
-                { year: '2021', revenue: 800000 },
-                { year: '2022', revenue: 880000 },
-                { year: '2023', revenue: 968000 },
-                { year: '2024', revenue: 1064800 }
-              ]
-            },
-            documentInventory: {
-              deal_id: 'sample_deal',
-              expected: ['income_statement', 'balance_sheet', 'cash_flow'],
-              present: ['income_statement', 'balance_sheet'],
-              missing: ['cash_flow']
-            },
-            ddSignals: {
-              deal_id: 'sample_deal',
-              working_capital_ccc: {
-                status: 'pass',
-                value: 31.079388930628596,
-                detail: 'Working capital cycle is within acceptable range'
-              },
-              current_ratio: {
-                status: 'pass',
-                value: 1.7333333333333334,
-                detail: 'Strong liquidity position'
-              }
-            },
-            summary: {
-              health_score: 85,
-              traffic_lights: {
-                revenue_quality: 'green',
-                profitability: 'green',
-                liquidity: 'green',
-                leverage: 'yellow',
-                efficiency: 'green'
-              },
-              top_strengths: [
-                'Strong revenue growth trend over 3 years',
-                'Healthy gross margins above industry average',
-                'Improving working capital efficiency',
-                'Consistent profitability with positive net margins'
-              ],
-              top_risks: [
-                'Moderate debt levels require monitoring',
-                'Seasonal variations in cash flow patterns',
-                'Dependency on key customer relationships'
-              ],
-              recommendation: 'Proceed'
-            }
-          });
+          console.log('No uploaded files found - no analysis possible');
+          setRealAnalysisData(null);
         }
       } catch (error) {
-        console.error('Error loading real analysis data:', error);
-        setRealAnalysisData({
-          financial: {
-            deal_id: 'sample_deal',
-            metrics: {
-              gross_margin: 0.4,
-              net_margin: 0.09954921111945905,
-              current_ratio: 1.7333333333333334,
-              ar_days: 25.366265965439517,
-              ap_days: 26.28036563986977,
-              dio_days: 31.99348860505885,
-              inventory_turns: 11.40857142857143,
-              ccc_days: 31.079388930628596,
-              revenue_cagr_3y: 0.10000000000000009,
-              wc_to_sales: 0.10330578512396695
-            },
-            coverage: { periodicity: 'annual' },
-            revenue_data: [
-              { year: '2021', revenue: 800000 },
-              { year: '2022', revenue: 880000 },
-              { year: '2023', revenue: 968000 },
-              { year: '2024', revenue: 1064800 }
-            ]
-          },
-          documentInventory: {
-            deal_id: 'sample_deal',
-            expected: ['income_statement', 'balance_sheet', 'cash_flow'],
-            present: ['income_statement', 'balance_sheet'],
-            missing: ['cash_flow']
-          },
-          ddSignals: {
-            deal_id: 'sample_deal',
-            working_capital_ccc: {
-              status: 'pass',
-              value: 31.079388930628596,
-              detail: 'Working capital cycle is within acceptable range'
-            },
-            current_ratio: {
-              status: 'pass',
-              value: 1.7333333333333334,
-              detail: 'Strong liquidity position'
-            }
-          },
-          summary: {
-            health_score: 85,
-            traffic_lights: {
-              revenue_quality: 'green',
-              profitability: 'green',
-              liquidity: 'green',
-              leverage: 'yellow',
-              efficiency: 'green'
-            },
-            top_strengths: [
-              'Strong revenue growth trend over 3 years',
-              'Healthy gross margins above industry average',
-              'Improving working capital efficiency',
-              'Consistent profitability with positive net margins'
-            ],
-            top_risks: [
-              'Moderate debt levels require monitoring',
-              'Seasonal variations in cash flow patterns',
-              'Dependency on key customer relationships'
-            ],
-            recommendation: 'Proceed'
-          }
+        console.error('Error during analysis:', error);
+        setRealAnalysisData(null);
+        addToast({
+          title: 'Analysis Error',
+          message: 'An error occurred while analyzing files. Please try again.',
+          type: 'error'
         });
+      } finally {
+        setLoadingRealData(false);
       }
-      setLoadingRealData(false);
     };
     loadData();
-  }, [deal.id, files, refreshFiles, userId]); // Added deal.id, files, refreshFiles, userId to dependencies
+  }, [deal.id, files, refreshFiles, userId, addToast]);
 
-  // Use real analysis data if available, otherwise fall back to deal data
-  const financial = realAnalysisData?.financial || deal.financial || null;
-  const summary = realAnalysisData?.summary || deal.summary;
-  const documentInventory = realAnalysisData?.documentInventory || deal.documentInventory;
-  const ddSignals = realAnalysisData?.ddSignals || deal.ddSignals;
+  // Use ONLY real analysis data from uploaded files - no fallbacks to deal data
+  const financial = realAnalysisData?.financial || null;
+  const summary = realAnalysisData?.summary || null;
+  const documentInventory = realAnalysisData?.documentInventory || null;
+  const ddSignals = realAnalysisData?.ddSignals || null;
 
   const metrics = financial?.metrics || {};
   const coverage = financial?.coverage || {};
@@ -501,8 +448,8 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
   
                     // Generate clean HTML content for PDF export
                     const dealTitle = deal?.title || 'Unknown Deal';
-                    const healthScore = summary?.analysis_result?.health_score || 'N/A';
-                    const recommendation = summary?.analysis_result?.recommendation || 'N/A';
+                    const healthScore = summary?.health_score || 'N/A';
+                    const recommendation = summary?.recommendation || 'N/A';
                     
                     // Create a comprehensive, detailed HTML template for professional PDF export
                     const htmlContent = `<!DOCTYPE html>
@@ -849,14 +796,14 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
                 <div class="recommendation-text">${recommendation}</div>
             </div>
             
-            ${summary?.analysis_result?.traffic_lights ? `
+                        ${summary?.traffic_lights ? `
             <div class="traffic-lights-section">
-                <div class="traffic-lights-title">Risk Assessment by Category</div>
-                <div class="traffic-lights-grid">
-                    ${Object.entries(summary.analysis_result.traffic_lights).map(([category, status]) => 
-                        `<span class="traffic-light ${status}">${category.replace(/_/g, ' ')}</span>`
-                    ).join('')}
-                </div>
+              <div class="traffic-lights-title">Risk Assessment by Category</div>
+              <div class="traffic-lights-grid">
+                ${Object.entries(summary.traffic_lights).map(([category, status]) => 
+                    `<span class="traffic-light ${status}">${category.replace(/_/g, ' ')}</span>`
+                ).join('')}
+              </div>
             </div>
             ` : ''}
         </div>
@@ -869,7 +816,7 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
                     <div class="confidence-label">Data Completeness</div>
                 </div>
                 <div class="confidence-metric">
-                    <div class="confidence-value">${Math.max(60, 100 - (Object.values(summary?.analysis_result?.traffic_lights || {}).filter(v => v === 'red').length * 10))}%</div>
+                    <div class="confidence-value">${summary?.traffic_lights ? Math.max(0, 100 - (Object.values(summary.traffic_lights).filter(v => v === 'red').length * 10)) : 0}%</div>
                     <div class="confidence-label">Confidence Score</div>
                 </div>
             </div>
@@ -892,27 +839,27 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
             </div>
         </div>
 
-        ${summary?.analysis_result?.top_strengths && summary.analysis_result.top_strengths.length > 0 ? `
+                ${summary?.top_strengths && summary.top_strengths.length > 0 ? `
         <div class="analysis-section">
-            <div class="section-title">Key Strengths</div>
-            <div class="strengths-box">
-                <div class="box-title">💪 Top Strengths</div>
-                ${summary.analysis_result.top_strengths.map(strength => 
-                    `<div class="strength-item">• ${strength}</div>`
-                ).join('')}
-            </div>
+          <div class="section-title">Key Strengths</div>
+          <div class="strengths-box">
+            <div class="box-title">💪 Top Strengths</div>
+            ${summary.top_strengths.map(strength => 
+                `<div class="strength-item">• ${strength}</div>`
+            ).join('')}
+          </div>
         </div>
         ` : ''}
 
-        ${summary?.analysis_result?.top_risks && summary.analysis_result.top_risks.length > 0 ? `
+                ${summary?.top_risks && summary.top_risks.length > 0 ? `
         <div class="analysis-section">
-            <div class="section-title">Risk Factors</div>
-            <div class="risks-box">
-                <div class="box-title">⚠️ Top Risks</div>
-                ${summary.analysis_result.top_risks.map(risk => 
-                    `<div class="risk-item">• ${risk}</div>`
-                ).join('')}
-            </div>
+          <div class="section-title">Risk Factors</div>
+          <div class="risks-box">
+            <div class="box-title">⚠️ Top Risks</div>
+            ${summary.top_risks.map(risk => 
+                `<div class="risk-item">• ${risk}</div>`
+            ).join('')}
+          </div>
         </div>
         ` : ''}
 
@@ -985,13 +932,13 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
         {/* Enhanced Health Score Dashboard */}
         {(summary || financial) && (
           <HealthScoreDashboard
-            healthScore={summary?.health_score || 85}
+            healthScore={summary?.health_score || 0}
             trafficLights={summary?.traffic_lights || {}}
-            recommendation={summary?.recommendation || 'Proceed'}
+            recommendation={summary?.recommendation || 'No Data'}
             topStrengths={summary?.top_strengths || []}
             topRisks={summary?.top_risks || []}
             dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
-            confidenceScore={Math.max(60, 100 - (Object.values(summary?.traffic_lights || {}).filter(v => v === 'red').length * 10))}
+            confidenceScore={summary?.traffic_lights ? Math.max(0, 100 - (Object.values(summary.traffic_lights).filter(v => v === 'red').length * 10)) : 0}
             onReviewConcerns={() => {
               // Scroll to risks section or open a modal
               const risksSection = document.getElementById('risks-section');
@@ -1104,7 +1051,7 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
                       metricId={k}
                       label={k.replace(/_/g,' ')}
                       value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'warning' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
                       tooltip={`Computed ${k.replace(/_/g,' ')}`}
                       ariaLabel={`${k} metric`}
                       className="min-h-[96px]"

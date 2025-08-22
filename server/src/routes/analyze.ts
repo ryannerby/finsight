@@ -11,7 +11,7 @@ import { buildDocumentInventory } from '../services/documentInventory';
 import { computeDDSignals } from '../services/ddSignals';
 import { parseXlsxToRows } from '../services/xlsxParser';
 import { jsonCall } from '../services/anthropic';
-import { rateLimiter } from '../services/rateLimiter';
+
 import { AnalysisErrorHandler, type AnalysisError } from '../services/errorHandler';
 import { withTimeout, TIMEOUTS } from '../services/timeoutWrapper';
 
@@ -81,17 +81,7 @@ analyzeRouter.post('/', async (req: Request, res: Response) => {
     const { dealId, userId } = req.body;
     if (!dealId || !userId) return res.status(400).json({ error: 'dealId and userId are required' });
 
-    // Rate limiting: one analysis per minute per deal
-    if (!rateLimiter.isAllowed(dealId)) {
-      const retryAfter = Math.ceil(rateLimiter.getTimeRemaining(dealId) / 1000);
-      const error = AnalysisErrorHandler.createRateLimitError(retryAfter);
-      return res.status(AnalysisErrorHandler.getHttpStatus(error))
-        .json({ 
-          error: error.message, 
-          type: error.type, 
-          retryAfter: error.retryAfter 
-        });
-    }
+
 
     // Verify the deal belongs to the user
     let t0 = Date.now();
