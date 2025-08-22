@@ -320,16 +320,14 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
     loadData();
   }, [deal.id, files, refreshFiles, userId]); // Added deal.id, files, refreshFiles, userId to dependencies
 
-  // Use real analysis data instead of mock data
-  const financial = realAnalysisData?.financial || null;
+  // Use real analysis data if available, otherwise fall back to deal data
+  const financial = realAnalysisData?.financial || deal.financial || null;
+  const summary = realAnalysisData?.summary || deal.summary;
+  const documentInventory = realAnalysisData?.documentInventory || deal.documentInventory;
+  const ddSignals = realAnalysisData?.ddSignals || deal.ddSignals;
 
   const metrics = financial?.metrics || {};
   const coverage = financial?.coverage || {};
-  
-  // Use real analysis data for all components
-  const inventory = realAnalysisData?.documentInventory || null;
-  const ddSignals = realAnalysisData?.ddSignals || null;
-  const summary = realAnalysisData?.summary || null;
 
   
   
@@ -984,304 +982,221 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
         </div>
 
 
-        {loadingRealData && (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading analysis data...</p>
-          </div>
-        )}
-        {!loadingRealData && !realAnalysisData && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">No analysis data available.</p>
-            {files && files.length > 0 ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Found {files.length} uploaded file{files.length > 1 ? 's' : ''}. Click below to analyze them.
-                </p>
-                <Button 
-                  onClick={triggerAnalysis} 
-                  disabled={analyzingFiles}
-                  className="flex items-center gap-2"
-                >
-                  {analyzingFiles ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Analyzing Files...
-                    </>
-                  ) : (
-                    <>
-                      📊 Analyze Financial Files
-                    </>
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Please upload financial files first to get started.</p>
-            )}
-          </div>
-        )}
-        {!loadingRealData && realAnalysisData && (
-          <>
-
-            {/* Analysis Controls */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">Financial Analysis Results</h3>
-                <p className="text-sm text-muted-foreground">
-                  Based on {files?.length || 0} uploaded financial file{files?.length === 1 ? '' : 's'}
-                </p>
-              </div>
-              <Button 
-                onClick={triggerAnalysis} 
-                disabled={analyzingFiles}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                {analyzingFiles ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                    Re-analyzing...
-                  </>
-                ) : (
-                  <>
-                    🔄 Refresh Analysis
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Enhanced Health Score Dashboard */}
-            {(summary || realAnalysisData?.summary) && (
-              <HealthScoreDashboard
-                  healthScore={summary?.health_score || realAnalysisData?.summary?.health_score || 85}
-                  trafficLights={summary?.traffic_lights || realAnalysisData?.summary?.traffic_lights || {}}
-                  recommendation={summary?.recommendation || realAnalysisData?.summary?.recommendation || 'Proceed'}
-                  topStrengths={
-                    summary?.top_strengths || 
-                    (realAnalysisData?.summary?.top_strengths || []).map((strength: string) => ({
-                      title: strength,
-                      evidence: `Strength: ${strength}`,
-                      page: undefined
-                    }))
-                  }
-                  topRisks={
-                    summary?.top_risks || 
-                    (realAnalysisData?.summary?.top_risks || []).map((risk: string) => ({
-                      title: risk,
-                      evidence: `Risk: ${risk}`,
-                      page: undefined
-                    }))
-                  }
-                  dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
-                  confidenceScore={Math.max(60, 100 - (Object.values(summary?.traffic_lights || {}).filter(v => v === 'red').length * 10))}
-                  onReviewConcerns={() => {
-                    // Scroll to risks section or open a modal
-                    const risksSection = document.getElementById('risks-section');
-                    if (risksSection) {
-                      risksSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  onDownloadReport={() => {
-                    // Trigger PDF export
-                    const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
-                    if (exportButton) {
-                      exportButton.click();
-                    }
-                  }}
-                  onViewDetails={() => {
-                    // Toggle to comprehensive metrics view
+        {/* Enhanced Health Score Dashboard */}
+        {(summary || financial) && (
+          <HealthScoreDashboard
+            healthScore={summary?.health_score || 85}
+            trafficLights={summary?.traffic_lights || {}}
+            recommendation={summary?.recommendation || 'Proceed'}
+            topStrengths={summary?.top_strengths || []}
+            topRisks={summary?.top_risks || []}
+            dataCompleteness={Object.keys(metrics).length > 0 ? Math.min((Object.keys(metrics).filter(k => metrics[k] != null).length / Object.keys(metrics).length) * 100, 100) : 0}
+            confidenceScore={Math.max(60, 100 - (Object.values(summary?.traffic_lights || {}).filter(v => v === 'red').length * 10))}
+            onReviewConcerns={() => {
+              // Scroll to risks section or open a modal
+              const risksSection = document.getElementById('risks-section');
+              if (risksSection) {
+                risksSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            onDownloadReport={() => {
+              // Trigger PDF export
+              const exportButton = document.querySelector('[data-export-pdf]') as HTMLButtonElement;
+              if (exportButton) {
+                exportButton.click();
+              }
+            }}
+            onViewDetails={() => {
+              // Toggle to comprehensive metrics view
   
-                    setMetricsView('comprehensive');
-                    addToast({
-                      title: 'Switched to Comprehensive View',
-                      message: 'You are now viewing the comprehensive financial analysis.',
-                      type: 'info',
-                    });
-                    // Also scroll to the metrics section to show the change
-                    setTimeout(() => {
-                      const metricsSection = document.querySelector('[data-metrics-section]');
-                      if (metricsSection) {
-                        metricsSection.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }, 100);
-                  }}
-                  className="mb-8"
-                />
-              )}
+              setMetricsView('comprehensive');
+              addToast({
+                title: 'Switched to Comprehensive View',
+                message: 'You are now viewing the comprehensive financial analysis.',
+                type: 'info',
+              });
+              // Also scroll to the metrics section to show the change
+              setTimeout(() => {
+                const metricsSection = document.querySelector('[data-metrics-section]');
+                if (metricsSection) {
+                  metricsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            }}
+            className="mb-8"
+          />
+        )}
 
-            {/* Metrics grouped */}
-            <div className="space-y-6" data-metrics-section>
-              {/* Metrics View Toggle */}
-              <div className="max-w-3xl mx-auto">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <Button
-                    size="sm"
-                    variant={metricsView === 'simple' ? 'default' : 'outline'}
-                    onClick={() => {
-                      setMetricsView('simple');
+        {/* Metrics grouped */}
+        <div className="space-y-6" data-metrics-section>
+          {/* Metrics View Toggle */}
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Button
+                size="sm"
+                variant={metricsView === 'simple' ? 'default' : 'outline'}
+                onClick={() => {
+                  setMetricsView('simple');
                                              addToast({
                          title: 'Switched to Simple View',
                          message: 'You are now viewing the simplified financial metrics.',
                          type: 'info',
                        });
-                    }}
-                  >
-                    Simple View
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={metricsView === 'comprehensive' ? 'default' : 'outline'}
-                    onClick={() => {
-                      setMetricsView('comprehensive');
+                }}
+              >
+                Simple View
+              </Button>
+              <Button
+                size="sm"
+                variant={metricsView === 'comprehensive' ? 'default' : 'outline'}
+                onClick={() => {
+                  setMetricsView('comprehensive');
                                              addToast({
                          title: 'Switched to Comprehensive View',
                          message: 'You are now viewing the comprehensive financial analysis.',
                          type: 'info',
                        });
-                    }}
-                  >
-                    Comprehensive View
-                  </Button>
-                </div>
-                {/* Active view indicator */}
-                <div className="text-center">
-                  <span className="text-xs text-muted-foreground">
-                    Currently viewing: <span className="font-medium text-foreground">
-                      {metricsView === 'simple' ? 'Simple Metrics' : 'Comprehensive Analysis'}
-                    </span>
-                  </span>
-                </div>
-              </div>
-              
-              {/* Benchmark Legend */}
-              <div className="max-w-3xl mx-auto">
-                <BenchmarkLegend />
-              </div>
-              
-              {/* Simple Metrics View */}
-              {metricsView === 'simple' && (
-                <>
-                  <div className="max-w-3xl mx-auto">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
-                    {/* Mobile: swipeable */}
-                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                      {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                        <MetricCard
-                          key={`m-${k}`}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px] snap-start min-w-[200px]"
-                        />
-                      ))}
-                    </div>
-                    {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
-                    <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                      {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
-                        <MetricCard
-                          key={k}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'warning' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="max-w-3xl mx-auto">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
-                    {/* Mobile: swipeable */}
-                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                      {['current_ratio','debt_to_equity'].map((k) => (
-                        <MetricCard
-                          key={`l-${k}`}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px] snap-start min-w-[200px]"
-                        />
-                      ))}
-                    </div>
-                    {/* Tablet/desktop grid - 2 fixed columns for perfect centering */}
-                    <div className="hidden sm:grid grid-cols-2 place-items-center gap-6">
-                      {['current_ratio','debt_to_equity'].map((k) => (
-                        <MetricCard
-                          key={k}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="max-w-3xl mx-auto">
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Efficiency & Working Capital</h4>
-                    {/* Mobile: swipeable */}
-                    <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
-                      {['ar_days','ap_days','ccc_days'].map((k) => (
-                        <MetricCard
-                          key={`e-${k}`}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px] snap-start min-w-[200px]"
-                        />
-                      ))}
-                    </div>
-                    {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
-                    <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
-                      {['ar_days','ap_days','ccc_days'].map((k) => (
-                        <MetricCard
-                          key={k}
-                          metricId={k}
-                          label={k.replace(/_/g,' ')}
-                          value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
-                          status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
-                          tooltip={`Computed ${k.replace(/_/g,' ')}`}
-                          ariaLabel={`${k} metric`}
-                          className="min-h-[96px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-              
-              {/* Comprehensive Metrics View */}
-              {metricsView === 'comprehensive' && (
-                <div className="w-full overflow-hidden">
-                  <ComprehensiveMetrics 
-                    metrics={metrics} 
-                    showLegend={false}
-                  />
-                </div>
-              )}
+                }}
+              >
+                Comprehensive View
+              </Button>
             </div>
-
-            {/* Revenue Trend Chart */}
-            {financial && getRevenueData().length > 0 && (
-              <div className="mt-8">
-                <RevenueChart data={getRevenueData()} title="Revenue Trend" />
+            {/* Active view indicator */}
+            <div className="text-center">
+              <span className="text-xs text-muted-foreground">
+                Currently viewing: <span className="font-medium text-foreground">
+                  {metricsView === 'simple' ? 'Simple Metrics' : 'Comprehensive Analysis'}
+                </span>
+              </span>
+            </div>
+          </div>
+          
+          {/* Benchmark Legend */}
+          <div className="max-w-3xl mx-auto">
+            <BenchmarkLegend />
+          </div>
+          
+          {/* Simple Metrics View */}
+          {metricsView === 'simple' && (
+            <>
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Margins & Growth</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={`m-${k}`}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'good' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['gross_margin','net_margin','revenue_cagr_3y'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k.includes('margin') ? (metrics[k] != null && metrics[k] > 0.2 ? 'warning' : metrics[k] != null && metrics[k] > 0.1 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
               </div>
-            )}
-          </>
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Liquidity & Leverage</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['current_ratio','debt_to_equity'].map((k) => (
+                    <MetricCard
+                      key={`l-${k}`}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 2 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-2 place-items-center gap-6">
+                  {['current_ratio','debt_to_equity'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'current_ratio' ? (metrics[k] != null && metrics[k] > 1.5 ? 'good' : metrics[k] != null && metrics[k] > 1.0 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="max-w-3xl mx-auto">
+                <h4 className="text-sm font-semibold text-muted-foreground mb-2 text-center">Efficiency & Working Capital</h4>
+                {/* Mobile: swipeable */}
+                <div className="flex gap-3 overflow-x-auto sm:hidden -mx-1 px-1 snap-x">
+                  {['ar_days','ap_days','ccc_days'].map((k) => (
+                    <MetricCard
+                      key={`e-${k}`}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px] snap-start min-w-[200px]"
+                    />
+                  ))}
+                </div>
+                {/* Tablet/desktop grid - 3 fixed columns for perfect centering */}
+                <div className="hidden sm:grid grid-cols-3 place-items-center gap-6">
+                  {['ar_days','ap_days','ccc_days'].map((k) => (
+                    <MetricCard
+                      key={k}
+                      metricId={k}
+                      label={k.replace(/_/g,' ')}
+                      value={metrics[k] == null ? 'n/a' : typeof metrics[k] === 'number' ? formatMetric(k, metrics[k]) : String(metrics[k])}
+                      status={k === 'ccc_days' ? (metrics[k] != null && metrics[k] < 60 ? 'good' : metrics[k] != null && metrics[k] < 90 ? 'warning' : 'bad') : 'neutral'}
+                      tooltip={`Computed ${k.replace(/_/g,' ')}`}
+                      ariaLabel={`${k} metric`}
+                      className="min-h-[96px]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          
+          {/* Comprehensive Metrics View */}
+          {metricsView === 'comprehensive' && (
+            <div className="w-full overflow-hidden">
+              <ComprehensiveMetrics 
+                metrics={metrics} 
+                showLegend={false}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Revenue Trend Chart */}
+        {financial && getRevenueData().length > 0 && (
+          <div className="mt-8">
+            <RevenueChart data={getRevenueData()} title="Revenue Trend" />
+          </div>
         )}
       </div>
 
@@ -1369,15 +1284,15 @@ const SummaryTab = ({ deal, refreshKey, metricsView, setMetricsView }: {
 
 
       {/* Document Inventory (compact with optional details) */}
-      {inventory && (() => {
-        const expected: string[] = inventory.expected || [];
-        const present: string[] = inventory.present || [];
-        const missing: string[] = inventory.missing || [];
+      {documentInventory && (() => {
+        const expected: string[] = documentInventory.expected || [];
+        const present: string[] = documentInventory.present || [];
+        const missing: string[] = documentInventory.missing || [];
         const expectedCount = expected.length;
         const presentCount = present.length;
         const missingCount = missing.length;
         const completionPct = expectedCount > 0 ? Math.round((presentCount / expectedCount) * 100) : 0;
-        const cov: Record<string, any> = inventory.coverage || {};
+        const cov: Record<string, any> = documentInventory.coverage || {};
         const periodicities = Object.values(cov).map((v: any) => v?.periodicity).filter(Boolean) as string[];
         const periodicitySummary = periodicities.length === 0 ? '—' : new Set(periodicities).size === 1 ? periodicities[0] as string : 'mixed';
         return (
@@ -1677,6 +1592,14 @@ export default function DealDetail() {
                       body: JSON.stringify({ dealId: deal.id, userId: 'user_123' })
                     });
                     if (!res.ok) throw new Error(await res.text());
+                    
+                    // Reload the deal to get the analysis results
+                    const dealRes = await fetch(`${API_BASE_URL}/deals/${dealId}`);
+                    if (dealRes.ok) {
+                      const updatedDeal = await dealRes.json();
+                      setDeal(updatedDeal);
+                    }
+                    
                     setAnalysisRefresh((x) => x + 1);
                     setShowUploadOnly(false); // navigate to overview state
                   } catch (e) {
