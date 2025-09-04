@@ -116,22 +116,6 @@ This project follows a feature-branch workflow:
 - `docs/` - Documentation updates
 - `refactor/` - Code refactoring
 
----
-
-## 📋 **Roadmap**
-
-See [ROADMAP.md](./ROADMAP.md) for our 14-day MVP development plan and current progress.
-
----
-
-## 📄 **License**
-
-MIT License - see [LICENSE](./LICENSE) for details.
-
----
-
-## 🙏 **Contributing**
-
 Contributions are welcome! Please read our contributing guidelines and submit pull requests for any improvements.
 
 ---
